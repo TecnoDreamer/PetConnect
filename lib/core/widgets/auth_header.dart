@@ -21,7 +21,12 @@ class AuthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(24, onBack != null ? 8 : 48, 24, 48),
+      // Padding vertical reduzido em 2026-09-14 (fix/login-card-sobreposicao
+      // -estatica): só espaçamento, nunca o logo/texto/cor em si — a tela de
+      // Login não cabia numa única viewport em aparelhos comuns sem este
+      // ajuste (ver docs/features/login-layout-static-fix.md). Benefício
+      // colateral: Esqueci senha (mesmo cabeçalho) também ganha mais espaço.
+      padding: EdgeInsets.fromLTRB(24, onBack != null ? 8 : 14, 24, 14),
       decoration: const BoxDecoration(
         gradient: AppColors.brandGradient,
         borderRadius: BorderRadius.only(
@@ -56,7 +61,7 @@ class AuthHeader extends StatelessWidget {
                     ),
                   Image.asset('assets/images/logo.png',
                       width: 160, height: 160),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
                   const Text(
                     'PetConnect',
                     textAlign: TextAlign.center,
@@ -66,7 +71,7 @@ class AuthHeader extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   const Text(
                     'Conectando corações perdidos aos seus lares',
                     textAlign: TextAlign.center,

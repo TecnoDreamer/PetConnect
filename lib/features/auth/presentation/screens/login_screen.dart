@@ -61,14 +61,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
+          // NeverScrollableScrollPhysics: a tela não pode se mover ao toque
+          // (correção de 2026-09-14, ver docs/features/login-layout-static
+          // -fix.md) — mesmo que uma combinação futura ainda mais extrema
+          // (fonte do sistema muito ampliada + aparelho muito pequeno) volte
+          // a sobrar conteúdo, ele é cortado embaixo, nunca vira arrastável.
+          physics: const NeverScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const AuthHeader(),
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
                 child: Transform.translate(
-                  offset: const Offset(0, -32),
+                  // Sobreposição um pouco maior que antes (32 → 48): o card
+                  // invade mais a base da área marrom, de propósito — ajuda
+                  // a tela a caber sem rolar e deixa a sobreposição mais
+                  // nítida (seção 14 do documento-fonte).
+                  offset: const Offset(0, -48),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -83,9 +93,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onSubmit: _handleLogin,
                         onForgotPassword: () => context.push('/esqueci-senha'),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 10),
                       const _SocialLoginRow(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 10),
                       _SignUpPrompt(onTap: () => context.push('/cadastro')),
                     ],
                   ),
@@ -136,7 +146,10 @@ class _LoginCard extends StatelessWidget {
     );
 
     return Container(
-      padding: const EdgeInsets.all(28),
+      // Padding vertical reduzido (28 → 18) — a tela precisa caber sem
+      // rolar em aparelhos comuns (correção de 2026-09-14); horizontal
+      // mantido em 28.
+      padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -160,7 +173,7 @@ class _LoginCard extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
           TextField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -168,9 +181,12 @@ class _LoginCard extends StatelessWidget {
               hintText: 'E-mail:',
               enabledBorder: borda,
               focusedBorder: bordaComFoco,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           TextField(
             controller: senhaController,
             obscureText: !senhaVisivel,
@@ -178,6 +194,9 @@ class _LoginCard extends StatelessWidget {
               hintText: 'Senha:',
               enabledBorder: borda,
               focusedBorder: bordaComFoco,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
               suffixIcon: IconButton(
                 icon: Icon(
                   senhaVisivel
@@ -191,27 +210,39 @@ class _LoginCard extends StatelessWidget {
             ),
           ),
           if (error != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               error!,
               style: const TextStyle(color: AppColors.error, fontSize: 13),
             ),
           ],
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: submitting ? null : onSubmit,
-            child: submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.textOnBrand,
+          const SizedBox(height: 10),
+          // Altura mínima reduzida (56 → 48) só neste botão, via Theme
+          // local — ajuda a caber sem rolar em aparelhos pequenos; não
+          // afeta nenhum outro botão do app.
+          Theme(
+            data: Theme.of(context).copyWith(
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: Theme.of(context).elevatedButtonTheme.style?.copyWith(
+                      minimumSize:
+                          const WidgetStatePropertyAll(Size.fromHeight(48)),
                     ),
-                  )
-                : const Text('ENTRAR'),
+              ),
+            ),
+            child: ElevatedButton(
+              onPressed: submitting ? null : onSubmit,
+              child: submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.textOnBrand,
+                      ),
+                    )
+                  : const Text('ENTRAR'),
+            ),
           ),
-          const SizedBox(height: 12),
           Center(
             child: TextButton(
               onPressed: onForgotPassword,
@@ -232,6 +263,11 @@ class _SocialLoginRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Altura já é o mínimo de área de toque acessível (48, ver
+    // OutlinedButtonThemeData em app_theme.dart) — o Flutter aplica esse
+    // piso via tapTargetSize independente de minimumSize, então não dá
+    // pra encolher mais sem violar acessibilidade (seção 23 do
+    // documento-fonte). Nada a reduzir aqui.
     return Row(
       children: [
         Expanded(
