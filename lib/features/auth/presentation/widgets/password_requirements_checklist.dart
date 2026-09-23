@@ -32,8 +32,8 @@ class PasswordRequirementsChecklist extends StatelessWidget {
           '${i.$2 ? 'atendido' : 'pendente'}').join('; ')}.',
       child: ExcludeSemantics(
         child: Wrap(
-          spacing: 16,
-          runSpacing: 4,
+          spacing: 10,
+          runSpacing: 2,
           children: [for (final item in itens) _Item(item.$1, item.$2)],
         ),
       ),

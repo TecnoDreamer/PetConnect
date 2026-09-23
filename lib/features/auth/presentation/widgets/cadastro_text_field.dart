@@ -97,8 +97,12 @@ class CadastroTextField extends StatelessWidget {
         enabledBorder: borda(corBorda),
         focusedBorder: borda(temErro ? AppColors.error : AppColors.brandDark,
             largura: 1.5),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        // isDense + padding vertical enxuto: a tela precisa caber inteira
+        // sem rolar mesmo em aparelhos comuns (360x800) — 5 campos são o
+        // maior consumidor de altura da tela (seção 4 do briefing, ver
+        // docs/features/cadastro-redesign.md).
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }

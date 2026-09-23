@@ -278,3 +278,120 @@ Firebase Auth nunca reavalia a política de uma senha já definida).
 ## 13. Validação manual
 
 Ver `docs/validation/cadastro-redesign.md`.
+
+## 14. Atualização 2026-09-14 — tela deixou de caber sem rolar em aparelhos reais
+
+> Branch: `fix/cadastro-tela-estatica-sem-scroll`. Origem: vídeo do
+> usuário mostrando o card dos campos "atrás" do cabeçalho marrom,
+> arrastável ao toque.
+
+### Causa raiz
+
+O layout original foi calibrado com testes de widget numa viewport de
+400×900 — mais alta que boa parte dos aparelhos Android reais em uso
+(360×800 é uma das resoluções lógicas mais comuns do mercado). Nesse
+tamanho comum, com a checklist de senha já visível por padrão (mostrada
+mesmo antes de qualquer interação, porque uma senha vazia nunca atende
+aos requisitos), o conteúdo **não cabia** de verdade: havia até ~249px
+de rolagem real (medido com `ScrollPosition.maxScrollExtent`, simulando
+status bar + barra de gestos). Como o cabeçalho fica fora do
+`SingleChildScrollView` (não rola) e o card dentro dele é deslocado com
+`Transform.translate`, arrastar esse scroll real fazia o card se
+separar visualmente do cabeçalho — exatamente o que o vídeo mostrou.
+
+### Correção
+
+1. **Layout bem mais compacto**: `contentPadding` dos campos, espaço
+   entre campos, padding do cabeçalho e do card, e tamanho do título
+   foram todos reduzidos; a `Wrap` do checklist de senha ficou mais
+   enxuta. O botão "CRIAR CONTA" usa uma altura mínima de 48 (era 56, o
+   padrão do resto do app) só nesta tela, via um `Theme` local — não
+   afeta nenhum outro botão do app.
+2. **`physics: NeverScrollableScrollPhysics()`** no
+   `SingleChildScrollView` — garantia dura de que nada nesta tela se
+   move ao toque, mesmo que uma combinação futura ainda mais extrema
+   (fonte do sistema muito ampliada, aparelho muito pequeno) volte a
+   gerar alguma sobra de conteúdo. Nesse cenário residual o conteúdo
+   simplesmente é cortado embaixo, em vez de virar arrastável — a tela
+   continua 100% estática, só a rede de segurança contra crash
+   (`RenderFlex overflow`) é que muda de "arrastável" para "cortado".
+3. Logo do cabeçalho: mantido bem maior que o valor original (108px —
+   era 100px antes do pedido de aumento, chegou a 132px, recuado pra
+   108px por causa deste ajuste) — ainda visivelmente maior que o
+   ponto de partida, mas o suficiente pra sobrar espaço real.
+
+### Testes
+
+`maxScrollExtent` agora é exatamente `0` (confirmado por teste,
+simulando status bar/barra de gestos reais) em 360×800 (Android comum),
+393×852 (iPhone 14/15) e 412×915 (Pixel comum) — os três tamanhos mais
+representativos do parque real de aparelhos. Um teste adicional confirma
+que a física de rolagem da tela é sempre `NeverScrollableScrollPhysics`,
+mesmo com fonte do sistema ampliada em 1.6x numa tela de 320×480 (não
+existe cenário em que o card fique arrastável). Aparelhos muito antigos/
+pequenos (ex.: 360×640) ainda podem ter alguma sobra de conteúdo
+cortada — aceito conscientemente, já que não são mais representativos
+do parque de aparelhos atual.
+
+## 15. Atualização 2026-09-14 (2ª rodada) — a correção da seção 14 não bastava
+
+> Vídeo do usuário no aparelho físico mostrou o mesmo sintoma
+> persistindo mesmo depois da seção 14: o card ainda aparecia
+> parcialmente atrás do cabeçalho e "descia e subia" sozinho ao focar
+> campos — validado comparando com a tela de Login (mesma classe de
+> bug, corrigida com sucesso em `fix/login-card-sobreposicao-estatica`,
+> confirmada correta pelo usuário).
+
+### Causa raiz real (a da seção 14 era só parte do problema)
+
+A correção da seção 14 tirou o cabeçalho do `SingleChildScrollView`
+(virou uma `Column` externa fixa, só o card ficava num
+`Expanded(SingleChildScrollView(...))` separado) para resolver o
+overflow. Isso resolveu o overflow, mas **quebrou a sobreposição
+visual**: com o cabeçalho fora do scroll, o card passou a flutuar
+*abaixo* dele, sem nenhuma invasão visual — exatamente o que o
+screenshot do usuário mostrou (comparado lado a lado com a print de
+referência do Login, onde o card claramente invade a base do
+cabeçalho).
+
+Pior: mesmo com `physics: NeverScrollableScrollPhysics()` já aplicado,
+o card ainda se movia sozinho ao tocar num campo. Motivo: o Flutter
+chama `Scrollable.ensureVisible()` **internamente**
+(`EditableText.bringIntoView`, disparado ao ganhar foco) para garantir
+que o campo focado fique visível — isso é uma rolagem **programática**,
+que `NeverScrollableScrollPhysics` **não bloqueia** (essa physics só
+bloqueia arrasto do *usuário*, via `shouldAcceptUserOffset`). Medição
+adicional revelou também que a folga real entre conteúdo e viewport em
+360×800 estava em **exatamente 0px** — qualquer variação mínima de
+métrica de fonte num aparelho real (diferente da fonte usada no
+ambiente de teste) já bastava para gerar um overflow residual, dando
+ao `ensureVisible()` uma pequena rolagem de verdade para executar.
+
+### Correção
+
+1. **Cabeçalho e card voltam a ficar dentro do mesmo
+   `SingleChildScrollView`**, como uma única `Column` — exatamente a
+   mesma estrutura da tela de Login (`login_screen.dart`), já validada
+   pelo usuário como correta. Com os dois no mesmo scroll, qualquer
+   tentativa de rolagem (arrasto ou `ensureVisible()` programático)
+   move os dois **juntos** — a sobreposição nunca se desfaz, não importa
+   o que a dispare.
+2. **Sobreposição aumentada de 24 para 32px** — mesmo espírito do ajuste
+   já feito no Login (32→48px), deixando a invasão do card na base do
+   cabeçalho mais nítida.
+3. **Margem de segurança real adicionada**: mais um corte de
+   espaçamento (padding do card, do cabeçalho, e do texto de apoio) até
+   a folga em 360×800 sair de exatamente 0px para **~20px** (medido
+   testando alturas de viewport decrescentes até o ponto exato em que
+   `maxScrollExtent` deixa de ser zero) — absorve variação normal de
+   fonte entre o ambiente de teste e aparelhos reais.
+
+### Testes
+
+Dois testes novos em `cadastro_screen_test.dart`, no grupo "sobreposição
+não se desfaz ao focar um campo": o título "Crie sua conta" continua
+acima da base do cabeçalho (comparação de posição Y) depois de focar
+*cada um* dos 5 campos, um por um; e `ScrollPosition.pixels` permanece
+`0` depois de focar o campo mais no fundo do formulário ("Confirmar
+senha", o mais propenso a disparar `ensureVisible()`). Suíte completa
+(162 testes) revalidada.

@@ -455,5 +455,126 @@ void main() {
       expect(find.text('9 ou mais caracteres'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    // Regressão de 2026-09-14: em aparelhos reais comuns (não só no
+    // 800x600 padrão de teste do Flutter, bem mais alto que a maioria dos
+    // celulares) a tela tinha overflow de verdade — o card virava
+    // arrastável e, ao arrastar, "descolava" visivelmente do cabeçalho
+    // (vídeo do usuário mostrando o card atrás do card marrom). O
+    // requisito da tela é não rolar em condições normais — aqui isso é
+    // verificado de forma exata (extensão de rolagem, não só ausência de
+    // erro).
+    for (final tamanho in [
+      const Size(360, 800), // Android muito comum
+      const Size(393, 852), // iPhone 14/15
+      const Size(412, 915), // Pixel comum
+    ]) {
+      testWidgets(
+          'não tem nenhuma extensão de rolagem em ${tamanho.width.toInt()}x${tamanho.height.toInt()}',
+          (tester) async {
+        tester.view.physicalSize = tamanho;
+        tester.view.devicePixelRatio = 1.0;
+        // Status bar + barra de navegação/gestos reais — sem isso o teste
+        // fica otimista demais (SafeArea não teria nada pra descontar).
+        tester.view.padding = const FakeViewPadding(top: 30, bottom: 24);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetPadding);
+
+        await tester.pumpWidget(_appPara(_FakeUsuarioRepository()));
+        await tester.pumpAndSettle();
+
+        final posicao = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
+        expect(posicao.maxScrollExtent, 0,
+            reason: 'a tela não deveria depender de rolagem neste tamanho');
+      });
+    }
+
+    testWidgets('a tela nunca é arrastável, mesmo que algo force overflow',
+        (tester) async {
+      // Fonte do sistema bem ampliada + aparelho pequeno — justamente a
+      // combinação extrema que a rede de segurança existe pra cobrir.
+      // Mesmo aqui, nada deve se mover ao arrastar.
+      tester.view.physicalSize = const Size(320, 480);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: _appPara(_FakeUsuarioRepository()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable).first;
+      final physics = tester.widget<Scrollable>(scrollable).physics;
+      expect(physics, isA<NeverScrollableScrollPhysics>());
+    });
+  });
+
+  group('CadastroScreen — sobreposição não se desfaz ao focar um campo', () {
+    // Regressão de 2026-09-14, 2ª rodada: com o cabeçalho fora do
+    // SingleChildScrollView (1ª versão desta correção), focar um campo
+    // fazia o Flutter chamar Scrollable.ensureVisible() internamente
+    // (EditableText.bringIntoView) — uma rolagem PROGRAMÁTICA que
+    // NeverScrollableScrollPhysics não bloqueia (só bloqueia arrasto do
+    // usuário) — e isso descolava o card do cabeçalho fixo. Agora os dois
+    // ficam dentro do mesmo scroll, então qualquer deslocamento move os
+    // dois juntos.
+    testWidgets(
+        'o título do card continua abaixo da base do cabeçalho depois de focar cada campo',
+        (tester) async {
+      await _abrirTela(tester, _FakeUsuarioRepository());
+      await tester.pumpAndSettle();
+
+      double baseCabecalho() =>
+          tester.getBottomLeft(find.text('PetConnect')).dy;
+      double topoCard() => tester.getTopLeft(find.text('Crie sua conta')).dy;
+
+      expect(topoCard(), lessThan(baseCabecalho()),
+          reason: 'estado inicial: o título "Crie sua conta" deveria estar '
+              'acima da base do cabeçalho — prova de que o card está '
+              'sobreposto, não solto abaixo dele');
+
+      for (final label in [
+        'Nome completo',
+        'E-mail',
+        'Telefone',
+        'Senha',
+        'Confirmar senha',
+      ]) {
+        await tester.tap(find.widgetWithText(TextFormField, label).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(topoCard(), lessThan(baseCabecalho()),
+            reason: 'a sobreposição deveria continuar depois de focar '
+                '"$label" — cabeçalho e card se movem sempre juntos');
+      }
+    });
+
+    testWidgets(
+        'focar um campo não move a posição de rolagem (sem ensureVisible programático perceptível)',
+        (tester) async {
+      await _abrirTela(tester, _FakeUsuarioRepository());
+      await tester.pumpAndSettle();
+
+      final posicao =
+          tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+      expect(posicao.pixels, 0);
+
+      await tester
+          .tap(find.widgetWithText(TextFormField, 'Confirmar senha').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(posicao.pixels, 0,
+          reason: 'focar o último campo (o mais provável de disparar '
+              'ensureVisible) não deveria mover a rolagem');
+    });
   });
 }
