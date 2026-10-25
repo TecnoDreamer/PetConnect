@@ -329,6 +329,14 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
                     child: Text(_error!,
                         style: TextStyle(color: colors.error, fontSize: 13)),
                   ),
+                if (ref.watch(petRepositoryProvider).suportaMemorial) ...[
+                  const SettingsSectionHeader(title: 'Memorial'),
+                  SettingsMenuTile(
+                    icon: Icons.local_florist_outlined,
+                    title: 'Registrar falecimento',
+                    onTap: () => context.push('/pet/${pet.id}/falecimento'),
+                  ),
+                ],
                 const SettingsSectionHeader(title: 'Conta'),
                 SettingsMenuTile(
                   icon: Icons.delete_forever_outlined,

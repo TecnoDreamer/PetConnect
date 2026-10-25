@@ -8,27 +8,13 @@ import '../features/auth/presentation/screens/cadastro_screen.dart';
 import '../features/auth/presentation/screens/esqueci_senha_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/splash_screen.dart';
-import '../features/pet/domain/consulta.dart';
-import '../features/pet/domain/historico_medico.dart';
-import '../features/pet/domain/pet.dart';
-import '../features/pet/domain/vacina.dart';
-import '../features/pet/presentation/screens/consulta_form_screen.dart';
-import '../features/pet/presentation/screens/consulta_list_screen.dart';
-import '../features/pet/presentation/screens/historico_form_screen.dart';
-import '../features/pet/presentation/screens/historico_list_screen.dart';
-import '../features/pet/presentation/screens/localizacao_form_screen.dart';
-import '../features/pet/presentation/screens/localizacao_list_screen.dart';
-import '../features/pet/presentation/screens/pet_detail_screen.dart';
-import '../features/pet/presentation/screens/pet_form_screen.dart';
-import '../features/pet/presentation/screens/pet_settings_screen.dart';
-import '../features/pet/presentation/screens/vacina_form_screen.dart';
-import '../features/pet/presentation/screens/vacina_list_screen.dart';
 import '../features/usuario/domain/usuario.dart';
 import '../features/usuario/presentation/providers/auth_providers.dart';
 import '../features/usuario/presentation/screens/configuracoes_screen.dart';
 import '../features/usuario/presentation/screens/tema_screen.dart';
 import '../features/usuario/presentation/screens/editar_perfil_screen.dart';
 import '../features/usuario/presentation/screens/home_screen.dart';
+import 'pet_routes.dart';
 
 const _authRoutes = ['/login', '/cadastro', '/esqueci-senha'];
 
@@ -97,85 +83,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/home',
         builder: (context, state) => const HomeScreen(),
       ),
-      GoRoute(
-        path: '/pet/novo',
-        builder: (context, state) => const PetFormScreen(),
-      ),
-      GoRoute(
-        path: '/pet/:id',
-        builder: (context, state) =>
-            PetDetailScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/editar',
-        builder: (context, state) => PetFormScreen(pet: state.extra as Pet?),
-      ),
-      GoRoute(
-        path: '/pet/:id/configuracoes',
-        builder: (context, state) =>
-            PetSettingsScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/vacinas',
-        builder: (context, state) =>
-            VacinaListScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/vacinas/nova',
-        builder: (context, state) =>
-            VacinaFormScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/vacinas/:vacinaId/editar',
-        builder: (context, state) => VacinaFormScreen(
-          petId: state.pathParameters['id']!,
-          vacina: state.extra as Vacina?,
-        ),
-      ),
-      GoRoute(
-        path: '/pet/:id/historico',
-        builder: (context, state) =>
-            HistoricoListScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/historico/novo',
-        builder: (context, state) =>
-            HistoricoFormScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/historico/:historicoId/editar',
-        builder: (context, state) => HistoricoFormScreen(
-          petId: state.pathParameters['id']!,
-          historico: state.extra as HistoricoMedico?,
-        ),
-      ),
-      GoRoute(
-        path: '/pet/:id/consultas',
-        builder: (context, state) =>
-            ConsultaListScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/consultas/nova',
-        builder: (context, state) =>
-            ConsultaFormScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/consultas/:consultaId/editar',
-        builder: (context, state) => ConsultaFormScreen(
-          petId: state.pathParameters['id']!,
-          consulta: state.extra as Consulta?,
-        ),
-      ),
-      GoRoute(
-        path: '/pet/:id/localizacao',
-        builder: (context, state) =>
-            LocalizacaoListScreen(petId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/pet/:id/localizacao/nova',
-        builder: (context, state) =>
-            LocalizacaoFormScreen(petId: state.pathParameters['id']!),
-      ),
+      ...buildPetRoutes(),
       GoRoute(
         path: '/configuracoes',
         builder: (context, state) => const ConfiguracoesScreen(),
