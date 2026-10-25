@@ -79,6 +79,15 @@ Como qualquer pessoa (sem login) precisa conseguir ver informações básicas de
 - Todo formulário (cadastro, criação de pet, vacina, histórico, consulta) valida no client antes de enviar, **e** as regras do Firestore validam tipo/presença dos campos obrigatórios no servidor — nunca confiar somente na validação do app.
 - Uploads de imagem (foto de pet, tutor, anexos) têm limite de tamanho (5MB) validado no client antes do envio ao Cloudinary — ver `core/config/cloudinary_config.dart`. O upload usa um preset "unsigned" (sem API secret embutida no app); exclusão de arquivo antigo não é feita (exigiria uma requisição assinada, que precisaria de um backend próprio para não expor o secret) — arquivo substituído/removido fica órfão no Cloudinary, limitação aceita conscientemente.
 
+## Memorial do Pet
+
+A situação de falecimento só pode ser alterada pelo dono (regra de
+`update` de `Pets`), com auditoria em `eventosSituacao`, sem exclusão de
+dados e sem exposição na página pública do QR. Autorização detalhada,
+proposta de regras pendente de aprovação e riscos em
+`docs/security/memorial-pet.md`; retenção em
+`docs/privacy/retencao-pets-falecidos.md`.
+
 ## Dados sensíveis e LGPD
 
 - Dados coletados: nome/e-mail/telefone do tutor, dados do pet, histórico médico. Finalidade: identificação de pets perdidos e gestão de saúde do pet — deve constar em uma política de privacidade (fora do escopo desta fase, mas necessária antes de lançar).

@@ -50,6 +50,7 @@ Além disso, centraliza para o tutor:
 | Histórico médico (com anexos no Cloudinary) | ✅ Concluído | RF24–RF26 |
 | Agendamento de consultas (agendar, listar por status, cancelar, marcar realizada, alerta visual) | ✅ Concluído | RF27–RF30 |
 | Localização — tutor registra/visualiza avistamentos | ✅ Concluído | RF32 |
+| Memorial do Pet (registrar falecimento, memorial privado, correção) — modo Firestore | 🔍 Em revisão | RF33–RF36 |
 | Localização — relato direto por quem encontrou o pet (via QR code) | ⬜ Bloqueado por RF17–RF19 | RF31 |
 
 Veja a lista completa de requisitos em [`docs/requisitos-funcionais.md`](docs/requisitos-funcionais.md).

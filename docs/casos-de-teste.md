@@ -98,3 +98,29 @@ Convenção: `CTxx`, referenciando o(s) `RFxx`/`RNFxx` cobertos. Formato: pré-c
 ### CT23 — Enumeração de pets via QR code
 - **Passos**: tentar acessar sequencialmente IDs de pet incrementais na URL da página pública.
 - **Resultado esperado**: IDs não são sequenciais/previsíveis (ver RNF/segurança), então a tentativa não retorna dados úteis.
+
+## Memorial do Pet
+
+Automatizados em `test/features/pet/memorial_flow_test.dart` e
+`test/features/pet/memorial_repository_test.dart`; roteiro de aparelho em
+`docs/validation/memorial-pet.md`.
+
+### CT24 — Registrar falecimento (RF33)
+- **Passos**: Configurações do Pet → Registrar falecimento → (opcional) data e homenagem → confirmar.
+- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada.
+
+### CT25 — Pet falecido sai da lista principal (RF34)
+- **Passos**: após o CT24, voltar à Home.
+- **Resultado esperado**: o pet não aparece em "Meus Pets"; aparece uma vez na seção Memorial.
+
+### CT26 — Memorial sem recursos clínicos (RF35)
+- **Passos**: abrir o memorial; tentar abrir `/pet/<id>/vacinas`, `/consultas/nova` etc. por link direto.
+- **Resultado esperado**: memorial mostra só identidade, dados básicos, homenagem e fotos do pet; as rotas operacionais mostram o aviso "está no Memorial".
+
+### CT27 — Corrigir marcação incorreta (RF36)
+- **Passos**: Memorial → Configurações do memorial → Corrigir informação de falecimento → confirmar.
+- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home.
+
+### CT28 — Outra conta não altera a situação (RF36, RF12)
+- **Passos**: com uma segunda conta, tentar atualizar `situacao` do pet de outro tutor.
+- **Resultado esperado**: negado pela regra de `update` de `Pets`. ⚠️ Não automatizado (ver `docs/features/memorial-pet.md`, "Testes").
