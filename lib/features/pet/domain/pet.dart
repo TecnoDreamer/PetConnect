@@ -1,3 +1,21 @@
+/// Situação do pet (Memorial do Pet, ver docs/features/memorial-pet.md).
+///
+/// Gravada no Firestore como `situacao: 'ATIVO' | 'FALECIDO'`. Documentos
+/// sem o campo — todos os pets anteriores ao Memorial — são tratados como
+/// [ativo]: até esta versão não havia nenhuma forma de registrar
+/// falecimento no app, então nenhum pet legado pode estar falecido.
+enum SituacaoPet {
+  ativo('ATIVO'),
+  falecido('FALECIDO');
+
+  const SituacaoPet(this.valor);
+
+  final String valor;
+
+  static SituacaoPet doBanco(Object? valor) =>
+      valor == falecido.valor ? falecido : ativo;
+}
+
 /// Espelha a coleção `Pets` já existente no Firestore, com o campo
 /// [vacinado] adicionado nesta fase (ver docs/modelo-dados-firestore.md).
 ///
@@ -22,6 +40,9 @@ class Pet {
     this.capa,
     this.capaAlinhamentoY,
     this.qrCodeId,
+    this.situacao = SituacaoPet.ativo,
+    this.dataFalecimento,
+    this.homenagem,
   });
 
   final String id;
@@ -63,6 +84,17 @@ class Pet {
   /// igual a [id] até que a regeneração de QR code (RF19) seja implementada.
   final String? qrCodeId;
 
+  final SituacaoPet situacao;
+
+  /// Formato `dd/MM/yyyy`. Opcional — nunca é inventada quando o tutor não
+  /// informa.
+  final String? dataFalecimento;
+
+  /// Texto livre e opcional do tutor exibido no memorial.
+  final String? homenagem;
+
+  bool get falecido => situacao == SituacaoPet.falecido;
+
   factory Pet.fromMap(String id, Map<String, dynamic> map) {
     return Pet(
       id: id,
@@ -82,9 +114,15 @@ class Pet {
       capa: map['capa'] as String?,
       capaAlinhamentoY: (map['capaAlinhamentoY'] as num?)?.toDouble(),
       qrCodeId: map['qrCodeId'] as String?,
+      situacao: SituacaoPet.doBanco(map['situacao']),
+      dataFalecimento: map['dataFalecimento'] as String?,
+      homenagem: map['homenagem'] as String?,
     );
   }
 
+  /// Não inclui [situacao], [dataFalecimento] nem [homenagem]: esses campos
+  /// só mudam por `PetRepository.alterarSituacao`, que registra auditoria.
+  /// Assim, editar o perfil (`updatePet`) nunca altera a situação.
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -141,6 +179,9 @@ class Pet {
       capa: capa ?? this.capa,
       capaAlinhamentoY: capaAlinhamentoY ?? this.capaAlinhamentoY,
       qrCodeId: qrCodeId ?? this.qrCodeId,
+      situacao: situacao,
+      dataFalecimento: dataFalecimento,
+      homenagem: homenagem,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/br_date.dart';
+import '../domain/alteracao_situacao.dart';
 import '../domain/pet.dart';
 import '../domain/pet_repository.dart';
 
@@ -92,6 +93,23 @@ class ApiPetRepository implements PetRepository {
     await _api.delete('/pets/$petId');
   }
 
+  /// Desligado de propósito: a API aceitaria `status: DECEASED`, mas a
+  /// página pública do QR code (public/index.html, via
+  /// `GET /public/pets/{publicId}`) exibe esse status como "Falecido" —
+  /// registrar o falecimento por aqui exporia o fato publicamente. Fica
+  /// pendente de uma mudança aprovada no backend (ver
+  /// docs/features/memorial-pet.md, "Pendências").
+  @override
+  bool get suportaMemorial => false;
+
+  @override
+  Future<void> alterarSituacao(
+    String petId,
+    AlteracaoDeSituacao alteracao, {
+    required String atorId,
+  }) =>
+      Future.error(const MemorialNaoSuportadoException());
+
   // ---------------------------------------------------------------- mapeamento
 
   Map<String, dynamic> _petParaApi(Pet p, {required bool incluirNome}) {
@@ -132,6 +150,11 @@ class ApiPetRepository implements PetRepository {
       capaAlinhamentoY: (m['coverPhotoAlignY'] as num?)?.toDouble(),
       // A API gerencia o id público do QR (RF16/RF19).
       qrCodeId: m['publicId'] as String?,
+      // Só leitura: um pet que já esteja DECEASED na API aparece no
+      // Memorial. Os demais status da API (LOST, FOUND, ARCHIVED) não têm
+      // equivalente no app e continuam como ativos.
+      situacao:
+          m['status'] == 'DECEASED' ? SituacaoPet.falecido : SituacaoPet.ativo,
     );
   }
 
