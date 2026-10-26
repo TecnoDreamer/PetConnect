@@ -95,6 +95,19 @@ O projeto Firebase (`pet-connect-c53f1`) já existe, com as coleções `Usuarios
 
 Upload de fotos (pet, tutor, anexos) usa o Cloudinary, não o Firebase Storage. Configure uma conta gratuita e preencha `lib/core/config/cloudinary_config.dart` — instruções no próprio arquivo.
 
+### Build Android, nome e ícone
+
+O app aparece no aparelho como **PetConnect** (o `applicationId` continua
+`com.petconnect.pet_connect`). Ícone e splash vêm do logo oficial
+(`assets/images/logo.png`) e são regerados com:
+
+```bash
+python tool/branding/gerar_icones_android.py
+```
+
+APK de teste: `flutter build apk --debug`. Detalhes em
+[`docs/branding/icone-e-splash-android.md`](docs/branding/icone-e-splash-android.md).
+
 ### Rodando os testes
 
 ```bash
@@ -110,6 +123,7 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Casos de teste](docs/casos-de-teste.md)
 - [Segurança](docs/seguranca.md)
 - [Arquitetura](docs/arquitetura.md)
+- [Ícone, nome e splash do Android](docs/branding/icone-e-splash-android.md)
 - [Modelo de dados (Firestore)](docs/modelo-dados-firestore.md)
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mesmo gradiente do cabeçalho da tela de login (AppColors.brandGradient):
+     do canto superior esquerdo (escuro) ao inferior direito (claro). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="315"
+        android:startColor="@color/marca_escura"
+        android:endColor="@color/marca_clara"
+        android:type="linear" />
+</shape>

@@ -13,9 +13,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pet_connect/core/theme/app_colors.dart';
 import 'package:pet_connect/features/auth/presentation/screens/splash_screen.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
 
@@ -53,10 +55,10 @@ void main() {
         authStateChanges: Stream.value(null),
       ));
 
-      // Passa do tempo mínimo de exibição da splash (2,5s) — se a splash
-      // navegasse sem esperar o bootstrap, já teria saído daqui.
+      // Bem mais que o necessário para navegar — se a splash não esperasse
+      // o bootstrap, já teria saído daqui.
       await tester.pump(const Duration(seconds: 3));
-      expect(find.text('PetConnect'), findsOneWidget,
+      expect(find.byType(SplashScreen), findsOneWidget,
           reason: 'ainda deveria estar na splash, esperando o signOut');
       expect(find.text('Login'), findsNothing);
       expect(find.text('Home'), findsNothing);
@@ -68,17 +70,48 @@ void main() {
           reason: 'só navega depois que o bootstrap de sessão termina');
     });
 
-    testWidgets('com o bootstrap concluído e sem sessão, vai para o login',
-        (tester) async {
+    testWidgets(
+        'com o bootstrap concluído e sem sessão, vai para o login sem '
+        'tempo mínimo artificial', (tester) async {
       await tester.pumpWidget(_appComSplash(
         bootstrap: () async {},
         authStateChanges: Stream.value(null),
       ));
 
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
+      // Só a transição de página (sem os 2,5s fixos de antes).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Login'), findsOneWidget);
+      expect(find.byType(SplashScreen), findsNothing);
+    });
+
+    testWidgets(
+        'mesma aparência da splash nativa: fundo da marca, só o logo, '
+        'ícones claros na status bar', (tester) async {
+      final bootstrap = Completer<void>();
+      await tester.pumpWidget(_appComSplash(
+        bootstrap: () => bootstrap.future,
+        authStateChanges: Stream.value(null),
+      ));
+      await tester.pump();
+
+      final scaffold = tester.widget<Scaffold>(find.descendant(
+          of: find.byType(SplashScreen), matching: find.byType(Scaffold)));
+      expect(scaffold.backgroundColor, AppColors.brandMedium,
+          reason: 'tem que bater com @color/splash_fundo do Android');
+      expect(find.text('PetConnect'), findsNothing,
+          reason: 'sem segunda "tela de abertura" com texto');
+      expect(find.bySemanticsLabel('PetConnect, carregando'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is AnnotatedRegion<SystemUiOverlayStyle> &&
+            w.value == SystemUiOverlayStyle.light),
+        findsOneWidget,
+      );
+
+      bootstrap.complete();
+      await tester.pumpAndSettle();
     });
 
     // O try/catch dentro de sessionBootstrapProvider (auth_providers.dart)

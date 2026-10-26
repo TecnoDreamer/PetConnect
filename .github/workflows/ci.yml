@@ -33,4 +33,4 @@ jobs:
         run: flutter analyze
 
       - name: flutter test (unit + widget — sem os que precisam de infra externa)
-        run: flutter test test/core/ test/features/pet/ test/features/auth/ test/features/usuario/ --exclude-tags=e2e
+        run: flutter test test/core/ test/features/pet/ test/features/auth/ test/features/usuario/ test/android/ --exclude-tags=e2e

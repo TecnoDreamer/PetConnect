@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nome exibido no launcher, na lista de apps e nas configurações. Não
+         confundir com o applicationId (com.petconnect.pet_connect), que não
+         muda: trocá-lo criaria outro app e impediria a atualização do
+         instalado. -->
+    <string name="app_name">PetConnect</string>
+</resources>
