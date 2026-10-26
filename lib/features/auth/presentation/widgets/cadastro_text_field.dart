@@ -58,6 +58,10 @@ class CadastroTextField extends StatelessWidget {
   final ValueChanged<String>? onFieldSubmitted;
   final TextAlign textAlign;
 
+  /// Mesma altura de linha para ajuda e erro — os dois ocupam exatamente o
+  /// mesmo espaço.
+  static const _estiloLinhaAuxiliar = TextStyle(fontSize: 11, height: 1.2);
+
   @override
   Widget build(BuildContext context) {
     final temErro = errorText != null;
@@ -97,8 +101,18 @@ class CadastroTextField extends StatelessWidget {
         enabledBorder: borda(corBorda),
         focusedBorder: borda(temErro ? AppColors.error : AppColors.brandDark,
             largura: 1.5),
+        // A linha abaixo do campo fica sempre reservada (helperText ' '):
+        // quando um erro aparece ele ocupa esse mesmo espaço, então mostrar
+        // ou esconder um erro nunca desloca os campos de baixo (correção de
+        // 2026-10-24, ver docs/features/cadastro-layout-estatico.md).
+        helperText: ' ',
+        helperMaxLines: 1,
+        errorMaxLines: 1,
+        helperStyle: _estiloLinhaAuxiliar,
+        errorStyle: _estiloLinhaAuxiliar.copyWith(color: AppColors.error),
+        isDense: true,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

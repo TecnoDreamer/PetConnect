@@ -84,6 +84,10 @@ títulos de seção (PERFIL/APLICATIVO/CONTA). Usado em `ConfiguracoesScreen`,
 perfil do pet já seguiam esse padrão, agora usam o componente de verdade
 em vez de uma versão própria quase idêntica).
 
+> **Atualização (2026-10-25):** Login, Cadastro e Esqueci senha **não**
+> respondem ao tema do tutor: usam sempre o tema Padrão via
+> `AuthThemeScope` (ver `docs/features/auth-theme.md`).
+
 ## Telas migradas (respondem ao tema)
 
 Núcleo do tema + os dois menus de configurações + toda a stack do perfil

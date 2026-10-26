@@ -4,9 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../features/auth/presentation/screens/cadastro_screen.dart';
-import '../features/auth/presentation/screens/esqueci_senha_screen.dart';
-import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/splash_screen.dart';
 import '../features/usuario/domain/usuario.dart';
 import '../features/usuario/presentation/providers/auth_providers.dart';
@@ -14,9 +11,8 @@ import '../features/usuario/presentation/screens/configuracoes_screen.dart';
 import '../features/usuario/presentation/screens/tema_screen.dart';
 import '../features/usuario/presentation/screens/editar_perfil_screen.dart';
 import '../features/usuario/presentation/screens/home_screen.dart';
+import 'auth_routes.dart';
 import 'pet_routes.dart';
-
-const _authRoutes = ['/login', '/cadastro', '/esqueci-senha'];
 
 /// Transforma o stream de autenticação num `Listenable`, para o GoRouter
 /// reavaliar `redirect` quando a sessão mudar — sem precisar recriar o
@@ -56,7 +52,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/') return null;
 
       final isLoggedIn = auth.currentUser != null;
-      final isAuthRoute = _authRoutes.contains(state.matchedLocation);
+      final isAuthRoute = authRoutePaths.contains(state.matchedLocation);
 
       if (!isLoggedIn && !isAuthRoute) return '/login';
       if (isLoggedIn && isAuthRoute) return '/home';
@@ -67,18 +63,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/cadastro',
-        builder: (context, state) => const CadastroScreen(),
-      ),
-      GoRoute(
-        path: '/esqueci-senha',
-        builder: (context, state) => const EsqueciSenhaScreen(),
-      ),
+      ...buildAuthRoutes(),
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
