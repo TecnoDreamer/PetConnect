@@ -373,5 +373,30 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Vacina pendente'), findsOneWidget);
     });
+
+    // Regressão: em 320x568 com fonte 1.3 a Home estourava ("A RenderFlex
+    // overflowed by 11 pixels on the right").
+    for (final escala in [1.0, 1.3]) {
+      testWidgets('tela 320x568 com fonte $escala e um pet: sem overflow',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1.0;
+        tester.platformDispatcher.textScaleFactorTestValue = escala;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        final repo = FakePetRepository();
+        await repo.createPet(_pet(id: '', nome: 'Rex'));
+
+        await tester.pumpWidget(_appPara(repo));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Meus Pets'), findsOneWidget);
+        expect(find.text('Adicionar pet'), findsOneWidget);
+        expect(find.text('Rex'), findsOneWidget);
+      });
+    }
   });
 }
