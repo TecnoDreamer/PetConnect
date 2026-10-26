@@ -5,6 +5,14 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ## [Não publicado]
 
+### Alterado
+
+- O tema **Claro** passa a ser o tema principal: quem não escolheu um tema
+  abre o app nele, com fundo sempre branco (campos e cartões em cinza bem
+  claro para continuarem visíveis). As telas de vacinas, consultas,
+  histórico e localização, que tinham fundo bege fixo, também ficam com
+  fundo branco. Ver `docs/features/theme-and-settings-menu.md`.
+
 ### Adicionado
 
 - Memorial do Pet: o tutor pode registrar o falecimento de um pet (com
