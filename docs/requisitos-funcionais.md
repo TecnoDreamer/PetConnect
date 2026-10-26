@@ -79,6 +79,17 @@ Convenção: `RFxx` — identificador único, usado também para rastrear casos 
 | RF31 | Quando alguém encontra um pet e acessa a página pública do QR code, o sistema permite registrar a localização onde o pet foi visto — `POST /api/v1/public/pets/{publicId}/sightings`, anônimo, com rate limiting. |
 | RF32 | O tutor consegue visualizar os registros de localização reportados para seu pet — `GET /api/v1/pets/{id}/locations`, autenticado. |
 
+## Memorial do Pet
+
+Detalhes em `docs/features/memorial-pet.md`.
+
+| ID | Requisito | Testes |
+|----|-----------|--------|
+| RF33 | O tutor dono pode registrar o falecimento de um pet ativo, a partir das Configurações do Pet, com explicação e confirmação explícita; data do falecimento e homenagem são opcionais. | `memorial_flow_test.dart` (Registrar falecimento), `memorial_repository_test.dart`, CT24 |
+| RF34 | Pets falecidos saem da lista principal e aparecem na seção Memorial, privada, sem duplicação. | `memorial_flow_test.dart` (Home), CT25 |
+| RF35 | O memorial mostra nome, foto, capa, dados básicos existentes, homenagem e as fotos do próprio pet, e não exibe nem carrega recursos clínicos ou operacionais, inclusive por link direto. | `memorial_flow_test.dart` (Tela do memorial, Proteção de rotas), CT26 |
+| RF36 | O tutor pode corrigir um falecimento registrado por engano; o pet volta a ficar ativo com todos os dados preservados. Toda transição é auditada e nenhuma exclui dados. | `memorial_repository_test.dart`, `memorial_flow_test.dart` (Corrigir marcação), CT27 |
+
 ## Fora de escopo nesta fase
 
 - Chat entre tutor e quem encontrou o pet.

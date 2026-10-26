@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:pet_connect/features/pet/domain/alteracao_situacao.dart';
 import 'package:pet_connect/features/pet/domain/pet.dart';
 import 'package:pet_connect/features/pet/domain/pet_repository.dart';
 
@@ -43,6 +44,44 @@ class FakePetRepository implements PetRepository {
   @override
   Future<void> deletePet(String petId) async {
     _store.remove(petId);
+    _changes.add(null);
+  }
+
+  /// Simula a fonte sem suporte ao Memorial (modo API).
+  bool suportaMemorialFake = true;
+
+  /// Se definido, [alterarSituacao] falha com este erro sem alterar nada.
+  Object? erroAoAlterarSituacao;
+
+  /// Eventos de auditoria gravados por [alterarSituacao].
+  final eventosSituacao = <({String petId, String atorId, SituacaoPet nova})>[];
+
+  @override
+  bool get suportaMemorial => suportaMemorialFake;
+
+  /// Mesmas garantias do Firestore: só o dono altera (regra de update de
+  /// `Pets`), idempotente e sem tocar em nada além dos campos de situação.
+  @override
+  Future<void> alterarSituacao(
+    String petId,
+    AlteracaoDeSituacao alteracao, {
+    required String atorId,
+  }) async {
+    if (!suportaMemorialFake) throw const MemorialNaoSuportadoException();
+    if (erroAoAlterarSituacao != null) throw erroAoAlterarSituacao!;
+    final pet = _store[petId];
+    if (pet == null) throw const PetNaoEncontradoException();
+    if (pet.userId != atorId) throw StateError('permission-denied');
+    if (pet.situacao == alteracao.nova) return;
+
+    final falecido = alteracao.nova == SituacaoPet.falecido;
+    _store[petId] = Pet.fromMap(petId, {
+      ...pet.toMap(),
+      'situacao': alteracao.nova.valor,
+      if (falecido) 'dataFalecimento': alteracao.dataFalecimento,
+      if (falecido) 'homenagem': alteracao.homenagem,
+    });
+    eventosSituacao.add((petId: petId, atorId: atorId, nova: alteracao.nova));
     _changes.add(null);
   }
 

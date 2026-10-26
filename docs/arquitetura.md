@@ -83,3 +83,13 @@ A UI nunca importa o Firebase SDK diretamente — sempre por meio de um reposit�
 1. **Unitários** para regras de negócio em `domain/` (ex: cálculo de alerta de vacina vencida).
 2. **Testes de widget** para telas críticas (login, criação de pet).
 3. Repositórios têm interface própria justamente para permitir fakes nesses testes, sem precisar de um Firestore real.
+
+## Situação do pet (Memorial do Pet)
+
+Pets têm uma situação (`SituacaoPet.ativo` / `falecido`). As rotas de pet
+ficam em `lib/routing/pet_routes.dart`, protegidas por `PetSituacaoGuard`:
+rotas operacionais só abrem para pets ativos e as do memorial só para
+falecidos, inclusive por link direto. A transição passa sempre por
+`PetRepository.alterarSituacao` (transação + auditoria). Ver
+`docs/features/memorial-pet.md` e
+`docs/decisions/0002-arquivamento-logico-pets-falecidos.md`.

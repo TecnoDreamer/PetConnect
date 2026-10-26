@@ -46,7 +46,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usuarioAsync = ref.watch(currentUsuarioProvider);
-    final petsAsync = ref.watch(petsProvider);
+    final petsAsync = ref.watch(petsAtivosProvider);
+    final quantidadeNoMemorial =
+        ref.watch(petsFalecidosProvider).valueOrNull?.length ?? 0;
     final colors = context.colors;
 
     return PopScope(
@@ -122,7 +124,9 @@ class HomeScreen extends ConsumerWidget {
                               Padding(
                                 padding: const EdgeInsets.all(24),
                                 child: Text(
-                                  'Você ainda não cadastrou nenhum pet.\nToque em "Adicionar pet" para começar.',
+                                  quantidadeNoMemorial > 0
+                                      ? 'Nenhum pet ativo no momento.\nToque em "Adicionar pet" para cadastrar.'
+                                      : 'Você ainda não cadastrou nenhum pet.\nToque em "Adicionar pet" para começar.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(color: colors.textMuted),
                                 ),
@@ -153,6 +157,14 @@ class HomeScreen extends ConsumerWidget {
                     },
                   ),
                 ),
+                if (quantidadeNoMemorial > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: _EntradaMemorial(
+                      quantidade: quantidadeNoMemorial,
+                      onTap: () => context.push('/memorial'),
+                    ),
+                  ),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
                   child: _RodapeInfo(),
@@ -338,6 +350,55 @@ class _RodapeInfo extends StatelessWidget {
           ),
           Icon(Icons.favorite, color: colors.success, size: 18),
         ],
+      ),
+    );
+  }
+}
+
+/// Entrada discreta para a seção Memorial (pets falecidos). Só aparece
+/// quando há pelo menos um pet no Memorial.
+class _EntradaMemorial extends StatelessWidget {
+  const _EntradaMemorial({required this.quantidade, required this.onTap});
+
+  final int quantidade;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Semantics(
+      button: true,
+      label: 'Memorial, $quantidade ${quantidade == 1 ? 'pet' : 'pets'}',
+      child: ExcludeSemantics(
+        child: Material(
+          color: colors.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.local_florist_outlined, color: colors.textMuted),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Memorial',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text('$quantidade',
+                      style: TextStyle(color: colors.textMuted)),
+                  Icon(Icons.chevron_right, color: colors.textMuted),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

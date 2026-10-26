@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../domain/alteracao_situacao.dart';
 import '../domain/pet.dart';
 import '../domain/pet_repository.dart';
 
@@ -47,5 +48,58 @@ class FirebasePetRepository implements PetRepository {
   @override
   Future<void> deletePet(String petId) async {
     await _pets.doc(petId).delete();
+  }
+
+  @override
+  bool get suportaMemorial => true;
+
+  /// Transação: lê a situação atual e, só se ela mudar, atualiza o pet e
+  /// grava o evento de auditoria juntos — dois toques simultâneos (ou uma
+  /// repetição após falha de rede) nunca geram dois eventos nem um estado
+  /// pela metade.
+  ///
+  /// Autorização: a regra `Pets/{petId}` já só permite `update` ao dono
+  /// (`request.auth.uid == resource.data.userId`, firestore.rules), então
+  /// a transação inteira falha para qualquer outra conta.
+  @override
+  Future<void> alterarSituacao(
+    String petId,
+    AlteracaoDeSituacao alteracao, {
+    required String atorId,
+  }) async {
+    final petRef = _pets.doc(petId);
+    await _firestore.runTransaction((tx) async {
+      final snapshot = await tx.get(petRef);
+      final data = snapshot.data();
+      if (!snapshot.exists || data == null) {
+        throw const PetNaoEncontradoException();
+      }
+
+      final anterior = SituacaoPet.doBanco(data['situacao']);
+      if (anterior == alteracao.nova) return;
+
+      final falecido = alteracao.nova == SituacaoPet.falecido;
+      tx.update(petRef, {
+        'situacao': alteracao.nova.valor,
+        'dataFalecimento': falecido && alteracao.dataFalecimento != null
+            ? alteracao.dataFalecimento
+            : FieldValue.delete(),
+        'homenagem': falecido && alteracao.homenagem != null
+            ? alteracao.homenagem
+            : FieldValue.delete(),
+        'situacaoAtualizadaEm': FieldValue.serverTimestamp(),
+      });
+      // Auditoria mínima: quem, de/para, quando e por quê — sem data de
+      // falecimento nem homenagem (não são necessárias para auditar).
+      tx.set(petRef.collection('eventosSituacao').doc(), {
+        'atorId': atorId,
+        'situacaoAnterior': anterior.valor,
+        'situacaoNova': alteracao.nova.valor,
+        'motivo': alteracao.motivo.valor,
+        'resultado': 'aplicado',
+        'origem': 'app',
+        'em': FieldValue.serverTimestamp(),
+      });
+    });
   }
 }

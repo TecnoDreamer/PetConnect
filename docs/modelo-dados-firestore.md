@@ -39,6 +39,10 @@ Reconciliado com a estrutura real já existente no projeto Firebase (`pet-connec
 | `telefone` | string \| null | contato a exibir na página pública do QR code; se nulo, cai no `telefone` do usuário dono |
 | `userId` | string | referencia o `docId`/UID do usuário dono (ver nota acima) |
 | **`vacinado`** | boolean | **novo campo, adicionado nesta fase** — indica se o pet está vacinado (RF20-A) |
+| `situacao` | string \| ausente | Memorial do Pet: `"ATIVO"` ou `"FALECIDO"`; **ausente = ATIVO** (pets legados). Só muda por `PetRepository.alterarSituacao`. |
+| `dataFalecimento` | string \| ausente | `"dd/MM/yyyy"`, opcional (nunca inventada) |
+| `homenagem` | string \| ausente | texto opcional do tutor exibido no memorial |
+| `situacaoAtualizadaEm` | timestamp \| ausente | horário (servidor) da última mudança de situação |
 
 > ⚠️ **A confirmar**: o campo `dono` parece redundante com `userId` (ambos apontariam para o tutor). Pode ser um campo legado, ou guardar o **nome** do dono de forma denormalizada (para exibir sem precisar buscar `Usuarios`) em vez do ID. Precisa confirmação antes de decidirmos se ele é usado, ignorado, ou removido.
 
@@ -93,6 +97,22 @@ As subcoleções abaixo não existiam na estrutura compartilhada original — fo
 }
 ```
 Sem latitude/longitude nesta fase — texto livre, para não introduzir uma dependência nova de mapas/geolocalização. RF31 (relato direto por quem encontrou o pet, sem login, a partir da página pública do QR code) segue bloqueado por RF17-19 — por ora, só o próprio tutor consegue registrar um avistamento pelo app.
+
+### `Pets/{petId}/eventosSituacao/{eventoId}`
+
+Auditoria das transições de situação (Memorial do Pet, ver
+`docs/features/memorial-pet.md`). Um documento por transição efetiva,
+gravado na mesma transação da mudança no pet.
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `atorId` | string | uid de quem fez a alteração |
+| `situacaoAnterior` | string | `"ATIVO"` / `"FALECIDO"` |
+| `situacaoNova` | string | `"ATIVO"` / `"FALECIDO"` |
+| `motivo` | string | `"registro_falecimento"` / `"correcao_marcacao"` |
+| `resultado` | string | `"aplicado"` |
+| `origem` | string | `"app"` |
+| `em` | timestamp | horário do servidor |
 
 ## Convenção de datas
 

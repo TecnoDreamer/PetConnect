@@ -39,3 +39,20 @@ final petsProvider = StreamProvider<List<Pet>>((ref) {
 final petProvider = StreamProvider.family<Pet?, String>((ref, petId) {
   return ref.watch(petRepositoryProvider).watchPet(petId);
 });
+
+/// Pets ativos do tutor (lista principal da Home). Derivado de
+/// [petsProvider] — mesma consulta, sem buscar nada a mais para separar
+/// ativos de falecidos.
+final petsAtivosProvider = Provider<AsyncValue<List<Pet>>>((ref) {
+  return ref
+      .watch(petsProvider)
+      .whenData((pets) => pets.where((pet) => !pet.falecido).toList());
+});
+
+/// Pets falecidos do tutor (seção Memorial). Mesma origem de
+/// [petsAtivosProvider].
+final petsFalecidosProvider = Provider<AsyncValue<List<Pet>>>((ref) {
+  return ref
+      .watch(petsProvider)
+      .whenData((pets) => pets.where((pet) => pet.falecido).toList());
+});
