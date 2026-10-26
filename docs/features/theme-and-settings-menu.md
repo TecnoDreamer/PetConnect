@@ -88,6 +88,17 @@ em vez de uma versão própria quase idêntica).
 > respondem ao tema do tutor: usam sempre o tema Padrão via
 > `AuthThemeScope` (ver `docs/features/auth-theme.md`).
 
+> **Atualização (2026-10-27):** o tema **Claro** passa a ser o tema
+> principal. Sem preferência salva (ou com valor inválido), o app abre no
+> Claro, e quem já escolheu um modo continua nele. No Claro o fundo é
+> sempre branco (`background` e `homeBackdrop`), com campos (`surface`
+> `#F4F4F2`) e cartões (`cardBackground` `#F6F6F4`) em cinza bem claro para
+> continuarem visíveis sobre o branco. As telas ainda não migradas
+> (vacinas, consultas, histórico e localização, issue #56), que usavam
+> `AppColors.background` (bege) fixo, passam a usar fundo branco.
+> Login, Cadastro e Esqueci senha continuam com a identidade fixa (ADR
+> 0001), já com fundo branco.
+
 ## Telas migradas (respondem ao tema)
 
 Núcleo do tema + os dois menus de configurações + toda a stack do perfil

@@ -45,12 +45,12 @@ void main() {
       expect(find.text('Escuro'), findsOneWidget);
     });
 
-    testWidgets('Padrão vem selecionado por padrão (Semantics)',
+    testWidgets('sem preferência salva, Claro vem selecionado (Semantics)',
         (tester) async {
       final handle = tester.ensureSemantics();
       await tester.pumpWidget(await _app());
 
-      expect(find.bySemanticsLabel('Tema Padrão, selecionado'), findsOneWidget);
+      expect(find.bySemanticsLabel('Tema Claro, selecionado'), findsOneWidget);
       handle.dispose();
     });
 

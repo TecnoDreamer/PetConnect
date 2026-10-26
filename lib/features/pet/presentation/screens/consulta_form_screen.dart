@@ -116,9 +116,9 @@ class _ConsultaFormScreenState extends ConsumerState<ConsultaFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
           widget.isEditing ? 'Editar consulta' : 'Agendar consulta',

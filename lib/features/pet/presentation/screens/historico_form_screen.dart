@@ -148,9 +148,9 @@ class _HistoricoFormScreenState extends ConsumerState<HistoricoFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
           widget.isEditing ? 'Editar histórico' : 'Novo registro',
