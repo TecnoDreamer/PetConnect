@@ -75,24 +75,35 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Meus Pets',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: colors.textPrimary,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Meus Pets',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: colors.textPrimary,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      _AdicionarPetButton(
-                          onTap: () => context.push('/pet/novo')),
-                    ],
+                        const SizedBox(width: 12),
+                        // Teto de largura pro botão: em telas estreitas com
+                        // fonte ampliada (320px a 1.3x) ele passava da
+                        // largura da linha e a Row estourava. Com o teto o
+                        // rótulo quebra dentro da pílula e o título mantém
+                        // espaço; em tamanhos normais nada muda.
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                              maxWidth: constraints.maxWidth * 0.6),
+                          child: _AdicionarPetButton(
+                              onTap: () => context.push('/pet/novo')),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -291,12 +302,19 @@ class _AdicionarPetButton extends StatelessWidget {
                   children: [
                     Icon(Icons.add, color: colors.success, size: 18),
                     const SizedBox(width: 6),
-                    Text(
-                      'Adicionar pet',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: colors.success,
-                        fontSize: 13,
+                    // Flexible: quando a largura do botão é limitada (ver
+                    // a Row do título na Home), o rótulo quebra em até
+                    // duas linhas em vez de estourar a pílula.
+                    Flexible(
+                      child: Text(
+                        'Adicionar pet',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: colors.success,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
