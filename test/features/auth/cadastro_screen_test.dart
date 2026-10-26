@@ -12,6 +12,8 @@ import 'package:pet_connect/features/usuario/domain/usuario.dart';
 import 'package:pet_connect/features/usuario/domain/usuario_repository.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
 
+import '../../helpers/fonte_roboto.dart';
+
 class _FakeUsuarioRepository implements UsuarioRepository {
   _FakeUsuarioRepository({this.erroAoCadastrar, this.aguardarAntes});
 
@@ -133,6 +135,10 @@ Future<void> _preencherTudoValido(
 }
 
 void main() {
+  // Roboto de verdade (não a fonte de teste, bem mais larga): os testes de
+  // layout abaixo medem se a tela cabe sem rolagem em tamanhos reais.
+  setUpAll(carregarRoboto);
+
   group('CadastroScreen — layout inicial', () {
     testWidgets(
         'mostra título, os 5 campos e o botão, sem exemplos redundantes',
@@ -245,22 +251,24 @@ void main() {
       expect(find.text('9 ou mais caracteres'), findsOneWidget);
     });
 
-    testWidgets('some quando a senha atende a tudo e perde o foco',
+    testWidgets(
+        'continua visível (altura fixa) quando a senha atende a tudo e perde o foco',
         (tester) async {
       await _abrirTela(tester, _FakeUsuarioRepository());
       await tester.pumpAndSettle();
+      final confirmarAntes = tester.getRect(_campo('Confirmar senha'));
 
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Senha').first, 'PetConnect@9');
-      await tester.pump();
-      expect(find.text('9 ou mais caracteres'), findsOneWidget,
-          reason: 'ainda focado, continua visível mesmo já sendo válida');
-
       await tester.enterText(find.widgetWithText(TextFormField, 'E-mail').first,
           ''); // tira o foco
       await tester.pump();
 
-      expect(find.text('9 ou mais caracteres'), findsNothing);
+      expect(find.text('9 ou mais caracteres'), findsOneWidget);
+      expect(find.byIcon(Icons.circle_outlined), findsNothing,
+          reason: 'todos os requisitos marcados como atendidos');
+      expect(tester.getRect(_campo('Confirmar senha')), confirmarAntes,
+          reason: 'atender aos requisitos não pode deslocar os campos');
     });
   });
 
@@ -313,7 +321,13 @@ void main() {
       await tester.pump();
 
       expect(find.text('As senhas não coincidem.'), findsNothing);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      // Dentro do campo: a checklist de senha (sempre visível) também usa
+      // check_circle para cada requisito atendido.
+      expect(
+          find.descendant(
+              of: _campo('Confirmar senha'),
+              matching: find.byIcon(Icons.check_circle)),
+          findsOneWidget);
     });
   });
 
@@ -397,63 +411,346 @@ void main() {
     });
   });
 
-  group('CadastroScreen — cabeçalho compacto com o teclado', () {
-    testWidgets('encolhe o cabeçalho e some com o texto de apoio',
+  // --- Correção de 2026-10-24 (docs/features/cadastro-layout-estatico.md) --
+
+  group('CadastroScreen — layout estático e sobreposição', () {
+    for (final tamanho in const [
+      Size(360, 800),
+      Size(390, 844),
+      Size(412, 915),
+    ]) {
+      testWidgets('$tamanho: tudo visível, sem nenhuma rolagem',
+          (tester) async {
+        await _abrirEmAparelho(tester, tamanho);
+
+        expect(tester.takeException(), isNull);
+        _esperarSemRolagem();
+        _esperarTudoDentroDaAreaUtil(tester, tamanho);
+      });
+    }
+
+    testWidgets('412x915 com fonte do sistema em 1.3: continua sem rolagem',
         (tester) async {
-      await _abrirTela(tester, _FakeUsuarioRepository());
-      await tester.pumpAndSettle();
+      await _abrirEmAparelho(tester, const Size(412, 915), escala: 1.3);
 
-      expect(find.text('Cadastre seus dados para começar.'), findsOneWidget);
-
-      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-      addTearDown(() => tester.view.resetViewInsets());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Cadastre seus dados para começar.'), findsNothing);
       expect(tester.takeException(), isNull);
+      _esperarSemRolagem();
+      _esperarTudoDentroDaAreaUtil(tester, const Size(412, 915));
+    });
+
+    testWidgets('painel invade a base do cabeçalho e fica na frente dele',
+        (tester) async {
+      await _abrirEmAparelho(tester, const Size(360, 800));
+
+      final cabecalho = tester.getRect(_cabecalho);
+      final painel = tester.getRect(_painel);
+      expect(painel.top, lessThan(cabecalho.bottom - 24),
+          reason: 'o painel deveria invadir a área marrom');
+      expect(painel.left, greaterThan(cabecalho.left));
+      expect(painel.right, lessThan(cabecalho.right));
+
+      // Na faixa em comum, quem está na frente recebe o toque (a ordem do
+      // teste de toque é a inversa da ordem de pintura): tem que ser o
+      // painel, e o cabeçalho nem chega a ser consultado.
+      final pontoNaFaixaComum =
+          Offset(painel.center.dx, (painel.top + cabecalho.bottom) / 2);
+      final alvos = tester
+          .hitTestOnBinding(pontoNaFaixaComum)
+          .path
+          .map((entrada) => entrada.target)
+          .toList();
+      expect(alvos, contains(tester.renderObject(_painel)));
+      expect(alvos, isNot(contains(tester.renderObject(_cabecalho))));
+    });
+
+    testWidgets('logo nunca sobrepõe o botão Voltar', (tester) async {
+      await _abrirEmAparelho(tester, const Size(412, 915));
+
+      final voltar = tester.getRect(find.byTooltip('Voltar'));
+      final logo = tester.getRect(find.byType(Image));
+      expect(voltar.overlaps(logo), isFalse);
+      expect(voltar.width, greaterThanOrEqualTo(48));
+      expect(voltar.height, greaterThanOrEqualTo(48));
     });
   });
 
-  group('CadastroScreen — responsividade', () {
-    testWidgets('tela pequena (320x480) sem overflow', (tester) async {
-      tester.view.physicalSize = const Size(320, 480);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+  group('CadastroScreen — nada se mexe sozinho', () {
+    testWidgets('focar um campo (sem teclado) não move nada', (tester) async {
+      await _abrirEmAparelho(tester, const Size(360, 800));
+      final antes = _retrato(tester);
 
-      await tester.pumpWidget(_appPara(_FakeUsuarioRepository()));
+      for (final rotulo in _rotulos) {
+        await tester.tap(_campo(rotulo));
+        await tester.pumpAndSettle();
+        expect(_retrato(tester), antes, reason: 'focar "$rotulo" moveu a tela');
+      }
+    });
+
+    testWidgets('mostrar/ocultar senha não move nada', (tester) async {
+      await _abrirEmAparelho(tester, const Size(360, 800));
+      final antes = _retrato(tester);
+
+      await tester.tap(find.byTooltip('Mostrar senha').first);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Ocultar senha'), findsOneWidget);
+      expect(_retrato(tester), antes);
+
+      await tester.tap(find.byTooltip('Ocultar senha'));
+      await tester.pumpAndSettle();
+      expect(_retrato(tester), antes);
+    });
+
+    testWidgets('erros de validação aparecem sem deslocar os campos',
+        (tester) async {
+      await _abrirEmAparelho(tester, const Size(360, 800));
+      final antes = _retrato(tester);
+
+      await tester.enterText(_campo('E-mail'), 'invalido');
+      await tester.enterText(_campo('Telefone'), '123');
+      await tester.enterText(_campo('Senha'), 'abc');
+      await tester.enterText(_campo('Confirmar senha'), 'x');
+      await tester.enterText(_campo('Nome completo'), '');
       await tester.pumpAndSettle();
 
+      expect(find.text('Informe um e-mail válido.'), findsOneWidget);
+      expect(find.text('Informe um telefone válido.'), findsOneWidget);
+      expect(find.text('Sua senha ainda não atende aos requisitos.'),
+          findsOneWidget);
+      expect(_retrato(tester), antes);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('erro geral do cadastro não desloca o botão', (tester) async {
+      await _abrirEmAparelho(tester, const Size(360, 800),
+          repo: _FakeUsuarioRepository(
+            erroAoCadastrar:
+                FirebaseAuthException(code: 'email-already-in-use'),
+          ));
+      await _preencherTudoValido(tester);
+      await tester.pumpAndSettle();
+      final antes = _retrato(tester);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'CRIAR CONTA'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Já existe uma conta com este e-mail.'), findsOneWidget);
+      expect(_retrato(tester), antes);
+    });
+
+    testWidgets('loading não desloca o botão', (tester) async {
+      final gate = Completer<void>();
+      await _abrirEmAparelho(tester, const Size(360, 800),
+          repo: _FakeUsuarioRepository(aguardarAntes: gate));
+      await _preencherTudoValido(tester);
+      await tester.pumpAndSettle();
+      final antes = _retrato(tester);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'CRIAR CONTA'));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(_retrato(tester), antes);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+    });
+  });
+
+  group('CadastroScreen — teclado', () {
+    testWidgets(
+        'cada campo focado continua visível e com foco; fechar o teclado '
+        'restaura exatamente o layout', (tester) async {
+      await _abrirEmAparelho(tester, const Size(360, 800));
+      final antes = _retrato(tester);
+      const alturaTeclado = 300.0;
+
+      for (final rotulo in _rotulos) {
+        await tester.tap(_campo(rotulo));
+        await tester.pump();
+        tester.view.viewInsets = const FakeViewPadding(bottom: alturaTeclado);
+        await tester.pumpAndSettle();
+
+        expect(_temFoco(tester, rotulo), isTrue,
+            reason: 'abrir o teclado tirou o foco de "$rotulo"');
+        final campo = tester.getRect(_campo(rotulo));
+        expect(campo.top, greaterThanOrEqualTo(_barraStatus),
+            reason: '"$rotulo" ficou atrás da status bar');
+        expect(campo.bottom, lessThanOrEqualTo(800 - alturaTeclado),
+            reason: '"$rotulo" ficou atrás do teclado');
+        expect(tester.getSize(_cabecalho).height, antes['cabecalho']!.height,
+            reason: 'o cabeçalho não deveria encolher com o teclado');
+        expect(tester.takeException(), isNull);
+
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SingleChildScrollView), findsNothing,
+            reason: 'sem teclado, a rolagem temporária tem que sumir');
+        expect(_retrato(tester), antes,
+            reason: 'fechar o teclado deveria restaurar o layout exato');
+      }
+    });
+  });
+
+  group('CadastroScreen — exceções documentadas (aparelho muito baixo)', () {
+    for (final caso in const [
+      (Size(320, 568), 1.0),
+      (Size(360, 800), 1.3),
+      (Size(320, 480), 1.6),
+    ]) {
+      testWidgets(
+          '${caso.$1} com fonte ${caso.$2}: sem overflow e todos os campos '
+          'alcançáveis', (tester) async {
+        await _abrirEmAparelho(tester, caso.$1, escala: caso.$2);
+        expect(tester.takeException(), isNull);
+
+        for (final rotulo in _rotulos) {
+          await tester.ensureVisible(_campo(rotulo));
+          await tester.pumpAndSettle();
+          await tester.tap(_campo(rotulo));
+          await tester.pumpAndSettle();
+          expect(_temFoco(tester, rotulo), isTrue);
+        }
+        await tester
+            .ensureVisible(find.widgetWithText(ElevatedButton, 'CRIAR CONTA'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets(
         'tela pequena com teclado aberto e checklist visível: sem overflow',
         (tester) async {
-      tester.view.physicalSize = const Size(320, 480);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(_appPara(_FakeUsuarioRepository()));
-      await tester.pumpAndSettle();
+      await _abrirEmAparelho(tester, const Size(320, 480));
 
       tester.view.viewInsets = const FakeViewPadding(bottom: 250);
-      addTearDown(() => tester.view.resetViewInsets());
       await tester.pumpAndSettle();
 
-      // Com o teclado comendo boa parte dos 480 de altura, o campo de
-      // senha pode não estar dentro da área visível sem rolar — a rede de
-      // segurança contra overflow (ver cadastro_screen.dart) é justamente
-      // pra isso: o conteúdo continua alcançável, só que rolando.
-      await tester
-          .ensureVisible(find.widgetWithText(TextFormField, 'Senha').first);
+      await tester.ensureVisible(_campo('Senha'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextFormField, 'Senha').first);
+      await tester.tap(_campo('Senha'));
       await tester.pumpAndSettle();
 
       expect(find.text('9 ou mais caracteres'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('CadastroScreen — navegação', () {
+    testWidgets('Voltar retorna para a tela anterior', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final router = GoRouter(
+        initialLocation: '/login',
+        routes: [
+          GoRoute(
+              path: '/login', builder: (context, state) => const Text('Login')),
+          GoRoute(
+              path: '/cadastro',
+              builder: (context, state) => const CadastroScreen()),
+        ],
+      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          usuarioRepositoryProvider.overrideWithValue(_FakeUsuarioRepository())
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ));
+      router.push('/cadastro');
+      await tester.pumpAndSettle();
+      expect(find.byType(CadastroScreen), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Voltar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CadastroScreen), findsNothing);
+      expect(find.text('Login'), findsOneWidget);
+    });
+  });
+}
+
+// --- Apoio aos testes de layout ---------------------------------------------
+
+/// Barras do sistema de um Android comum: status bar + navegação por 3
+/// botões (a mais alta das duas opções de navegação).
+const _barraStatus = 24.0;
+const _barraNavegacao = 48.0;
+
+const _rotulos = [
+  'Nome completo',
+  'E-mail',
+  'Telefone',
+  'Senha',
+  'Confirmar senha',
+];
+
+final _cabecalho = find.byKey(const ValueKey('cadastro-cabecalho'));
+final _painel = find.byKey(const ValueKey('cadastro-painel'));
+
+Finder _campo(String rotulo) =>
+    find.widgetWithText(TextFormField, rotulo).first;
+
+Future<void> _abrirEmAparelho(
+  WidgetTester tester,
+  Size tamanho, {
+  double escala = 1.0,
+  _FakeUsuarioRepository? repo,
+}) async {
+  tester.view.physicalSize = tamanho;
+  tester.view.devicePixelRatio = 1.0;
+  tester.view.padding =
+      const FakeViewPadding(top: _barraStatus, bottom: _barraNavegacao);
+  tester.platformDispatcher.textScaleFactorTestValue = escala;
+  addTearDown(tester.view.reset);
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+  await tester.pumpWidget(_appPara(repo ?? _FakeUsuarioRepository()));
+  await tester.pumpAndSettle();
+}
+
+/// Posição de tudo que o usuário enxerga como "estrutura" da tela — se
+/// qualquer um destes mudar, a tela se mexeu.
+Map<String, Rect> _retrato(WidgetTester tester) => {
+      'cabecalho': tester.getRect(_cabecalho),
+      'painel': tester.getRect(_painel),
+      'logo': tester.getRect(find.byType(Image)),
+      'titulo': tester.getRect(find.text('Crie sua conta')),
+      for (final rotulo in _rotulos) rotulo: tester.getRect(_campo(rotulo)),
+      'checklist': tester.getRect(find.text('Caractere especial')),
+      'botao': tester.getRect(find.byType(ElevatedButton)),
+    };
+
+bool _temFoco(WidgetTester tester, String rotulo) => tester
+    .widget<EditableText>(find.descendant(
+        of: _campo(rotulo), matching: find.byType(EditableText)))
+    .focusNode
+    .hasFocus;
+
+void _esperarSemRolagem() {
+  expect(find.byType(SingleChildScrollView), findsNothing);
+  expect(find.byType(ListView), findsNothing);
+  expect(find.byType(CustomScrollView), findsNothing);
+}
+
+void _esperarTudoDentroDaAreaUtil(WidgetTester tester, Size tamanho) {
+  final limiteInferior = tamanho.height - _barraNavegacao;
+  final alvos = {
+    'título': find.text('Crie sua conta'),
+    'subtítulo': find.text('Cadastre seus dados para começar.'),
+    for (final rotulo in _rotulos) rotulo: _campo(rotulo),
+    'checklist': find.text('Caractere especial'),
+    'botão': find.widgetWithText(ElevatedButton, 'CRIAR CONTA'),
+    'painel': _painel,
+  };
+  for (final MapEntry(key: nome, value: alvo) in alvos.entries) {
+    final r = tester.getRect(alvo);
+    expect(r.top, greaterThanOrEqualTo(_barraStatus),
+        reason: '$nome atrás da status bar');
+    expect(r.bottom, lessThanOrEqualTo(limiteInferior),
+        reason: '$nome atrás da barra de navegação');
+    expect(r.left, greaterThanOrEqualTo(0), reason: '$nome cortado');
+    expect(r.right, lessThanOrEqualTo(tamanho.width), reason: '$nome cortado');
+  }
 }

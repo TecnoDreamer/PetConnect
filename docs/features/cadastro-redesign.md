@@ -1,5 +1,11 @@
 # Redesign da tela de Cadastro
 
+> **Layout substituído em 2026-10-24:** o cabeçalho compacto com
+> teclado, o `SingleChildScrollView` + `Transform.translate` e a checklist
+> que aparecia e sumia, descritos abaixo, foram trocados por uma composição
+> estática. Ver `docs/features/cadastro-layout-estatico.md`. Campos,
+> validações e fluxo de cadastro deste documento continuam valendo.
+
 > Branch: `feat/redesign-cadastro`. Fonte:
 > `prompt_redesign_tela_cadastro_petconnect.md` (2026-09-13) + vídeo
 > `tela de cadastro.mp4` (comportamento no aparelho) + print de referência
