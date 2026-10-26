@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marca (AppColors.brandDark / brandLight / brandMedium). A splash usa
+         o tom do meio do gradiente; a SplashScreen do Flutter usa a mesma
+         cor (lib/core/theme/app_colors.dart: AppColors.brandMedium) para a
+         troca da splash nativa para o Flutter não piscar. -->
+    <color name="marca_escura">#3E2415</color>
+    <color name="marca_clara">#7A5137</color>
+    <color name="splash_fundo">#5C3A24</color>
+</resources>
