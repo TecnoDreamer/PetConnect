@@ -141,8 +141,10 @@ três coisas. Por isso a escolha foi a rolagem de exceção, que é acessível.
   linha de erro reservada, `isDense`, padding vertical de 12.
 - `test/features/auth/cadastro_screen_test.dart`: testes novos (ver abaixo)
   e testes antigos ajustados à checklist sempre visível.
-- `test/helpers/fonte_roboto.dart` (novo): carrega a Roboto do cache do
-  Flutter SDK nos testes de geometria.
+- `test/helpers/fonte_roboto.dart` (novo) e `test/fonts/` (Roboto
+  regular/medium/bold, Apache 2.0): carrega a Roboto nos testes de
+  geometria. Versionada no repositório porque o cache de fontes do
+  Flutter SDK não existe na máquina do CI.
 
 O Login e o `AuthHeader` compartilhado **não foram tocados**. Validação,
 política de senha, integração Firebase/Spring, navegação e textos também
