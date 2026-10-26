@@ -20,6 +20,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
   icon e ícone temático, em vez do ícone padrão do Flutter. A abertura
   mostra só a splash da marca (nativa + continuação idêntica no Flutter),
   sem a espera fixa de 2,5s. Ver `docs/branding/icone-e-splash-android.md`.
+- Tela de Login: a altura da tela é distribuída entre o cabeçalho e o
+  espaço entre o card e os botões de login social, que ficam ancorados
+  embaixo, sem a faixa vazia que sobrava; o slogan deixa de ficar atrás
+  do card. Ver `docs/features/login-layout-distribuido.md`.
 - Tela Criar conta: o painel de cadastro fica na frente do cabeçalho
   marrom e a tela não rola nem se mexe no estado normal. Ver
   `docs/features/cadastro-layout-estatico.md`.

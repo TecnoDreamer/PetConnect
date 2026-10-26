@@ -114,6 +114,11 @@ campos ou cortar conteúdo. Esse estado é detectado pelo próprio layout, que
 mede o painel a cada quadro. A troca acontece no quadro seguinte, e nesse
 único quadro o excedente fica recortado, sem erro de overflow.
 
+> **Atualização (2026-10-26):** o layout `_CabecalhoComPainel` virou o
+> componente compartilhado `ComposicaoCabecalhoPainel`
+> (`lib/core/widgets/composicao_cabecalho_painel.dart`), também usado pelo
+> Login. O comportamento do Cadastro não mudou.
+
 ## Medidas reais (Roboto, status bar 24dp + navegação de 3 botões 48dp)
 
 | Viewport | Fonte 1.0 | Fonte 1.3 |

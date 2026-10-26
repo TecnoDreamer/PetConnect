@@ -16,6 +16,8 @@ import 'package:pet_connect/features/usuario/domain/usuario.dart';
 import 'package:pet_connect/features/usuario/domain/usuario_repository.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
 
+import '../../helpers/fonte_roboto.dart';
+
 class _FakeUsuarioRepository implements UsuarioRepository {
   _FakeUsuarioRepository({this.erroAoLogar, this.aguardarAntes});
 
@@ -106,53 +108,95 @@ Future<void> _abrirTela(
 }
 
 void main() {
-  group('LoginScreen — layout estático (sem rolagem)', () {
-    // Os 3 tamanhos listados na seção 22 do documento-fonte em que é
-    // realista exigir zero rolagem — em 320x568 (o 4º tamanho da lista,
-    // um aparelho muito antigo/pequeno) o logo de 160px sozinho já ocupa
-    // ~28% da altura da tela, e o documento proíbe explicitamente alterar
-    // o logo (seção 3) — ver a exceção documentada no teste seguinte.
-    for (final tamanho in [
-      const Size(360, 800), // Android muito comum
-      const Size(390, 844), // iPhone 12/13/14
-      const Size(412, 915), // Pixel comum
+  // Roboto de verdade (não a fonte de teste, bem mais larga): os testes de
+  // layout medem a distribuição em tamanhos reais de aparelho.
+  setUpAll(carregarRoboto);
+
+  // --- Correção de 2026-10-26 (docs/features/login-layout-distribuido.md) --
+
+  group('LoginScreen — layout estático e distribuído', () {
+    for (final tamanho in const [
+      Size(360, 800),
+      Size(390, 844),
+      Size(412, 915),
     ]) {
       testWidgets(
-          'não tem nenhuma extensão de rolagem em ${tamanho.width.toInt()}x${tamanho.height.toInt()}',
-          (tester) async {
-        tester.view.physicalSize = tamanho;
-        tester.view.devicePixelRatio = 1.0;
-        tester.view.padding = const FakeViewPadding(top: 30, bottom: 24);
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        addTearDown(tester.view.resetPadding);
+          '${tamanho.width.toInt()}x${tamanho.height.toInt()}: sem rolagem, '
+          'tudo visível e sem faixa vazia embaixo', (tester) async {
+        await _abrirEmAparelho(tester, tamanho);
 
-        await tester.pumpWidget(_appPara(_FakeUsuarioRepository()));
-        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byType(SingleChildScrollView), findsNothing);
+        expect(find.byType(ListView), findsNothing);
 
-        final posicao = tester
-            .state<ScrollableState>(find.byType(Scrollable).first)
-            .position;
-        expect(posicao.maxScrollExtent, 0,
-            reason: 'a tela não deveria depender de rolagem neste tamanho');
+        final limiteUtil = tamanho.height - _barraNavegacao;
+        final cadastreSe = tester.getRect(find.text('Cadastre-se'));
+        expect(cadastreSe.bottom, lessThanOrEqualTo(limiteUtil),
+            reason: '"Cadastre-se" atrás da barra de navegação');
+        expect(limiteUtil - cadastreSe.bottom, lessThanOrEqualTo(20),
+            reason: 'o rodapé deveria ficar ancorado embaixo, sem sobrar '
+                'uma faixa vazia');
+        for (final texto in const [
+          'PetConnect',
+          'Conectando corações perdidos aos seus lares',
+          'Login',
+          'Esqueceu a senha?',
+          'Google',
+          'Facebook',
+        ]) {
+          final r = tester.getRect(find.text(texto));
+          expect(r.top, greaterThanOrEqualTo(_barraStatus), reason: texto);
+          expect(r.bottom, lessThanOrEqualTo(limiteUtil), reason: texto);
+        }
       });
     }
 
-    testWidgets(
-        'a tela nunca é arrastável, mesmo em 320x568 (aparelho muito pequeno, limitação aceita e documentada)',
+    testWidgets('o slogan nunca fica atrás do card', (tester) async {
+      for (final tamanho in const [Size(360, 800), Size(412, 915)]) {
+        await _abrirEmAparelho(tester, tamanho);
+
+        final slogan = tester
+            .getRect(find.text('Conectando corações perdidos aos seus lares'));
+        final topoDoCard = tester.getRect(_card).top;
+        expect(slogan.bottom, lessThanOrEqualTo(topoDoCard),
+            reason: 'slogan coberto pelo card em $tamanho');
+      }
+    });
+
+    testWidgets('o card fica na frente do cabeçalho (teste de toque)',
         (tester) async {
-      tester.view.physicalSize = const Size(320, 568);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await _abrirEmAparelho(tester, const Size(412, 915));
 
-      await tester.pumpWidget(_appPara(_FakeUsuarioRepository()));
-      await tester.pumpAndSettle();
+      final cabecalho = tester.getRect(find.byType(AuthHeader));
+      final card = tester.getRect(_card);
+      expect(card.top, lessThan(cabecalho.bottom - 24));
 
-      final scrollable = find.byType(Scrollable).first;
-      final physics = tester.widget<Scrollable>(scrollable).physics;
-      expect(physics, isA<NeverScrollableScrollPhysics>(),
-          reason: 'mesmo sem caber 100%, a tela nunca pode virar arrastável');
+      final ponto = Offset(card.center.dx, (card.top + cabecalho.bottom) / 2);
+      final alvos = tester
+          .hitTestOnBinding(ponto)
+          .path
+          .map((entrada) => entrada.target)
+          .toList();
+      expect(
+          alvos, isNot(contains(tester.renderObject(find.byType(AuthHeader)))),
+          reason: 'na faixa em comum, o card deveria estar na frente');
+    });
+
+    testWidgets(
+        '320x568 (aparelho muito baixo): sem overflow e tudo alcançável '
+        '(rolagem de exceção, documentada)', (tester) async {
+      await _abrirEmAparelho(tester, const Size(320, 568));
+      expect(tester.takeException(), isNull);
+
+      for (final alvo in [
+        find.widgetWithText(TextField, 'E-mail:'),
+        find.widgetWithText(ElevatedButton, 'ENTRAR'),
+        find.text('Cadastre-se'),
+      ]) {
+        await tester.ensureVisible(alvo);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(alvo).bottom, lessThanOrEqualTo(568));
+      }
     });
   });
 
@@ -316,4 +360,25 @@ void main() {
           reason: 'o título do card não deveria se mover com o erro');
     });
   });
+}
+
+// --- Apoio aos testes de layout ---------------------------------------------
+
+/// Status bar + navegação por 3 botões (a mais alta das duas opções).
+const _barraStatus = 24.0;
+const _barraNavegacao = 48.0;
+
+/// O card branco: o Container mais próximo do título "Login".
+final _card = find
+    .ancestor(of: find.text('Login'), matching: find.byType(Container))
+    .first;
+
+Future<void> _abrirEmAparelho(WidgetTester tester, Size tamanho) async {
+  tester.view.physicalSize = tamanho;
+  tester.view.devicePixelRatio = 1.0;
+  tester.view.padding =
+      const FakeViewPadding(top: _barraStatus, bottom: _barraNavegacao);
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(_appPara(_FakeUsuarioRepository()));
+  await tester.pumpAndSettle();
 }

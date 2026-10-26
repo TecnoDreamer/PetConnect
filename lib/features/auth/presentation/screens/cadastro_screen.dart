@@ -1,13 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/errors/auth_error_translator.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/composicao_cabecalho_painel.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../utils/br_phone_formatter.dart';
 import '../utils/cadastro_validators.dart';
@@ -58,17 +56,6 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
   bool _confirmarSenhaVisivel = false;
   bool _submitting = false;
   String? _erroGeral;
-
-  final _composicaoKey = GlobalKey();
-  bool _tecladoAberto = false;
-
-  /// `false` quando o painel não cabe na tela nem com o cabeçalho no
-  /// tamanho mínimo — aí a tela usa a rolagem de exceção.
-  bool _cabeSemRolagem = true;
-
-  /// Altura do cabeçalho na tela normal, mantida enquanto o teclado está
-  /// aberto.
-  double? _alturaCabecalhoEstatico;
 
   late final _campos = Listenable.merge([
     _nomeController,
@@ -188,16 +175,11 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
 
   // --- Composição da tela ---------------------------------------------
   //
-  // Correção de 2026-10-24 (ver docs/features/cadastro-layout-estatico.md):
-  // cabeçalho e painel são posicionados por [_CabecalhoComPainel], um
-  // layout próprio que mede o painel primeiro e entrega ao cabeçalho só a
-  // altura que sobra — sem SingleChildScrollView nem Transform.translate
-  // no estado normal. O painel é o último filho, então é pintado por cima
-  // do cabeçalho na faixa em que os dois se encontram.
+  // Cabeçalho atrás e painel na frente, sem SingleChildScrollView nem
+  // Transform no estado normal — ver [ComposicaoCabecalhoPainel] e
+  // docs/features/cadastro-layout-estatico.md.
 
   static const _sobreposicao = 32.0;
-  static const _margemHorizontal = 20.0;
-  static const _margemInferior = 12.0;
 
   /// Altura reservada para a mensagem de erro geral (Firebase) acima do
   /// botão, em linhas — reservada sempre, para o erro não empurrar nada.
@@ -205,68 +187,27 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
   static const _estiloErroGeral =
       TextStyle(color: AppColors.error, fontSize: 13, height: 1.25);
 
-  void _aoMedirComposicao(_MedidaComposicao medida) {
-    if (medida.alturaLimitada) {
-      _alturaCabecalhoEstatico = medida.alturaCabecalho;
-    }
-    // Com o teclado aberto a altura disponível é a que sobrou acima dele —
-    // não serve para decidir se a tela normal cabe sem rolagem.
-    if (_tecladoAberto || medida.cabeSemRolagem == _cabeSemRolagem) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _cabeSemRolagem = medida.cabeSemRolagem);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tecladoAberto = MediaQuery.viewInsetsOf(context).bottom > 0;
-    _tecladoAberto = tecladoAberto;
     final escala = MediaQuery.textScalerOf(context);
-    final alturaMarca = _CadastroHeader.alturaDaMarca(escala);
-    final alturaMinimaCabecalho = _CadastroHeader.alturaPara(
-        alturaMarca: alturaMarca,
-        logo: _CadastroHeader.logoMinimo,
-        sobreposicao: _sobreposicao);
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final composicao = _CabecalhoComPainel(
-              // GlobalKey: ao abrir o teclado a composição muda de pai (entra
-              // na rolagem temporária) sem perder o estado dos campos nem o
-              // foco do campo que está sendo editado.
-              key: _composicaoKey,
-              geometria: _GeometriaComposicao(
-                sobreposicao: _sobreposicao,
-                margemHorizontal: _margemHorizontal,
-                margemInferior: _margemInferior,
-                alturaMinimaCabecalho: alturaMinimaCabecalho,
-                // Com o teclado aberto o cabeçalho mantém exatamente a
-                // altura da tela normal — só a rolagem muda, nada encolhe.
-                alturaCabecalhoSemLimite: tecladoAberto
-                    ? (_alturaCabecalhoEstatico ?? alturaMinimaCabecalho)
-                    : alturaMinimaCabecalho,
-                alturaDeReferencia: constraints.maxHeight,
-              ),
-              aoMedir: _aoMedirComposicao,
-              cabecalho: _CadastroHeader(
-                sobreposicao: _sobreposicao,
-                onBack: () => context.pop(),
-              ),
-              painel: _construirPainel(escala),
-            );
-
-            // Estado normal: composição estática, sem nenhum Scrollable na
-            // árvore. Rolagem só existe (a) enquanto o teclado estiver
-            // aberto, para o campo focado continuar visível, ou (b) quando
-            // o painel não cabe nem com o cabeçalho no tamanho mínimo
-            // (aparelho muito baixo e/ou fonte do sistema muito ampliada) —
-            // exceções documentadas em vez de campos inacessíveis.
-            if (!tecladoAberto && _cabeSemRolagem) return composicao;
-            return SingleChildScrollView(child: composicao);
-          },
+        child: ComposicaoCabecalhoPainel(
+          sobreposicao: _sobreposicao,
+          margemHorizontal: 20,
+          margemInferior: 12,
+          alturaMinimaCabecalho: _CadastroHeader.alturaPara(
+            alturaMarca: _CadastroHeader.alturaDaMarca(escala),
+            logo: _CadastroHeader.logoMinimo,
+            sobreposicao: _sobreposicao,
+          ),
+          cabecalho: _CadastroHeader(
+            sobreposicao: _sobreposicao,
+            onBack: () => context.pop(),
+          ),
+          painel: _construirPainel(escala),
         ),
       ),
     );
@@ -447,7 +388,7 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
 }
 
 /// Cabeçalho marrom do Cadastro — recebe uma altura exata de
-/// [_CabecalhoComPainel] e acomoda o logo no que sobra (entre
+/// [ComposicaoCabecalhoPainel] e acomoda o logo no que sobra (entre
 /// [logoMinimo] e [logoMaximo], o mesmo tamanho do Login), com o conjunto
 /// logo + nome centralizado na área marrom visível. Não reaproveita o
 /// [AuthHeader]
@@ -556,211 +497,5 @@ class _BotaoVoltar extends StatelessWidget {
       tooltip: 'Voltar',
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
     );
-  }
-}
-
-// --- Layout cabeçalho + painel -------------------------------------------
-
-@immutable
-class _GeometriaComposicao {
-  const _GeometriaComposicao({
-    required this.sobreposicao,
-    required this.margemHorizontal,
-    required this.margemInferior,
-    required this.alturaMinimaCabecalho,
-    required this.alturaCabecalhoSemLimite,
-    required this.alturaDeReferencia,
-  });
-
-  /// Quanto o painel invade a base do cabeçalho.
-  final double sobreposicao;
-  final double margemHorizontal;
-  final double margemInferior;
-  final double alturaMinimaCabecalho;
-
-  /// Altura do cabeçalho quando a composição está dentro de uma rolagem
-  /// (altura sem limite) — não há "sobra" para distribuir.
-  final double alturaCabecalhoSemLimite;
-
-  /// Altura útil da tela, usada para dizer se a composição caberia sem
-  /// rolagem mesmo quando ela está dentro de uma.
-  final double alturaDeReferencia;
-
-  @override
-  bool operator ==(Object other) =>
-      other is _GeometriaComposicao &&
-      other.sobreposicao == sobreposicao &&
-      other.margemHorizontal == margemHorizontal &&
-      other.margemInferior == margemInferior &&
-      other.alturaMinimaCabecalho == alturaMinimaCabecalho &&
-      other.alturaCabecalhoSemLimite == alturaCabecalhoSemLimite &&
-      other.alturaDeReferencia == alturaDeReferencia;
-
-  @override
-  int get hashCode => Object.hash(
-        sobreposicao,
-        margemHorizontal,
-        margemInferior,
-        alturaMinimaCabecalho,
-        alturaCabecalhoSemLimite,
-        alturaDeReferencia,
-      );
-}
-
-class _MedidaComposicao {
-  const _MedidaComposicao({
-    required this.alturaCabecalho,
-    required this.alturaLimitada,
-    required this.cabeSemRolagem,
-  });
-
-  final double alturaCabecalho;
-
-  /// `true` quando a composição foi medida na tela normal (altura fixa),
-  /// `false` quando estava dentro da rolagem.
-  final bool alturaLimitada;
-
-  /// Se o painel caberia inteiro na [_GeometriaComposicao.alturaDeReferencia]
-  /// com o cabeçalho no tamanho mínimo.
-  final bool cabeSemRolagem;
-}
-
-/// Cabeçalho (1º filho) atrás, painel (2º filho) na frente.
-///
-/// O painel é medido primeiro, na sua altura natural; o cabeçalho recebe a
-/// altura que sobra (entre o mínimo e o máximo) mais a [sobreposicao], e o
-/// painel é posicionado começando [sobreposicao] pixels antes do fim do
-/// cabeçalho. Como o painel é pintado depois, ele fica na frente na faixa
-/// em comum — e também recebe os toques primeiro nessa faixa.
-class _CabecalhoComPainel extends MultiChildRenderObjectWidget {
-  _CabecalhoComPainel({
-    super.key,
-    required this.geometria,
-    required this.aoMedir,
-    required Widget cabecalho,
-    required Widget painel,
-  }) : super(children: [cabecalho, painel]);
-
-  final _GeometriaComposicao geometria;
-  final ValueChanged<_MedidaComposicao> aoMedir;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderCabecalhoComPainel(geometria: geometria, aoMedir: aoMedir);
-
-  @override
-  void updateRenderObject(
-      BuildContext context, _RenderCabecalhoComPainel renderObject) {
-    renderObject
-      ..geometria = geometria
-      ..aoMedir = aoMedir;
-  }
-}
-
-class _PosicaoNaComposicao extends ContainerBoxParentData<RenderBox> {}
-
-class _RenderCabecalhoComPainel extends RenderBox
-    with
-        ContainerRenderObjectMixin<RenderBox, _PosicaoNaComposicao>,
-        RenderBoxContainerDefaultsMixin<RenderBox, _PosicaoNaComposicao> {
-  _RenderCabecalhoComPainel({
-    required _GeometriaComposicao geometria,
-    required this.aoMedir,
-  }) : _geometria = geometria;
-
-  _GeometriaComposicao _geometria;
-  set geometria(_GeometriaComposicao valor) {
-    if (valor == _geometria) return;
-    _geometria = valor;
-    markNeedsLayout();
-  }
-
-  ValueChanged<_MedidaComposicao> aoMedir;
-
-  bool _transbordou = false;
-  final _recorte = LayerHandle<ClipRectLayer>();
-
-  @override
-  void setupParentData(RenderBox child) {
-    if (child.parentData is! _PosicaoNaComposicao) {
-      child.parentData = _PosicaoNaComposicao();
-    }
-  }
-
-  @override
-  void performLayout() {
-    final g = _geometria;
-    final cabecalho = firstChild!;
-    final painel = childAfter(cabecalho)!;
-    final largura = constraints.maxWidth;
-
-    painel.layout(
-      BoxConstraints.tightFor(
-          width: math.max(0, largura - 2 * g.margemHorizontal)),
-      parentUsesSize: true,
-    );
-    final alturaPainel = painel.size.height;
-
-    final alturaLimitada = constraints.hasBoundedHeight;
-    final alturaCabecalho = alturaLimitada
-        // Sem teto: toda a sobra vai para o cabeçalho, então o painel fica
-        // sempre ancorado logo acima da margem inferior, sem faixa vazia
-        // embaixo dele em telas altas.
-        ? math.max(
-            g.alturaMinimaCabecalho,
-            constraints.maxHeight -
-                alturaPainel -
-                g.margemInferior +
-                g.sobreposicao,
-          )
-        : g.alturaCabecalhoSemLimite;
-    cabecalho.layout(
-        BoxConstraints.tightFor(width: largura, height: alturaCabecalho));
-
-    (cabecalho.parentData! as _PosicaoNaComposicao).offset = Offset.zero;
-    (painel.parentData! as _PosicaoNaComposicao).offset =
-        Offset(g.margemHorizontal, alturaCabecalho - g.sobreposicao);
-
-    final alturaConteudo =
-        alturaCabecalho - g.sobreposicao + alturaPainel + g.margemInferior;
-    size = alturaLimitada
-        ? constraints.biggest
-        : constraints.constrain(Size(largura, alturaConteudo));
-    _transbordou = alturaConteudo > size.height + 0.5;
-
-    final alturaNecessaria = g.alturaMinimaCabecalho -
-        g.sobreposicao +
-        alturaPainel +
-        g.margemInferior;
-    aoMedir(_MedidaComposicao(
-      alturaCabecalho: alturaCabecalho,
-      alturaLimitada: alturaLimitada,
-      cabeSemRolagem: alturaNecessaria <= g.alturaDeReferencia + 0.5,
-    ));
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    // Só recorta no único quadro em que o painel ainda não coube (antes de
-    // a tela trocar para a rolagem de exceção) — nunca no uso normal, para
-    // não cortar a sombra do painel.
-    if (_transbordou) {
-      _recorte.layer = context.pushClipRect(
-          needsCompositing, offset, Offset.zero & size, defaultPaint,
-          oldLayer: _recorte.layer);
-    } else {
-      _recorte.layer = null;
-      defaultPaint(context, offset);
-    }
-  }
-
-  @override
-  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
-      defaultHitTestChildren(result, position: position);
-
-  @override
-  void dispose() {
-    _recorte.layer = null;
-    super.dispose();
   }
 }
