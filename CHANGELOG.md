@@ -15,6 +15,11 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Android: o app aparece como **PetConnect** (não `pet_connect`) e usa o
+  logo oficial (marcador com cachorro e gato) no launcher, com adaptive
+  icon e ícone temático, em vez do ícone padrão do Flutter. A abertura
+  mostra só a splash da marca (nativa + continuação idêntica no Flutter),
+  sem a espera fixa de 2,5s. Ver `docs/branding/icone-e-splash-android.md`.
 - Tela Criar conta: o painel de cadastro fica na frente do cabeçalho
   marrom e a tela não rola nem se mexe no estado normal. Ver
   `docs/features/cadastro-layout-estatico.md`.

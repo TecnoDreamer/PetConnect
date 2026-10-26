@@ -93,3 +93,24 @@ falecidos, inclusive por link direto. A transição passa sempre por
 `PetRepository.alterarSituacao` (transação + auditoria). Ver
 `docs/features/memorial-pet.md` e
 `docs/decisions/0002-arquivamento-logico-pets-falecidos.md`.
+
+## Sequência de inicialização (Android)
+
+```text
+Toque no ícone
+  → splash nativa (sistema; Android 12+ via API SplashScreen) — cor da marca + logo
+  → main(): Firebase.initializeApp + SharedPreferences (tema) → runApp
+  → SplashScreen (Flutter) — mesma cor e logo, sem tempo mínimo
+      aguarda sessionBootstrapProvider (signOut: login exigido a cada abertura)
+      e a primeira leitura de authStateChanges
+  → /login (ou /home, se houver sessão — na prática sempre /login)
+```
+
+- Antes de `runApp` ficam só as dependências do primeiro frame: Firebase
+  (o router lê o `FirebaseAuth`) e `SharedPreferences` (o tema escolhido).
+- A `SplashScreen` do Flutter é a continuação visual da splash nativa, não
+  uma segunda abertura. O tempo mínimo artificial de 2,5s foi removido. Ver
+  `docs/branding/icone-e-splash-android.md` e
+  `docs/decisions/0003-splash-nativa-sem-abertura-flutter-extra.md`.
+- Se o `signOut` de bootstrap falhar (ex.: sem rede), o erro é engolido em
+  `sessionBootstrapProvider` e a splash segue para o login, sem travar.
