@@ -77,10 +77,8 @@ Usam as **rotas reais** (`buildAuthRoutes()`) e o mesmo arranjo de
 - Troca repetida de tema com o login aberto, sem efeito no login.
 - Navegação login ↔ cadastro ↔ esqueci senha no Escuro.
 - No Escuro, sem overflow em 320×568, 360×800, 390×844 e 412×915, com
-  fonte 1.0 e 1.3, e com o teclado aberto e fechado. A exceção é o
-  Cadastro com teclado: o cabeçalho compacto do layout atual estoura na
-  horizontal com fonte ampliada, independentemente do tema, e esse layout
-  é substituído pela PR #68.
+  fonte 1.0 e 1.3, e com o teclado aberto e fechado, nas três telas
+  (inclusive o Cadastro com o layout novo da PR #68).
 
 Verificação de mutação: sem o `AuthThemeScope`, os casos de Login e
 Esqueci senha no Escuro falham.

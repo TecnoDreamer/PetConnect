@@ -233,18 +233,12 @@ void main() {
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull, reason: rota);
 
-            // Teclado aberto e fechado. Cadastro fica de fora: o cabeçalho
-            // compacto do layout atual (Row com logo + nome) estoura na
-            // horizontal com fonte ampliada, independentemente do tema — o
-            // layout inteiro é substituído pela PR #68 (cobertura de teclado
-            // em cadastro_screen_test.dart).
-            if (rota != '/cadastro') {
-              tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-              await tester.pumpAndSettle();
-              expect(tester.takeException(), isNull, reason: '$rota + teclado');
-              tester.view.resetViewInsets();
-              await tester.pumpAndSettle();
-            }
+            // Teclado aberto e fechado.
+            tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull, reason: '$rota + teclado');
+            tester.view.resetViewInsets();
+            await tester.pumpAndSettle();
             _esperarIdentidadeOriginal(tester);
           }
         });
