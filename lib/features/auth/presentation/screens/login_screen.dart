@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/errors/auth_error_translator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/auth_header.dart';
+import '../../../../core/widgets/composicao_cabecalho_painel.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -54,53 +55,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  /// Faixa da base do cabeçalho coberta pelo card.
+  static const _sobreposicao = 32.0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          // NeverScrollableScrollPhysics: a tela não pode se mover ao toque
-          // (correção de 2026-09-14, ver docs/features/login-layout-static
-          // -fix.md) — mesmo que uma combinação futura ainda mais extrema
-          // (fonte do sistema muito ampliada + aparelho muito pequeno) volte
-          // a sobrar conteúdo, ele é cortado embaixo, nunca vira arrastável.
-          physics: const NeverScrollableScrollPhysics(),
-          child: Column(
+        // Correção de 2026-10-26 (docs/features/login-layout-distribuido.md):
+        // a altura que sobra na tela é dividida entre o cabeçalho e o espaço
+        // entre o card e o rodapé, em vez de virar uma faixa vazia embaixo;
+        // e o slogan não fica mais escondido atrás do card.
+        child: ComposicaoCabecalhoPainel(
+          sobreposicao: _sobreposicao,
+          margemHorizontal: 24,
+          margemInferior: 16,
+          fracaoDaSobraParaCabecalho: 0.5,
+          cabecalho: const AuthHeader(sobreposicao: _sobreposicao),
+          painel: _LoginCard(
+            emailController: _emailController,
+            senhaController: _senhaController,
+            submitting: _submitting,
+            senhaVisivel: _senhaVisivel,
+            onToggleSenhaVisivel: () =>
+                setState(() => _senhaVisivel = !_senhaVisivel),
+            error: _error,
+            onSubmit: _handleLogin,
+            onForgotPassword: () => context.push('/esqueci-senha'),
+          ),
+          rodape: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const AuthHeader(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
-                child: Transform.translate(
-                  // Sobreposição um pouco maior que antes (32 → 48): o card
-                  // invade mais a base da área marrom, de propósito — ajuda
-                  // a tela a caber sem rolar e deixa a sobreposição mais
-                  // nítida (seção 14 do documento-fonte).
-                  offset: const Offset(0, -48),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _LoginCard(
-                        emailController: _emailController,
-                        senhaController: _senhaController,
-                        submitting: _submitting,
-                        senhaVisivel: _senhaVisivel,
-                        onToggleSenhaVisivel: () =>
-                            setState(() => _senhaVisivel = !_senhaVisivel),
-                        error: _error,
-                        onSubmit: _handleLogin,
-                        onForgotPassword: () => context.push('/esqueci-senha'),
-                      ),
-                      const SizedBox(height: 10),
-                      const _SocialLoginRow(),
-                      const SizedBox(height: 10),
-                      _SignUpPrompt(onTap: () => context.push('/cadastro')),
-                    ],
-                  ),
-                ),
-              ),
+              const _SocialLoginRow(),
+              const SizedBox(height: 10),
+              _SignUpPrompt(onTap: () => context.push('/cadastro')),
             ],
           ),
         ),
@@ -129,6 +119,9 @@ class _LoginCard extends StatelessWidget {
   final String? error;
   final VoidCallback onSubmit;
   final VoidCallback onForgotPassword;
+
+  static const _estiloErro =
+      TextStyle(color: AppColors.error, fontSize: 13, height: 1.25);
 
   @override
   Widget build(BuildContext context) {
@@ -209,14 +202,27 @@ class _LoginCard extends StatelessWidget {
               ),
             ),
           ),
-          if (error != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              error!,
-              style: const TextStyle(color: AppColors.error, fontSize: 13),
+          // Espaço do erro sempre reservado (2 linhas): a mensagem aparece
+          // sem mudar a altura do card — senão a composição redistribuiria
+          // a sobra e o card subiria um pouco a cada erro.
+          SizedBox(
+            height:
+                MediaQuery.textScalerOf(context).scale(_estiloErro.fontSize!) *
+                        _estiloErro.height! *
+                        2 +
+                    8,
+            child: Center(
+              child: error == null
+                  ? null
+                  : Text(
+                      error!,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _estiloErro,
+                    ),
             ),
-          ],
-          const SizedBox(height: 10),
+          ),
           // Altura mínima reduzida (56 → 48) só neste botão, via Theme
           // local — ajuda a caber sem rolar em aparelhos pequenos; não
           // afeta nenhum outro botão do app.

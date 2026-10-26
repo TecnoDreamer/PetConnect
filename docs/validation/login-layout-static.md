@@ -3,6 +3,17 @@
 > Branch: `fix/login-card-sobreposicao-estatica`. Fonte:
 > `prompt_correcao_layout_login_estatico.md` (2026-09-14).
 
+> **Atualização (2026-10-26):** o layout passou a distribuir a altura da
+> tela (`docs/features/login-layout-distribuido.md`). Além do checklist
+> abaixo, conferir:
+>
+> ```text
+> [ ] Slogan "Conectando corações perdidos aos seus lares" visível (não fica atrás do card)
+> [ ] Sem faixa branca grande embaixo: Google/Facebook e "Cadastre-se" ficam perto da base
+> [ ] Área marrom maior em telas altas, com logo e textos centralizados
+> [ ] Erro de login aparece sem o card subir ou descer
+> ```
+
 ## Como testar
 
 Atualizar o app no celular com o código desta branch. Testar login com

@@ -10,12 +10,19 @@ import '../theme/app_colors.dart';
 /// transparente) para o padrão de patinhas aparecer — sem ele, a área some
 /// silenciosamente (ver [_PawPrintsBackground]).
 class AuthHeader extends StatelessWidget {
-  const AuthHeader({super.key, this.onBack});
+  const AuthHeader({super.key, this.onBack, this.sobreposicao});
 
   /// Quando não nulo, mostra uma seta de voltar (telas empilhadas sobre o
   /// login, como cadastro e esqueci-senha). O login, por ser a rota raiz,
   /// não passa esse callback.
   final VoidCallback? onBack;
+
+  /// Usado dentro de `ComposicaoCabecalhoPainel` (Login): o cabeçalho
+  /// recebe uma altura exata, maior que o próprio conteúdo em telas altas,
+  /// e um painel cobre os últimos [sobreposicao] pixels. O conteúdo fica
+  /// centralizado na área visível acima dessa faixa — nunca coberto. Nulo
+  /// (Esqueci senha) = altura do próprio conteúdo, como antes.
+  final double? sobreposicao;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +33,8 @@ class AuthHeader extends StatelessWidget {
       // Login não cabia numa única viewport em aparelhos comuns sem este
       // ajuste (ver docs/features/login-layout-static-fix.md). Benefício
       // colateral: Esqueci senha (mesmo cabeçalho) também ganha mais espaço.
-      padding: EdgeInsets.fromLTRB(24, onBack != null ? 8 : 14, 24, 14),
+      padding: EdgeInsets.fromLTRB(
+          24, onBack != null ? 8 : 14, 24, 14 + (sobreposicao ?? 0)),
       decoration: const BoxDecoration(
         gradient: AppColors.brandGradient,
         borderRadius: BorderRadius.only(
@@ -49,6 +57,7 @@ class AuthHeader extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (onBack != null)
                     Align(
