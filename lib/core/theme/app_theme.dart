@@ -101,6 +101,12 @@ abstract final class AppTheme {
     );
   }
 
+  /// Tema fixo das telas de autenticação (Login, Cadastro, Esqueci senha):
+  /// a identidade original do app, independente da preferência do tutor —
+  /// ver docs/decisions/0001-tema-fixo-autenticacao.md. Aplicado só à
+  /// subárvore dessas telas, por `AuthThemeScope`.
+  static ThemeData autenticacao() => build(AppThemeMode.padrao);
+
   /// Mantido por compatibilidade — usado em telas/testes anteriores a esta
   /// etapa. Equivale a `build(AppThemeMode.padrao)`; usa [AppColors]
   /// diretamente (não a paleta) porque telas que ainda não migraram para

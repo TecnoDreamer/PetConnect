@@ -57,6 +57,8 @@ Código compartilhado entre features que não é específico de nenhuma delas: t
 
 Configuração central do `go_router`: define as rotas (`/login`, `/cadastro`, `/home`, `/pet/:id`, etc.) e os *redirects*/guards que impedem acesso a rotas autenticadas sem sessão ativa (RF06, RNF12).
 
+As rotas de autenticação ficam em `auth_routes.dart`, envolvidas por `AuthThemeScope`: usam sempre o tema da identidade original, independentemente do tema escolhido pelo tutor (ver `docs/features/auth-theme.md` e `docs/decisions/0001-tema-fixo-autenticacao.md`).
+
 ## Fluxo de dados
 
 ```
