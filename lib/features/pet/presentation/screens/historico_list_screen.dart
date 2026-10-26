@@ -58,9 +58,9 @@ class HistoricoListScreen extends ConsumerWidget {
     final historicoAsync = ref.watch(historicoMedicoProvider(petId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: const Text('Histórico médico',
             style: TextStyle(color: AppColors.textPrimary)),

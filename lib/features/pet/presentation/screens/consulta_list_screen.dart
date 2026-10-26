@@ -19,9 +19,9 @@ class ConsultaListScreen extends ConsumerWidget {
     final consultasAsync = ref.watch(consultasProvider(petId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: const Text('Consultas',
             style: TextStyle(color: AppColors.textPrimary)),

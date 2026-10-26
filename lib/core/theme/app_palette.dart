@@ -91,11 +91,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
     genderFemaleBackground: Color(0xFFFCE4EC),
   );
 
+  // Tema principal do app (2026-10-27): fundo sempre branco. Como o fundo
+  // é branco, campos e cartões usam um cinza bem claro — senão um campo
+  // branco sobre fundo branco desaparece.
   static const claro = AppPalette(
-    background: Color(0xFFF7F7F5),
-    homeBackdrop: Color(0xFFF1F2F6),
-    surface: Colors.white,
-    cardBackground: Colors.white,
+    background: Colors.white,
+    homeBackdrop: Colors.white,
+    surface: Color(0xFFF4F4F2),
+    cardBackground: Color(0xFFF6F6F4),
     textPrimary: Color(0xFF231A13),
     textMuted: Color(0xFF6E655D),
     textOnBrand: Colors.white,

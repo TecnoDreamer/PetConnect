@@ -13,9 +13,10 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
       'sharedPreferencesProvider precisa ser sobrescrito em main().');
 });
 
-/// Preferência de aparência do tutor (RF de tema, 2026-09-13). Usuários
-/// sem preferência salva (todo mundo antes desta versão) começam no
-/// [AppThemeMode.padrao] — nunca migra sozinho pra Claro/Escuro.
+/// Preferência de aparência do tutor (RF de tema, 2026-09-13). Sem
+/// preferência salva (ou com um valor inválido), o app abre no
+/// [AppThemeMode.claro] — o tema principal desde 2026-10-27. Quem já
+/// escolheu um modo explicitamente continua nele.
 class ThemeModeController extends StateNotifier<AppThemeMode> {
   ThemeModeController(this._prefs) : super(_lerPreferencia(_prefs));
 
@@ -25,7 +26,7 @@ class ThemeModeController extends StateNotifier<AppThemeMode> {
     final salvo = prefs.getString(_chaveTema);
     return AppThemeMode.values.firstWhere(
       (modo) => modo.name == salvo,
-      orElse: () => AppThemeMode.padrao,
+      orElse: () => AppThemeMode.claro,
     );
   }
 

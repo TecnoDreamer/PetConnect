@@ -46,9 +46,9 @@ class VacinaListScreen extends ConsumerWidget {
     final vacinasAsync = ref.watch(vacinasProvider(petId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: const Text('Carteira de vacina',
             style: TextStyle(color: AppColors.textPrimary)),

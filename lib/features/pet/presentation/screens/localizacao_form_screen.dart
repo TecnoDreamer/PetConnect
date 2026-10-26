@@ -84,9 +84,9 @@ class _LocalizacaoFormScreenState extends ConsumerState<LocalizacaoFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: const Text('Registrar avistamento',
             style: TextStyle(color: AppColors.textPrimary)),

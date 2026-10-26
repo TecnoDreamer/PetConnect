@@ -17,9 +17,9 @@ class LocalizacaoListScreen extends ConsumerWidget {
     final localizacoesAsync = ref.watch(localizacoesProvider(petId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: const Text('Localização',
             style: TextStyle(color: AppColors.textPrimary)),
