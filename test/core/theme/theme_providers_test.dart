@@ -22,9 +22,10 @@ void main() {
     return container;
   }
 
-  test('sem preferência salva, começa no modo Padrão', () async {
+  test('sem preferência salva, começa no modo Claro (tema principal)',
+      () async {
     final container = await criarContainer();
-    expect(container.read(themeModeProvider), AppThemeMode.padrao);
+    expect(container.read(themeModeProvider), AppThemeMode.claro);
   });
 
   test('definir Escuro persiste, mesmo depois de "reabrir o app"', () async {
@@ -79,10 +80,10 @@ void main() {
     expect(containerDepois.read(themeModeProvider), AppThemeMode.padrao);
   });
 
-  test('valor inválido salvo (versão antiga, corrompido) cai para Padrão',
+  test('valor inválido salvo (versão antiga, corrompido) cai para Claro',
       () async {
     SharedPreferences.setMockInitialValues({'tema_app': 'valor-invalido'});
     final container = await criarContainer();
-    expect(container.read(themeModeProvider), AppThemeMode.padrao);
+    expect(container.read(themeModeProvider), AppThemeMode.claro);
   });
 }
