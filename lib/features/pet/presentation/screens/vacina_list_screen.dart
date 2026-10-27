@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/vacina.dart';
 import '../providers/vacina_providers.dart';
 import '../widgets/vacina_tile.dart';
@@ -29,7 +29,7 @@ class VacinaListScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child:
-                const Text('Excluir', style: TextStyle(color: AppColors.error)),
+                Text('Excluir', style: TextStyle(color: context.colors.error)),
           ),
         ],
       ),
@@ -43,29 +43,30 @@ class VacinaListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final vacinasAsync = ref.watch(vacinasProvider(petId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text('Carteira de vacina',
-            style: TextStyle(color: AppColors.textPrimary)),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        title: Text('Carteira de vacina',
+            style: TextStyle(color: colors.textPrimary)),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/pet/$petId/vacinas/nova'),
-        backgroundColor: AppColors.brandDark,
+        backgroundColor: colors.brandDark,
         tooltip: 'Registrar vacina',
-        child: const Icon(Icons.add, color: AppColors.textOnBrand),
+        child: Icon(Icons.add, color: colors.textOnBrand),
       ),
       body: SafeArea(
         child: vacinasAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Center(
+          error: (_, __) => Center(
             child: Text('Não foi possível carregar as vacinas.',
-                style: TextStyle(color: AppColors.error)),
+                style: TextStyle(color: context.colors.error)),
           ),
           data: (vacinas) {
             Future<void> atualizar() async {
@@ -78,14 +79,14 @@ class VacinaListScreen extends ConsumerWidget {
                 onRefresh: atualizar,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(height: 120),
+                  children: [
+                    const SizedBox(height: 120),
                     Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Text(
                         'Nenhuma vacina registrada ainda.\nToque em "+" para adicionar.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(color: colors.textMuted),
                       ),
                     ),
                   ],

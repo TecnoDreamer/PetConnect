@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/consulta.dart';
 import '../providers/consulta_providers.dart';
 import '../widgets/consulta_tile.dart';
@@ -16,29 +16,29 @@ class ConsultaListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final consultasAsync = ref.watch(consultasProvider(petId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text('Consultas',
-            style: TextStyle(color: AppColors.textPrimary)),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        title: Text('Consultas', style: TextStyle(color: colors.textPrimary)),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/pet/$petId/consultas/nova'),
-        backgroundColor: AppColors.brandDark,
+        backgroundColor: colors.brandDark,
         tooltip: 'Agendar consulta',
-        child: const Icon(Icons.add, color: AppColors.textOnBrand),
+        child: Icon(Icons.add, color: colors.textOnBrand),
       ),
       body: SafeArea(
         child: consultasAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Center(
+          error: (_, __) => Center(
             child: Text('Não foi possível carregar as consultas.',
-                style: TextStyle(color: AppColors.error)),
+                style: TextStyle(color: colors.error)),
           ),
           data: (consultas) {
             if (consultas.isEmpty) {
@@ -49,14 +49,14 @@ class ConsultaListScreen extends ConsumerWidget {
                 },
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(height: 120),
+                  children: [
+                    const SizedBox(height: 120),
                     Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Text(
                         'Nenhuma consulta agendada ainda.\nToque em "+" para agendar.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(color: colors.textMuted),
                       ),
                     ),
                   ],
@@ -103,9 +103,9 @@ class ConsultaListScreen extends ConsumerWidget {
     return [
       Text(
         titulo,
-        style: const TextStyle(
+        style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: context.colors.textPrimary,
             fontSize: 15),
       ),
       const SizedBox(height: 8),

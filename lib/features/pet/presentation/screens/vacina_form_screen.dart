@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/br_date.dart';
 import '../../domain/vacina.dart';
 import '../providers/vacina_providers.dart';
@@ -108,16 +108,17 @@ class _VacinaFormScreenState extends ConsumerState<VacinaFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.background,
         elevation: 0,
         title: Text(
           widget.isEditing ? 'Editar vacina' : 'Registrar vacina',
-          style: const TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -140,10 +141,10 @@ class _VacinaFormScreenState extends ConsumerState<VacinaFormScreen> {
                   controller: _dataAplicacaoController,
                   readOnly: true,
                   onTap: () => _pickData(_dataAplicacaoController),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Data de aplicação:',
                     suffixIcon:
-                        Icon(Icons.calendar_today, color: AppColors.textMuted),
+                        Icon(Icons.calendar_today, color: colors.textMuted),
                   ),
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Informe a data de aplicação.'
@@ -154,10 +155,10 @@ class _VacinaFormScreenState extends ConsumerState<VacinaFormScreen> {
                   controller: _proximaDoseController,
                   readOnly: true,
                   onTap: () => _pickData(_proximaDoseController),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Próxima dose (opcional):',
                     suffixIcon:
-                        Icon(Icons.calendar_today, color: AppColors.textMuted),
+                        Icon(Icons.calendar_today, color: colors.textMuted),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -176,19 +177,18 @@ class _VacinaFormScreenState extends ConsumerState<VacinaFormScreen> {
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!,
-                      style: const TextStyle(
-                          color: AppColors.error, fontSize: 13)),
+                      style: TextStyle(color: colors.error, fontSize: 13)),
                 ],
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _submitting ? null : _handleSalvar,
                   child: _submitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textOnBrand,
+                            color: colors.textOnBrand,
                           ),
                         )
                       : const Text('SALVAR'),
