@@ -1,75 +1,121 @@
 rules_version = '2';
 
-// FASE 11, passo 1 — endurecimento de baixo risco (2026-09-11).
-// Estado anterior (o que estava deployado antes desta mudança) fica registrado
-// em docs/security/firestore-rules-deployed.md e no histórico do git deste
-// arquivo. Mudança: fecha leitura/escrita ANÔNIMA (sem login) em tudo — nada
-// que exigia só `request.auth != null` deixa de funcionar; só o acesso sem
-// login nenhum é que passa a ser negado.
+// Isolamento por dono (Fase 1 do plano de próximos passos, issue #31).
+// Estado anterior: docs/security/firestore-rules-deployed.md e o histórico
+// do git deste arquivo. Testes: tool/firestore-rules/ (Firestore Emulator,
+// rodam no CI). Documentação: docs/security/firestore-isolamento-por-dono.md.
 //
-// Confirmado com o usuário (2026-09-11): não há mais nenhum fluxo público
-// real (página/Cloud Function) escrevendo em `Localizacoes` — os 95 registros
-// eram só histórico, já migrados para o MongoDB. Por isso já é seguro fechar
-// a escrita pública, não só a leitura.
+// O que mudou em relação à FASE 11:
+//   - Saiu o catch-all `/{document=**}`. Ele tinha `allow write` para
+//     qualquer usuário logado e também casava `Usuarios/{id}` e `Pets/{id}`,
+//     então as condições de dono desses blocos não tinham efeito. Sem ele,
+//     qualquer caminho sem regra própria abaixo é negado.
+//   - `Usuarios`: só o próprio usuário (ID do documento = Auth UID) lê e
+//     escreve o seu perfil.
+//   - `Pets` e subcoleções: só o dono (`userId` = Auth UID) lê e escreve.
+//   - Pet falecido: sem criar ou alterar registros clínicos; leitura e
+//     exclusão continuam (exclusão de conta precisa apagar).
+//   - `eventosSituacao`: só criação pelo dono, junto com a mudança real de
+//     situação do pet; nunca alterado nem apagado.
 //
-// FASE 11, passo 2 — fecha COMPLETAMENTE a escrita em `Localizacoes` (coleção
-// de nível raiz, 2026-09-11). Importante: isto é diferente da subcoleção
-// `Pets/{petId}/localizacoes` (minúscula) que o app antigo usa de verdade
-// hoje (fica sob o catch-all abaixo, já exige login, não é afetada). A
-// coleção `Localizacoes` raiz é 100% legado morto — nenhum código (app
-// antigo, app novo ou backend) ainda escreve nela; só existe pra manter os
-// 95 registros históricos legíveis por quem já está logado.
-//
-// ATENÇÃO — pegadinha das regras do Firestore: blocos `match` não se
-// "sobrepõem" por especificidade, eles se somam por OR. Um `allow write:
-// if false` aqui NÃO bloqueia nada sozinho se o catch-all abaixo também
-// bate no mesmo caminho com uma condição mais permissiva (auth != null) —
-// o Firestore libera se QUALQUER bloco que casar permitir. Por isso o
-// catch-all abaixo exclui explicitamente `Localizacoes` da sua permissão
-// de escrita (confirmado com teste real via REST direto: sem essa
-// exclusão, a escrita "se if false" ainda passava).
-//
-// Segunda pegadinha, achada testando: a variável local `document` do
-// `{document=**}` é do tipo `path` mas NÃO tem `.size()` (erro de tipo
-// silencioso — o Firestore trata condição com erro como `false`, o que
-// teria derrubado a escrita de TODAS as coleções, não só Localizacoes,
-// se não fosse pego no teste real). Solução: indexar `request.path`
-// (sempre `/databases/{db}/documents/<colecao>/...`) em vez da variável
-// do wildcard.
+// Pegadinhas que continuam valendo (aprendidas na FASE 11):
+//   - Blocos `match` somam por OR: um `if false` não vence outra regra que
+//     também case o mesmo caminho. Por isso nada aqui é genérico.
+//   - Condição com erro (campo inexistente, `get` de documento que não
+//     existe) vale `false`. Em `||`, um lado com erro não impede o outro
+//     lado de liberar.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    // Dono de um documento de pet. `userId` é o campo de todos os pets
+    // atuais; `userID` (D maiúsculo) só existe num pet legado de teste.
+    function ehDonoDoPet(dados) {
+      return dados.userId == request.auth.uid
+          || dados.get('userID', null) == request.auth.uid;
+    }
+
     match /Usuarios/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-      allow update: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow read, create, update, delete:
+          if logado() && request.auth.uid == userId;
     }
 
     match /Pets/{petId} {
-      // Antes: allow read: if true;  (qualquer um, sem login, lia todos os pets)
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, delete: if logado() && ehDonoDoPet(resource.data);
+      allow create: if logado()
+          && request.resource.data.userId == request.auth.uid;
+      // O pet continua sendo do mesmo tutor depois do update: não dá para
+      // transferir para outra conta.
+      allow update: if logado()
+          && ehDonoDoPet(resource.data)
+          && ehDonoDoPet(request.resource.data);
+
+      function pet() {
+        return get(/databases/$(database)/documents/Pets/$(petId));
+      }
+      function situacaoAntes() {
+        return pet().data.get('situacao', 'ATIVO');
+      }
+      function situacaoDepois() {
+        return getAfter(/databases/$(database)/documents/Pets/$(petId))
+            .data.get('situacao', 'ATIVO');
+      }
+      function donoDoPet() {
+        return logado() && ehDonoDoPet(pet().data);
+      }
+      // Escrita clínica = criar ou alterar vacina, consulta, histórico ou
+      // localização. Bloqueada para pet falecido (ADR 0002).
+      function podeEscreverClinico() {
+        return donoDoPet() && situacaoAntes() != 'FALECIDO';
+      }
+
+      match /vacinas/{id} {
+        allow read, delete: if donoDoPet();
+        allow create, update: if podeEscreverClinico();
+      }
+      match /consultas/{id} {
+        allow read, delete: if donoDoPet();
+        allow create, update: if podeEscreverClinico();
+      }
+      match /historicoMedico/{id} {
+        allow read, delete: if donoDoPet();
+        allow create, update: if podeEscreverClinico();
+      }
+      match /localizacoes/{id} {
+        allow read, delete: if donoDoPet();
+        allow create, update: if podeEscreverClinico();
+      }
+
+      // Auditoria das mudanças de situação (Memorial). O evento só é aceito
+      // na mesma escrita que muda `situacao` do pet, descrevendo exatamente
+      // essa mudança, com o próprio usuário como autor e o horário do
+      // servidor. Limite conhecido: o dono ainda pode mudar `situacao` sem
+      // evento (update direto); auditoria à prova do próprio dono exigiria
+      // servidor.
+      match /eventosSituacao/{id} {
+        allow read: if donoDoPet();
+        allow create: if donoDoPet()
+            && request.resource.data.keys().hasOnly([
+                'atorId', 'situacaoAnterior', 'situacaoNova', 'motivo',
+                'resultado', 'origem', 'em'])
+            && request.resource.data.atorId == request.auth.uid
+            && request.resource.data.em == request.time
+            && request.resource.data.situacaoAnterior == situacaoAntes()
+            && request.resource.data.situacaoNova == situacaoDepois()
+            && situacaoAntes() != situacaoDepois();
+        allow update, delete: if false;
+      }
     }
 
+    // Coleção raiz legada (95 registros históricos já migrados para o
+    // MongoDB). Escrita fechada desde a FASE 11; leitura mantida para quem
+    // está logado. Fechar a leitura é decisão pendente (ver doc acima).
     match /Localizacoes/{docId} {
-      // Antes: allow read, write: if request.auth != null;
-      // Coleção raiz morta (ver comentário acima) — leitura ainda liberada
-      // pra quem está logado (histórico), escrita fechada de vez.
-      allow read: if request.auth != null;
+      allow read: if logado();
       allow write: if false;
-    }
-
-    match /{document=**} {
-      // Antes: allow read;  (catch-all liberava leitura de qualquer coisa,
-      // mesmo sem login, para qualquer coleção sem regra própria)
-      allow read: if request.auth != null;
-      // Exclui `Localizacoes` (nível raiz) — sem isto, esta regra mais
-      // permissiva "vazaria" write pra lá por cima do `if false` acima
-      // (ver comentário no bloco de Localizacoes). request.path[3] é o
-      // nome da coleção de nível raiz (0=databases,1=db,2=documents,3=colecao).
-      allow write: if request.auth != null && request.path[3] != 'Localizacoes';
     }
   }
 }
