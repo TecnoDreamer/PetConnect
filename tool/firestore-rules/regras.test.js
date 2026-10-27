@@ -2,6 +2,7 @@
 // nunca o Firebase real). Rodar: `npm ci && npm test` nesta pasta (precisa
 // de Java 21). No Windows deste projeto o emulador não sobe (loopback);
 // o CI roda em Linux. Ver docs/security/firestore-isolamento-por-dono.md.
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
@@ -34,6 +35,21 @@ const SUBCOLECOES_CLINICAS = [
   'historicoMedico',
   'localizacoes',
 ];
+// Mesma lista que `subcolecoesApagadasComOPet`
+// (lib/features/pet/data/exclusao_de_pet.dart), usada por deletePet e
+// deleteAccount. `eventosSituacao` fica de fora (retenção: decisão pendente).
+const SUBCOLECOES_APAGADAS_COM_O_PET = [...SUBCOLECOES_CLINICAS, 'fotos'];
+
+// Mesma ordem que apagarPetComSubcolecoes: cada subcoleção, depois o pet.
+async function apagarPetComoOApp(db, petId) {
+  for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
+    const docs = await getDocs(collection(db, 'Pets', petId, sub));
+    for (const d of docs.docs) {
+      await deleteDoc(d.ref);
+    }
+  }
+  await deleteDoc(doc(db, 'Pets', petId));
+}
 
 let env;
 
@@ -192,6 +208,28 @@ describe('Pets', () => {
   it('altera e apaga o próprio pet', async () => {
     await assertSucceeds(updateDoc(doc(comoAna(), 'Pets', 'petAna'), { nome: 'Rex 2' }));
     await assertSucceeds(deleteDoc(doc(comoAna(), 'Pets', 'petAna')));
+  });
+
+  it('apaga o pet na ordem do app: subcoleções antes, inclusive pet falecido', async () => {
+    for (const petId of ['petAna', 'petAnaFalecido']) {
+      await assertSucceeds(apagarPetComoOApp(comoAna(), petId));
+    }
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      for (const petId of ['petAna', 'petAnaFalecido']) {
+        for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
+          const restantes = await getDocs(collection(db, 'Pets', petId, sub));
+          assert.equal(restantes.size, 0, `Pets/${petId}/${sub} ficou órfã`);
+        }
+      }
+      // Retido, sem pet pai: a regra nega delete (decisão pendente).
+      const evento = await getDoc(doc(db, 'Pets', 'petAna', 'eventosSituacao', 'e1'));
+      assert.ok(evento.exists());
+    });
+  });
+
+  it('não apaga as subcoleções do pet de outro tutor', async () => {
+    await assertFails(apagarPetComoOApp(comoAna(), 'petBeto'));
   });
 
   it('não altera nem apaga pet de outro tutor', async () => {
@@ -427,17 +465,11 @@ describe('fotos (galeria)', () => {
   });
 });
 
-// Mesma lista de subcoleções que FirebaseUsuarioRepository.deleteAccount
-// (`subcolecoesApagadasNaExclusaoDeConta`): as quatro clínicas e `fotos`.
 describe('exclusão de conta (mesma ordem do app)', () => {
   it('apaga subcoleções, pets e o perfil, inclusive de pet falecido', async () => {
     const db = comoAna();
     for (const petId of ['petAna', 'petAnaFalecido']) {
-      for (const sub of SUBCOLECOES_CLINICAS) {
-        await assertSucceeds(deleteDoc(doc(db, 'Pets', petId, sub, 'r1')));
-      }
-      await assertSucceeds(deleteDoc(doc(db, 'Pets', petId, 'fotos', 'f1')));
-      await assertSucceeds(deleteDoc(doc(db, 'Pets', petId)));
+      await assertSucceeds(apagarPetComoOApp(db, petId));
     }
     await assertSucceeds(deleteDoc(doc(db, 'Usuarios', ANA)));
   });
@@ -450,8 +482,9 @@ describe('exclusão de conta (mesma ordem do app)', () => {
 
   it('não apaga registros nem pets de outro tutor', async () => {
     const db = comoAna();
-    for (const sub of SUBCOLECOES_CLINICAS) {
-      await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', sub, 'r1')));
+    for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
+      const id = sub === 'fotos' ? 'f1' : 'r1';
+      await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', sub, id)));
     }
     await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto')));
   });

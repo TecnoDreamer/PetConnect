@@ -1,25 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../pet/data/exclusao_de_pet.dart';
 import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
-
-/// Subcoleções de cada pet apagadas por [FirebaseUsuarioRepository.deleteAccount]
-/// antes do próprio pet (LGPD, RF09/RNF13): as quatro clínicas e os registros
-/// da galeria (os arquivos no Cloudinary não são apagados daqui — ver
-/// docs/features/galeria-fotos-pet.md, "Retenção").
-///
-/// `eventosSituacao` (auditoria do Memorial) fica de fora: `firestore.rules`
-/// nega `delete` nela, inclusive para o dono. Apagar ou reter esses eventos é
-/// decisão pendente do proprietário (ver
-/// docs/security/firestore-isolamento-por-dono.md).
-const subcolecoesApagadasNaExclusaoDeConta = [
-  'vacinas',
-  'consultas',
-  'historicoMedico',
-  'localizacoes',
-  'fotos',
-];
 
 class FirebaseUsuarioRepository implements UsuarioRepository {
   FirebaseUsuarioRepository({
@@ -117,21 +101,10 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
         .where('userId', isEqualTo: uid)
         .get();
     for (final pet in pets.docs) {
-      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
-        await _deleteSubcollection(pet.reference.collection(sub));
-      }
-      await pet.reference.delete();
+      await apagarPetComSubcolecoes(pet.reference);
     }
 
     await _usuarios.doc(uid).delete();
     await user.delete();
-  }
-
-  Future<void> _deleteSubcollection(
-      CollectionReference<Map<String, dynamic>> collection) async {
-    final docs = await collection.get();
-    for (final doc in docs.docs) {
-      await doc.reference.delete();
-    }
   }
 }
