@@ -155,23 +155,31 @@ List<GoRoute> buildPetRoutes() => [
           RegistrarFalecimentoScreen(petId: state.pathParameters['id']!),
         ),
       ),
+      // Aninhadas (mesmos caminhos): um `go` para o memorial de um pet
+      // monta a pilha lista → memorial, então o Voltar passa pela lista em
+      // vez de esvaziar a pilha e fechar o app. A lista, na base, volta
+      // para a Home (VoltarParaHome).
       GoRoute(
         path: '/memorial',
         builder: (context, state) => const MemorialListScreen(),
-      ),
-      GoRoute(
-        path: '/memorial/:id',
-        builder: (context, state) => _soPetFalecido(
-          state,
-          MemorialScreen(petId: state.pathParameters['id']!),
-        ),
-      ),
-      GoRoute(
-        path: '/memorial/:id/configuracoes',
-        builder: (context, state) => _soPetFalecido(
-          state,
-          MemorialSettingsScreen(petId: state.pathParameters['id']!),
-        ),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => _soPetFalecido(
+              state,
+              MemorialScreen(petId: state.pathParameters['id']!),
+            ),
+            routes: [
+              GoRoute(
+                path: 'configuracoes',
+                builder: (context, state) => _soPetFalecido(
+                  state,
+                  MemorialSettingsScreen(petId: state.pathParameters['id']!),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ];
 
