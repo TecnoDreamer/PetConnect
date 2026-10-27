@@ -102,6 +102,7 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
     for (final pet in pets.docs) {
       await _deleteSubcollection(pet.reference.collection('vacinas'));
       await _deleteSubcollection(pet.reference.collection('historicoMedico'));
+      await _deleteSubcollection(pet.reference.collection('fotos'));
       await pet.reference.delete();
     }
 

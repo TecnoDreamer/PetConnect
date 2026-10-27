@@ -5,10 +5,34 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/cloudinary_config.dart';
 import '../domain/anexo_repository.dart';
+import 'cloudinary_imagem_upload.dart';
 
 /// Upload de arquivos via Cloudinary (upload preset "unsigned") — ver
 /// core/config/cloudinary_config.dart para como configurar a conta.
 class CloudinaryAnexoRepository implements AnexoRepository {
+  CloudinaryAnexoRepository({http.Client? httpClient})
+      : _http = httpClient ?? http.Client();
+
+  final http.Client _http;
+
+  @override
+  Future<ImagemEnviada> enviarImagem({
+    required String nomeArquivo,
+    required Uint8List bytes,
+    void Function(double fracao)? aoProgredir,
+    Future<void>? cancelar,
+  }) {
+    return enviarImagemAoCloudinary(
+      cliente: _http,
+      cloudName: cloudinaryCloudName,
+      campos: {'upload_preset': cloudinaryUploadPreset},
+      nomeArquivo: nomeArquivo,
+      bytes: bytes,
+      aoProgredir: aoProgredir,
+      cancelar: cancelar,
+    );
+  }
+
   @override
   Future<String> upload({
     required String path,
