@@ -94,6 +94,18 @@ service cloud.firestore {
 | `Usuarios` create/update/delete → `... == data.uid` | Só o doc da "Gabrielly" tem campo `uid`. Nos outros 17, `resource.data.uid` é `undefined` → condição falsa → **update/delete negados**. Perfis antigos provavelmente só eram alterados por caminho administrativo/versão antiga. | 🟡 Inconsistência (fail-closed) |
 | `Pets` update/delete → `... == resource.data.userId` | Correto para os docs que têm `userId` (23 de 24). O pet com `userID` (maiúsculo) fica sem dono válido. | 🟡 |
 
+> **Correção de 2026-10-26 — as duas últimas linhas da tabela acima estão
+> erradas.** Elas avaliam os blocos `Usuarios` e `Pets` isoladamente. Mas o
+> catch-all `/{document=**}` tinha (e ainda tem, com exceção só de
+> `Localizacoes`) `allow write: if request.auth != null`, e ele também casa
+> `Usuarios/{id}` e `Pets/{id}`. Como os blocos somam por OR, **qualquer
+> usuário logado consegue criar, alterar e apagar perfis e pets de outros
+> tutores**, além das subcoleções; as condições de dono não têm efeito. Não é
+> fail-closed. Conclusão tirada da leitura das regras com a mesma semântica
+> que o passo 2 confirmou na prática em `Localizacoes`; não foi testado contra
+> produção. Correção planejada na Fase 1 do plano de próximos passos (#31),
+> sem deploy sem aprovação.
+
 ## Recomendação (situação após o passo 2 — FASE 11 fechada)
 
 1. ~~Endurecimento de baixo risco~~ ✅ feito em 2026-09-11 (catch-all + `Pets` + `Localizacoes` exigem login agora).

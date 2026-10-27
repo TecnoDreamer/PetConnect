@@ -6,7 +6,7 @@ Complementa `docs/seguranca.md` e `docs/features/memorial-pet.md`.
 
 | Ação | Onde é garantida | Situação |
 |---|---|---|
-| Registrar falecimento / corrigir marcação | Regra deployada `Pets/{petId}`: `allow update: if request.auth.uid == resource.data.userId`. A transação falha inteira para outra conta. | ✅ Em vigor |
+| Registrar falecimento / corrigir marcação | App: só o dono chega à tela (`PetSituacaoGuard`). Regras: `Pets/{petId}` tem `allow update` só para o dono, **mas o catch-all `/{document=**}` (`allow write` para logado) também casa `Pets/{id}` e, como os blocos somam por OR, libera o update para qualquer conta logada. | ⛔ Servidor não garante (correção na Fase 1, #31) |
 | Ver memorial ou lista do Memorial | Consulta por `userId` + `PetSituacaoGuard` confere o dono | ✅ App. ⚠️ As regras permitem **leitura** de `Pets` a qualquer usuário logado (situação anterior, ver `firestore.rules`). |
 | Criar vacina, consulta, histórico ou localização para pet falecido | Rotas bloqueadas pelo `PetSituacaoGuard` | ✅ App. ⛔ Servidor pendente (abaixo). |
 | Gravar evento de auditoria | Subcoleção sob o catch-all (`write` para logado) | ⚠️ Pendente de restrição |
@@ -43,7 +43,9 @@ match /Pets/{petId} {
 Atenção à observação já registrada em `firestore.rules`: blocos `match`
 se somam por **OR**. O catch-all `/{document=**}` precisaria **excluir**
 as subcoleções de `Pets`, senão continua liberando escrita por cima destas
-regras. Antes do deploy, a proposta precisa ser validada no Firestore
+regras. Correção de 2026-10-26: o catch-all também casa os próprios
+documentos `Pets/{id}` e `Usuarios/{id}`, então precisa excluí-los também
+(ou ser removido), não só as subcoleções. Antes do deploy, a proposta precisa ser validada no Firestore
 Emulator (que não roda nesta máquina) ou num projeto de staging.
 
 ## Exposição pública
