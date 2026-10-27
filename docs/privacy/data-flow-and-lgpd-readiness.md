@@ -72,22 +72,23 @@ O mapa acima descreve a API/MongoDB. No modo Firestore, a exclusão de conta é
 feita pelo app (`FirebaseUsuarioRepository.deleteAccount`), na ordem:
 
 1. Para cada pet do tutor (`Pets where userId == uid`): apaga `vacinas`,
-   `consultas`, `historicoMedico` e `localizacoes`; depois o pet.
-2. Apaga o perfil `Usuarios/{uid}`.
+   `consultas`, `historicoMedico` e `localizacoes`.
+2. Num lote atômico: apaga os eventos de situação do Memorial
+   (`eventosSituacao`) de cada pet, os pets e o perfil `Usuarios/{uid}`.
 3. Apaga o usuário do Firebase Auth.
 
 | Dado | Apagado? |
 |---|---|
 | Perfil, pets, vacinas, histórico médico | ✅ Sim |
 | Consultas, localizações/avistamentos do pet | ✅ Sim (antes desta correção ficavam órfãos) |
-| Eventos de situação do Memorial (`eventosSituacao`: `atorId` = UID, mudança de situação, motivo, horário) | ❌ **Retidos** — a regra do Firestore nega `delete` (auditoria imutável). **Decisão pendente do proprietário:** liberar o `delete` só para o dono durante a exclusão de conta, ou manter e declarar a retenção. Detalhes e prós/contras em `docs/security/firestore-isolamento-por-dono.md` ("Decisão pendente: `eventosSituacao` na exclusão de conta") |
+| Eventos de situação do Memorial (`eventosSituacao`: `atorId` = UID, mudança de situação, motivo, horário) | ✅ Sim. Decisão do proprietário (2026-10-27): a auditoria é imutável, exceto na exclusão de conta, quando o dono pode apagá-la no mesmo lote do perfil. Detalhes em `docs/security/firestore-isolamento-por-dono.md` ("Decisão: `eventosSituacao` é apagado na exclusão de conta") |
 | Documentos já órfãos de contas excluídas antes desta correção | ❌ Não tratados — limpeza exige Admin SDK e decisão à parte |
+
+Depende do deploy de `firestore.rules`: com as regras antigas no ar, a
+exclusão de conta para no passo 2.
 
 ## Decisões pendentes (jurídicas/de produto, não técnicas)
 
-- Exclusão de conta no modo Firestore: apagar ou reter os eventos de
-  situação do Memorial (`eventosSituacao`) — ver a seção acima. Se reter,
-  definir base legal, finalidade e prazo.
 
 - Base legal para cada categoria de dado (provavelmente "execução de
   contrato"/"legítimo interesse" para a maioria, mas isso precisa de

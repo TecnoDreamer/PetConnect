@@ -2,8 +2,9 @@
 // subcoleções de cada pet. Ver docs/security/firestore-isolamento-por-dono.md.
 //
 // O fake_cloud_firestore apaga as subcoleções junto com o documento pai; o
-// Firestore real não. Por isso a cascata é verificada com o `delete` do pet
-// falhando: o que sumiu antes dele foi apagado pelo app.
+// Firestore real não. Por isso a cascata é verificada com um `delete`
+// falhando no meio: o que sumiu antes dele foi apagado pelo app. (O lote do
+// fake é aplicado em ordem e não é atômico; o do Firestore real é.)
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,6 +14,7 @@ import 'package:pet_connect/features/usuario/data/firebase_usuario_repository.da
 
 const _dono = 'tutor-dono';
 const _outro = 'outro-tutor';
+final _erro = FirebaseException(plugin: 'cloud_firestore', code: 'teste');
 
 class _UsuarioFake implements User {
   _UsuarioFake(this.uid);
@@ -81,11 +83,15 @@ void main() {
     ]);
   });
 
-  test('apaga subcoleções, pets (inclusive falecido), perfil e Auth', () async {
+  test('apaga subcoleções, eventos, pets (inclusive falecido), perfil e Auth',
+      () async {
     await repo.deleteAccount();
 
     for (final petId in ['rex', 'mel']) {
-      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
+      for (final sub in [
+        ...subcolecoesApagadasNaExclusaoDeConta,
+        'eventosSituacao',
+      ]) {
         expect(await _contar(db, 'Pets/$petId/$sub'), 0,
             reason: 'Pets/$petId/$sub ficou órfã');
       }
@@ -95,30 +101,49 @@ void main() {
     expect(usuario.excluido, isTrue);
   });
 
-  test('apaga cada subcoleção antes do pet e não toca em eventosSituacao',
-      () async {
-    final erro = FirebaseException(plugin: 'cloud_firestore', code: 'teste');
+  test('apaga as subcoleções clínicas antes do lote final', () async {
+    // O lote final começa pelos eventos; falhando ali, nada dele é aplicado.
+    for (final petId in ['rex', 'mel']) {
+      final eventos = await db.collection('Pets/$petId/eventosSituacao').get();
+      for (final evento in eventos.docs) {
+        whenCalling(Invocation.method(#delete, null))
+            .on(evento.reference)
+            .thenThrow(_erro);
+      }
+    }
+
+    await expectLater(repo.deleteAccount(), throwsA(_erro));
+
+    for (final petId in ['rex', 'mel']) {
+      expect((await db.doc('Pets/$petId').get()).exists, isTrue);
+      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
+        expect(await _contar(db, 'Pets/$petId/$sub'), 0,
+            reason: 'Pets/$petId/$sub não foi apagada');
+      }
+      expect(await _contar(db, 'Pets/$petId/eventosSituacao'), 1);
+    }
+    expect((await db.doc('Usuarios/$_dono').get()).exists, isTrue);
+    expect(usuario.excluido, isFalse);
+  });
+
+  test('o lote final apaga os eventos de cada pet antes do pet', () async {
     for (final petId in ['rex', 'mel']) {
       whenCalling(Invocation.method(#delete, null))
           .on(db.doc('Pets/$petId'))
-          .thenThrow(erro);
+          .thenThrow(_erro);
     }
 
-    await expectLater(repo.deleteAccount(), throwsA(erro));
+    await expectLater(repo.deleteAccount(), throwsA(_erro));
 
-    // Parou no primeiro pet: ele continua, sem nenhum registro clínico.
-    final vazios = <String>[];
+    // Parou no primeiro pet: ele continua, já sem eventos.
+    final semEventos = <String>[];
     for (final petId in ['rex', 'mel']) {
       expect((await db.doc('Pets/$petId').get()).exists, isTrue);
-      var total = 0;
-      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
-        total += await _contar(db, 'Pets/$petId/$sub');
+      if (await _contar(db, 'Pets/$petId/eventosSituacao') == 0) {
+        semEventos.add(petId);
       }
-      if (total == 0) vazios.add(petId);
-      // Retidos: a regra nega delete (decisão pendente do proprietário).
-      expect(await _contar(db, 'Pets/$petId/eventosSituacao'), 1);
     }
-    expect(vazios, hasLength(1));
+    expect(semEventos, hasLength(1));
     expect((await db.doc('Usuarios/$_dono').get()).exists, isTrue);
     expect(usuario.excluido, isFalse);
   });
