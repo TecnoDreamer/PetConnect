@@ -85,7 +85,7 @@ sequenceDiagram
         Repo-->>UI: nada a fazer (idempotente)
     else ATIVO
         Repo->>FS: update(Pets/petId) + set(eventosSituacao/novo)
-        Note over FS: regra de update: só o dono<br/>(transação inteira falha para outra conta)
+        Note over FS: regra de update do dono anulada pelo<br/>catch-all hoje (ver "Autorização da transição")
     end
     UI->>UI: invalidate(petsProvider, petProvider)
     UI-->>Tutor: abre /memorial/petId
@@ -143,10 +143,14 @@ sem evento, ou o contrário).
   histórico e localização não abrem para pet falecido, então nenhum fluxo
   do tutor grava registros novos. Bloquear também nas regras do Firestore
   depende de aprovação (ver "Pendências").
-- **Autorização da transição:** a regra já deployada
+- **Autorização da transição:** hoje só o app impede (o
+  `PetSituacaoGuard` e a consulta por `userId`). A regra deployada
   `match /Pets/{petId} { allow update: if request.auth.uid ==
-  resource.data.userId }` faz a transação inteira falhar para qualquer
-  outra conta. Não é só a UI que impede.
+  resource.data.userId }` não basta: o catch-all `/{document=**}` com
+  `allow write` para qualquer usuário logado também casa `Pets/{id}`, e
+  blocos `match` somam por OR. Correção de 2026-10-26 — a versão anterior
+  deste texto dizia que a regra fazia a transação falhar para outra conta,
+  o que está errado. O isolamento no servidor é a Fase 1 (#31).
 - **Isolamento:** a lista do Memorial e a lista de ativos vêm da mesma
   consulta já filtrada por `userId` (`petsProvider`), sem consulta extra
   nem N+1.

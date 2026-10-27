@@ -2,6 +2,7 @@
 
 > Documento vivo para retomar o trabalho (por mim numa próxima sessão ou por outra pessoa).
 > Atualizado em 2026-09-11, FASE 11 fechada (rate limiting + Firestore Rules passos 1 e 2, todos deployados e verificados em produção).
+> Estado-base de 2026-10-26 (depois das entregas de UI, Memorial e Android): ver [seção 8](#8-estado-base-em-2026-10-26).
 
 ---
 
@@ -291,3 +292,69 @@ Só depois de tudo validado em produção por um tempo: tirar `cloud_firestore` 
 - **`auth_flow_test.dart`** ainda bate no Firebase real, fora do CI — reescrever na FASE 12.
 - **APK de release** (loopback) segue sem solução no Windows; não bloqueia a migração (`flutter run` pra device funciona).
 - **Validação no device**: nenhuma das flags foi testada de verdade no celular do usuário ainda — só e2e via script contra a API. Vale rodar com todas ligadas numa sessão e comparar com o Firestore.
+
+---
+
+## 8. Estado-base em 2026-10-26
+
+Registrado na Fase 0 do plano de próximos passos (organização, sem mudança funcional).
+
+**Repositório.** O repositório canônico agora é `TecnoDreamer/PetConnect`; o remote
+local `AleksGustavo/PetConnect` redireciona para ele. Base de todas as PRs:
+`feature/backend-spring-mongodb-migration` (o default do GitHub continua `main`,
+parado em 2026-08-19). Base em `aa483d1` (merge da PR #71).
+
+**Entregue e mesclado desde a seção 7** (PRs para a base, todas com CI verde):
+
+| PR | Entrega | Doc |
+|---|---|---|
+| #62 | Confirmação ao cancelar consulta (fecha #26) | `docs/features/confirmacao-cancelamento-consulta.md` |
+| #66 | Card do Login estável | `docs/features/login-layout-static-fix.md` |
+| #68 | Cadastro estático, card na frente do cabeçalho (fecha #65) | `docs/features/cadastro-layout-estatico.md` |
+| #69 | Telas de autenticação com identidade fixa (ADR 0001) | `docs/features/auth-theme.md` |
+| #70 | Memorial do Pet, só modo Firestore (ADR 0002, fecha #40) | `docs/features/memorial-pet.md` |
+| #71 | Home: linha "Meus Pets" sem overflow com fonte ampliada | — |
+| #72 | Login com altura distribuída (`ComposicaoCabecalhoPainel`) | `docs/features/login-layout-distribuido.md` |
+| #73 | Nome "PetConnect", ícone oficial e splash nativa (ADR 0003) | `docs/branding/icone-e-splash-android.md` |
+| #74 | Tema Claro como principal, fundo branco | `docs/features/theme-and-settings-menu.md` |
+
+Quality gates na base (`dart format`, `flutter analyze`, `flutter test test/core/
+test/features/pet/ test/features/auth/ test/features/usuario/ test/android/
+--exclude-tags=e2e`): verdes, 261 testes, rodados localmente em 2026-10-26.
+
+**Pendências, em ordem de prioridade:**
+
+1. **Segurança do Firestore (#31) — crítica.** No `firestore.rules` versionado (igual
+   ao deployado em 2026-09-11, segundo `docs/security/firestore-rules-deployed.md`),
+   o catch-all `match /{document=**}` com `allow write: if request.auth != null`
+   também casa `Usuarios/{id}` e `Pets/{id}`. Como blocos `match` somam por OR, as
+   condições de dono (`request.auth.uid == resource.data.userId`/`uid`) **não têm
+   efeito**: qualquer usuário logado consegue alterar ou apagar perfis e pets de
+   outros tutores, além das subcoleções. Leitura de `Usuarios` e `Pets` também é
+   aberta a qualquer usuário logado. A análise de 2026-09-11 em
+   `firestore-rules-deployed.md` e os docs do Memorial tratavam essas regras de dono
+   como efetivas; foram corrigidos nesta data. A proposta em
+   `docs/security/memorial-pet.md` (não deployada) só excluía as subcoleções do
+   catch-all. Conclusão pela leitura das regras, não testada contra produção.
+   Correção planejada na Fase 1, sem deploy sem aprovação. Atenção à seção 5.4: o app antigo dos usuários reais lê essas
+   coleções direto do Firestore, então isolamento por dono precisa ser compatível
+   com ele (não é o mesmo que `if false`).
+2. **Tema nas telas restantes (#56).** Vacinas, consultas, histórico e localização
+   ainda usam `AppColors` fixo. O título da issue cita Login e Cadastro, mas essas
+   telas têm identidade fixa por decisão (ADR 0001) e saem do escopo.
+3. **QR regenerável (#29)**, depois **privacidade/contato público (#35)**.
+4. **Publicação (#28 e assinatura):** release assinado com a chave de debug, sem
+   política de privacidade. Só planejamento por enquanto.
+5. **Validação no aparelho (#33)** — no Project está "In review"; checklists em
+   `docs/validation/`.
+6. Itens da seção 7 que continuam valendo: hospedagem/staging, credenciais reais do
+   Cloudinary, CI do backend, APK de release no Windows (loopback).
+
+**Branches já mescladas que ainda existem no GitHub** (nenhuma protegida; apagar
+só com autorização do proprietário): `feat/memorial-pet`,
+`fix/android-icone-inicializacao-petconnect`, `fix/auth-tema-identidade-original`,
+`fix/cadastro-sobreposicao-layout-estatico`, `fix/home-overflow-fonte-grande`,
+`fix/login-layout-distribuido`, `fix/tema-claro-padrao-fundo-branco`,
+`fix/qr-code-pet-publico` (PR #19). A `fix/cadastro-tela-estatica-sem-scroll`
+(PR #64, fechada sem merge, substituída pela #68) tem 6 commits fora da base:
+apagá-la descarta esse trabalho, que não é usado.
