@@ -113,6 +113,12 @@ service cloud.firestore {
     // Coleção raiz legada (95 registros históricos já migrados para o
     // MongoDB). Escrita fechada desde a FASE 11; leitura mantida para quem
     // está logado. Fechar a leitura é decisão pendente (ver doc acima).
+    // MUTAÇÃO DE TESTE (não mesclar): catch-all da FASE 11 de volta.
+    match /{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.path[3] != 'Localizacoes';
+    }
+
     match /Localizacoes/{docId} {
       allow read: if logado();
       allow write: if false;
