@@ -5,6 +5,15 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ## [Não publicado]
 
+### Segurança
+
+- Regras do Firestore com isolamento por dono (aguardando deploy): cada
+  tutor só lê e escreve o próprio perfil, os próprios pets e os registros
+  deles; pet falecido não aceita novos registros clínicos; eventos do
+  Memorial ficam imutáveis. Corrige a regra genérica que deixava qualquer
+  usuário logado alterar dados de outros. Testes no Firestore Emulator, no
+  CI. Ver `docs/security/firestore-isolamento-por-dono.md`.
+
 ### Alterado
 
 - O tema **Claro** passa a ser o tema principal: quem não escolheu um tema

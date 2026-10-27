@@ -339,6 +339,9 @@ test/features/pet/ test/features/auth/ test/features/usuario/ test/android/
    Correção planejada na Fase 1, sem deploy sem aprovação. Atenção à seção 5.4: o app antigo dos usuários reais lê essas
    coleções direto do Firestore, então isolamento por dono precisa ser compatível
    com ele (não é o mesmo que `if false`).
+   **Andamento:** regras de isolamento por dono e testes no emulador (CI) prontos em
+   `firestore.rules` e `tool/firestore-rules/`; deploy pendente de aprovação. Ver
+   `docs/security/firestore-isolamento-por-dono.md`.
 2. **Tema nas telas restantes (#56).** Vacinas, consultas, histórico e localização
    ainda usam `AppColors` fixo. O título da issue cita Login e Cadastro, mas essas
    telas têm identidade fixa por decisão (ADR 0001) e saem do escopo.

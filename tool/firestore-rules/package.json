@@ -1,0 +1,14 @@
+{
+  "name": "petconnect-firestore-rules-tests",
+  "private": true,
+  "description": "Testes das regras do Firestore (firestore.rules) contra o Firestore Emulator.",
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --config ../../firebase.json --only firestore --project demo-petconnect \"node --test --test-reporter=spec\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase": "12.18.0",
+    "firebase-tools": "15.32.1"
+  }
+}

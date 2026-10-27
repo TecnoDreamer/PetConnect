@@ -17,3 +17,4 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    - "**/node_modules/**"

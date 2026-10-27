@@ -34,3 +34,32 @@ jobs:
 
       - name: flutter test (unit + widget — sem os que precisam de infra externa)
         run: flutter test test/core/ test/features/pet/ test/features/auth/ test/features/usuario/ test/android/ --exclude-tags=e2e
+
+  # firestore.rules contra o Firestore Emulator (projeto demo, nunca o
+  # Firebase real). O emulador é Java e não sobe no Windows de
+  # desenvolvimento (loopback), então este job é a validação das regras.
+  firestore-rules:
+    name: Firestore Rules (emulador)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tool/firestore-rules
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tool/firestore-rules/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: testes das regras
+        run: npm test

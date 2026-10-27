@@ -58,9 +58,11 @@ class FirebasePetRepository implements PetRepository {
   /// repetição após falha de rede) nunca geram dois eventos nem um estado
   /// pela metade.
   ///
-  /// Autorização: a regra `Pets/{petId}` já só permite `update` ao dono
-  /// (`request.auth.uid == resource.data.userId`, firestore.rules), então
-  /// a transação inteira falha para qualquer outra conta.
+  /// Autorização: em firestore.rules, só o dono altera `Pets/{petId}` e o
+  /// evento só é aceito junto com essa mudança de situação, então a
+  /// transação inteira falha para qualquer outra conta. Vale a partir do
+  /// deploy das regras de isolamento por dono
+  /// (docs/security/firestore-isolamento-por-dono.md).
   @override
   Future<void> alterarSituacao(
     String petId,
