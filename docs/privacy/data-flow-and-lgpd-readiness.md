@@ -16,6 +16,7 @@
 | Dados do pet (nome, espécie, raça, data de nascimento, foto) | Identificação do pet, achado/perdido | Formulário de pet | App → API → MongoDB | MongoDB (`pets`) | Tutor + qualquer um que escaneie o QR (nome/espécie/foto, nunca o resto) | Enquanto o pet existir no perfil | `DELETE /api/v1/pets/{id}` (cascata) | Baixo (dado do animal, não da pessoa, exceto o vínculo ao tutor) | Isolamento por `tutorId` em toda a API |
 | Localização/avistamento (coordenadas, descrição, quem viu) | Ajudar a recuperar o pet perdido | Formulário do tutor OU relato anônimo via QR público | App/página pública → API → MongoDB | MongoDB (`locations`) | Tutor do pet (lista completa); quem reporta não se identifica (endpoint anônimo) | Enquanto o pet existir | Cascata na exclusão do pet | Médio (coordenada geográfica é dado sensível de localização) | Endpoint de relato é anônimo de propósito (RF31) — não guarda IP nem identidade de quem reporta, só a coordenada e descrição textual |
 | Histórico médico + anexos (exames, laudos) | Carteira de saúde do pet | Formulário do tutor | App → API → MongoDB (+ anexos no Cloudinary) | MongoDB (`medical_records`) + Cloudinary | Só o tutor (nunca exposto no endpoint público) | Enquanto o registro existir | `DELETE .../medical-records/{id}` + cascata na exclusão do pet | Médio-alto (dado de saúde, mesmo sendo do animal — pode conter nome de clínica/veterinário, potencialmente identificável) | Nunca acessível sem autenticação; não aparece em nenhum endpoint público |
+| Galeria de fotos do pet (imagens + legenda) | Guardar lembranças do pet, inclusive no Memorial | Seletor de fotos do sistema | App → Cloudinary (arquivo) + Firestore `Pets/{id}/fotos` (metadados) | Cloudinary + Firestore | Só o tutor dono (regras do Firestore); a URL do arquivo abre para quem a tiver | Enquanto a foto existir; excluir apaga o registro, e o arquivo só com upload assinado (`USE_API_UPLOAD`) | Excluir no visualizador; cascata na exclusão do pet e da conta (só registros) | Médio (pode mostrar pessoas, a casa, rotina; EXIF com GPS no original em Android 7–9) | Privada por padrão; interface só exibe versões sem metadados; nome original do arquivo não é enviado |
 | Vacinas, consultas | Carteira de saúde, agenda | Formulário do tutor | App → API → MongoDB | MongoDB (`vaccines`, `appointments`) | Só o tutor | Enquanto o registro existir | Baixo-médio | Idem histórico médico |
 | Firebase UID + ID Token | Identidade/autenticação | Firebase Auth (login) | App → Firebase Auth SDK; App → API (header `Authorization`) | Firebase Auth (gerenciado pelo Google); nunca persistido pela API além do `firebaseUid` de referência | Firebase (Google) + backend (verificação) | Enquanto a conta existir no Firebase Auth | Exclusão de conta remove o usuário do Firebase Auth também | Baixo (token de curta duração, não é senha) | Nunca logado (verificado nesta auditoria — `05-security-review.md`) |
 | Logs de aplicação | Diagnóstico/operação | Requisições à API | Backend → stdout do container | Onde o container roda (hoje: só localhost) | Quem tem acesso ao host/logs | Não configurado (sem rotação/retenção definida ainda) | Baixo hoje (sem PII nos logs, verificado) | `include-stacktrace: never`; nenhuma PII logada, confirmado por auditoria de código |
@@ -49,7 +50,13 @@
    agregado ao longo do tempo. Mitigação parcial: só o tutor do pet
    vê o histórico completo (RF32); a página pública mostra só o
    resumo do pet, não o histórico de avistamentos.
-3. **Sem política de retenção/expiração** — dado de tutores que
+3. **Galeria de fotos (EXIF e arquivos órfãos)** — no Android 7 a 9 o
+   arquivo original enviado pode conter a localização GPS da foto; a
+   interface só exibe versões transformadas (sem metadados), mas o
+   original fica no Cloudinary. No modo de upload padrão, excluir uma
+   foto, um pet ou a conta apaga os registros, não os arquivos. Ver
+   `docs/features/galeria-fotos-pet.md` e ADR 0005 (D2, D3).
+4. **Sem política de retenção/expiração** — dado de tutores que
    abandonarem o app (não excluírem a conta, só pararem de usar)
    fica para sempre. Comum em produtos early-stage, mas vira
    obrigação sob LGPD depois de um certo volume/tempo de operação.

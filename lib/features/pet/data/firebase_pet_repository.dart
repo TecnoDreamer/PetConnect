@@ -45,8 +45,15 @@ class FirebasePetRepository implements PetRepository {
     await _pets.doc(pet.id).update(pet.toMap());
   }
 
+  /// Apaga também os registros da galeria (antes do pet: as regras só
+  /// autorizam enquanto o pet existe). Os arquivos no Cloudinary não são
+  /// apagados daqui — ver docs/features/galeria-fotos-pet.md, "Retenção".
   @override
   Future<void> deletePet(String petId) async {
+    final fotos = await _pets.doc(petId).collection('fotos').get();
+    for (final foto in fotos.docs) {
+      await foto.reference.delete();
+    }
     await _pets.doc(petId).delete();
   }
 

@@ -7,6 +7,9 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Segurança
 
+- Regras do Firestore para a galeria de fotos (`Pets/{petId}/fotos`): só o
+  dono lê, publica e exclui; criação validada campo a campo; sem edição.
+  Testes no emulador, no CI. Junto do deploy das regras de isolamento.
 - Regras do Firestore com isolamento por dono (aguardando deploy): cada
   tutor só lê e escreve o próprio perfil, os próprios pets e os registros
   deles; pet falecido não aceita novos registros clínicos; eventos do
@@ -28,6 +31,13 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Galeria de fotos por pet: em "Fotos", no perfil do pet, o tutor vê as
+  fotos em grade de 3 colunas (mais recentes primeiro, em páginas), abre
+  em tela cheia com zoom, publica até 10 por vez com legenda e progresso,
+  e exclui com confirmação. Pet no Memorial continua recebendo fotos, sem
+  reativar recursos clínicos. Privada (só o dono, pelas regras do
+  Firestore). Desligada até o deploy das regras (`GALERIA_FOTOS`). Ver
+  `docs/features/galeria-fotos-pet.md`.
 - QR code regenerável: em "QR Code do Pet", o tutor pode gerar um novo QR
   (com confirmação); o anterior para de funcionar na hora. Depende da API
   com os endpoints novos publicada e fica desligado até lá

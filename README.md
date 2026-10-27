@@ -29,6 +29,7 @@ Além disso, centraliza para o tutor:
 - 🩺 **Histórico médico** — consultas, exames e anotações por pet.
 - 📅 **Agendamento de consultas** — com lembretes.
 - 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento.
+- 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada até o deploy das regras do Firestore).
 
 ## Status do projeto
 
@@ -51,6 +52,7 @@ Além disso, centraliza para o tutor:
 | Agendamento de consultas (agendar, listar por status, cancelar, marcar realizada, alerta visual) | ✅ Concluído | RF27–RF30 |
 | Localização — tutor registra/visualiza avistamentos | ✅ Concluído | RF32 |
 | Memorial do Pet (registrar falecimento, memorial privado, correção) — modo Firestore | 🔍 Em revisão | RF33–RF36 |
+| Galeria de fotos por pet (privada, também no Memorial) — modo Firestore, flag `GALERIA_FOTOS` | 🔍 Em revisão | RF37–RF42 |
 | Localização — relato direto por quem encontrou o pet (via QR code) | ⬜ Bloqueado por RF17–RF19 | RF31 |
 
 Veja a lista completa de requisitos em [`docs/requisitos-funcionais.md`](docs/requisitos-funcionais.md).
@@ -125,6 +127,7 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Arquitetura](docs/arquitetura.md)
 - [Ícone, nome e splash do Android](docs/branding/icone-e-splash-android.md)
 - [Modelo de dados (Firestore)](docs/modelo-dados-firestore.md)
+- [Galeria de fotos por pet](docs/features/galeria-fotos-pet.md)
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 
 ## Contribuindo

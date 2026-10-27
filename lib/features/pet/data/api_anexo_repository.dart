@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/network/api_client.dart';
 import '../domain/anexo_repository.dart';
+import 'cloudinary_imagem_upload.dart';
 
 /// Upload/exclusão de anexos via Cloudinary **assinado** pelo backend
 /// (FASE 10) — substitui o preset unsigned. O arquivo em si continua indo
@@ -51,6 +52,31 @@ class ApiAnexoRepository implements AnexoRepository {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['secure_url'] as String;
+  }
+
+  @override
+  Future<ImagemEnviada> enviarImagem({
+    required String nomeArquivo,
+    required Uint8List bytes,
+    void Function(double fracao)? aoProgredir,
+    Future<void>? cancelar,
+  }) async {
+    final sig = await _api.post('/uploads/signature', const {});
+    return enviarImagemAoCloudinary(
+      cliente: _http,
+      cloudName: sig['cloudName'] as String,
+      campos: {
+        'api_key': sig['apiKey'] as String,
+        'timestamp': sig['timestamp'].toString(),
+        'signature': sig['signature'] as String,
+        // Mesmo motivo do upload(): 'folder' é parâmetro assinado.
+        'folder': sig['folder'] as String,
+      },
+      nomeArquivo: nomeArquivo,
+      bytes: bytes,
+      aoProgredir: aoProgredir,
+      cancelar: cancelar,
+    );
   }
 
   @override

@@ -73,3 +73,8 @@ sequenceDiagram
         Web-->>Visitante: exibe mensagem de erro amigável
     end
 ```
+
+## Galeria de fotos do pet (RF37–RF42)
+
+Publicar, listar e excluir, com o tratamento de falha parcial: ver
+`docs/features/galeria-fotos-pet.md` ("Arquitetura").

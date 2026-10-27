@@ -5,16 +5,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_palette.dart';
 import '../../domain/pet.dart';
+import '../providers/galeria_providers.dart';
 import '../providers/pet_providers.dart';
 import '../widgets/fullscreen_image_viewer.dart';
+import '../widgets/galeria_resumo.dart';
 import '../widgets/pet_avatar.dart';
 import '../widgets/pet_cover_image.dart';
 
 /// Memorial de um pet falecido (ver docs/features/memorial-pet.md):
 /// capa, foto, nome, informações básicas, homenagem e lembranças.
 ///
-/// Só leitura. Não mostra nem carrega vacinas, consultas, histórico ou
-/// localização — usa apenas o documento do próprio pet. A rota é protegida
+/// Não mostra nem carrega vacinas, consultas, histórico ou localização. A
+/// única escrita possível daqui é adicionar fotos à galeria do pet. A rota é protegida
 /// por `PetSituacaoGuard` (só pets falecidos do tutor autenticado).
 class MemorialScreen extends ConsumerWidget {
   const MemorialScreen({super.key, required this.petId});
@@ -59,6 +61,10 @@ class MemorialScreen extends ConsumerWidget {
                           pet.homenagem!.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         _Homenagem(texto: pet.homenagem!),
+                      ],
+                      if (ref.watch(galeriaDisponivelProvider)) ...[
+                        const SizedBox(height: 28),
+                        GaleriaResumo(pet: pet),
                       ],
                       const SizedBox(height: 28),
                       MemorialGaleria(pet: pet),
@@ -219,8 +225,8 @@ class _Homenagem extends StatelessWidget {
   }
 }
 
-/// Lembranças do pet: só as imagens já vinculadas a ele (foto de perfil e
-/// capa). Não há outra galeria no app hoje; as fotos anexadas ao histórico
+/// Lembranças do pet: as imagens do próprio perfil (foto e capa). As fotos
+/// da galeria aparecem acima, em [GaleriaResumo]; as anexadas ao histórico
 /// médico são registros clínicos e ficam de fora do memorial.
 class MemorialGaleria extends StatelessWidget {
   const MemorialGaleria({super.key, required this.pet});
