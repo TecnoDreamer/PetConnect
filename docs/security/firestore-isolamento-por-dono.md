@@ -104,7 +104,8 @@ não sobe (`Unable to establish loopback connection`).
 
 ## Deploy (não executado — exige aprovação separada)
 
-1. Confirmar com o proprietário quem ainda usa o app antigo.
+1. Confirmar com o proprietário quem ainda usa o app antigo. (Em
+   2026-10-26: ninguém; só existe esta versão.)
 2. CI verde, inclusive o job das regras.
 3. Copiar as regras **em vigor** do console do Firebase (Firestore → Regras)
    para `firestore-rules-deployed.md`, como backup verificado. Não usar o

@@ -154,7 +154,12 @@ Sem nenhuma flag de API, o sheet mostra o QR como antes, sem o botão.
   gravando o campo errado no Firestore, 3 testes do repositório falham; com
   `qrPublicId` no `toMap`, o teste do modelo falha.
 
-Não testado no aparelho: depende do deploy da API (abaixo).
+API publicada no Render em 2026-10-27 (PR `AleksGustavo/PetConnect-API#16`):
+`/v3/api-docs` lista as rotas `legacy-pets`, o QR de um pet migrado continua
+abrindo e as rotas novas recusam pedido sem token (401). O app com
+`USE_API_QR=true` foi instalado no Motorola Edge 60 Fusion no mesmo dia, mas
+o roteiro do passo 3 abaixo **não foi feito**: o celular ficou sem internet
+e a conexão USB caiu. **PENDENTE — validação do proprietário.**
 
 ## Como ligar (com aprovação)
 
