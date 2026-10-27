@@ -14,6 +14,18 @@
 > [ ] Erro de login aparece sem o card subir ou descer
 > ```
 
+> **Atualização (2026-10-27):** Google, Facebook e "Cadastre-se" passaram a
+> ficar logo abaixo do card (`docs/features/login-espacamento-acoes-sociais.md`).
+> O item "ficam perto da base" acima deixa de valer. Conferir:
+>
+> ```text
+> [ ] Google e Facebook ~28px abaixo do card, lado a lado, mesmo tamanho
+> [ ] "Não tem uma conta? Cadastre-se" logo abaixo dos botões, centralizado
+> [ ] Cabeçalho, logo, slogan e card no lugar (no máximo ~9px acima de antes)
+> [ ] Teclado aberto/fechado, erro, carregamento e mostrar senha sem salto
+> [ ] Cadastre-se abre o cadastro
+> ```
+
 ## Como testar
 
 Atualizar o app no celular com o código desta branch. Testar login com

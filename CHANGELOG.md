@@ -50,6 +50,9 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Login: Google, Facebook e "Cadastre-se" ficam logo abaixo do card, em vez
+  de isolados na base da tela. Ver
+  `docs/features/login-espacamento-acoes-sociais.md`.
 - Consultas: os botões "Marcar realizada" e "Cancelar" não estouram mais
   a largura em telas estreitas com fonte ampliada.
 - Home: a linha "Meus Pets" com o botão "Adicionar pet" não estoura mais

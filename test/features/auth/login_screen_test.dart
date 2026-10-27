@@ -122,7 +122,7 @@ void main() {
     ]) {
       testWidgets(
           '${tamanho.width.toInt()}x${tamanho.height.toInt()}: sem rolagem, '
-          'tudo visível e sem faixa vazia embaixo', (tester) async {
+          'tudo visível', (tester) async {
         await _abrirEmAparelho(tester, tamanho);
 
         expect(tester.takeException(), isNull);
@@ -133,9 +133,6 @@ void main() {
         final cadastreSe = tester.getRect(find.text('Cadastre-se'));
         expect(cadastreSe.bottom, lessThanOrEqualTo(limiteUtil),
             reason: '"Cadastre-se" atrás da barra de navegação');
-        expect(limiteUtil - cadastreSe.bottom, lessThanOrEqualTo(20),
-            reason: 'o rodapé deveria ficar ancorado embaixo, sem sobrar '
-                'uma faixa vazia');
         for (final texto in const [
           'PetConnect',
           'Conectando corações perdidos aos seus lares',
@@ -197,6 +194,91 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.getRect(alvo).bottom, lessThanOrEqualTo(568));
       }
+    });
+  });
+
+  // --- Correção de 2026-10-27 ----------------------------------------------
+  // (docs/features/login-espacamento-acoes-sociais.md): o rodapé ficava
+  // ancorado na base da tela, isolado do card por metade da sobra de altura.
+
+  group('LoginScreen — ações sociais junto do card', () {
+    for (final tamanho in const [
+      Size(320, 640),
+      Size(360, 800),
+      Size(390, 844),
+      Size(412, 915),
+    ]) {
+      testWidgets(
+          '${tamanho.width.toInt()}x${tamanho.height.toInt()}: Google e '
+          'Facebook logo abaixo do card, lado a lado, e Cadastre-se junto',
+          (tester) async {
+        await _abrirEmAparelho(tester, tamanho);
+        expect(tester.takeException(), isNull);
+
+        final card = tester.getRect(_card);
+        final google = tester.getRect(_botaoGoogle);
+        final facebook = tester.getRect(_botaoFacebook);
+        final cadastreSe = tester.getRect(find.text('Cadastre-se'));
+
+        final espacoAposCard = google.top - card.bottom;
+        expect(espacoAposCard, inInclusiveRange(24, 32),
+            reason: 'espaço entre o card e os botões sociais');
+        expect(facebook.top, google.top, reason: 'na mesma linha');
+        expect(facebook.height, google.height);
+        expect(facebook.width, closeTo(google.width, 0.5),
+            reason: 'tamanhos equilibrados');
+        expect(
+            google.left - card.left, closeTo(card.right - facebook.right, 0.5),
+            reason: 'linha centralizada sob o card');
+
+        final espacoAteCadastro = cadastreSe.top - google.bottom;
+        expect(espacoAteCadastro, inInclusiveRange(16, 24),
+            reason: 'Cadastre-se acompanha os botões');
+        final prompt = tester.getRect(find.byType(Wrap));
+        final centroDaTela = tamanho.width / 2;
+        final convite = tester.getRect(find.text('Não tem uma conta? '));
+        expect((convite.left + cadastreSe.right) / 2, closeTo(centroDaTela, 1),
+            reason: 'convite centralizado');
+        expect(prompt.left, greaterThanOrEqualTo(0));
+      });
+    }
+
+    testWidgets(
+        'fonte do sistema ampliada (1,3x): sem overflow e com os três '
+        'acessos alcançáveis', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _abrirEmAparelho(tester, const Size(360, 800));
+      expect(tester.takeException(), isNull);
+
+      for (final alvo in [
+        _botaoGoogle,
+        _botaoFacebook,
+        find.text('Cadastre-se')
+      ]) {
+        await tester.ensureVisible(alvo);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(alvo).bottom, lessThanOrEqualTo(800));
+      }
+      expect(
+          tester.getRect(_botaoFacebook).top, tester.getRect(_botaoGoogle).top);
+    });
+
+    testWidgets('Cadastre-se continua abrindo o cadastro', (tester) async {
+      await _abrirEmAparelho(tester, const Size(412, 915));
+      await tester.tap(find.text('Cadastre-se'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tela Cadastro'), findsOneWidget);
+    });
+
+    testWidgets('Google e Facebook continuam tocáveis, sem erro nem navegação',
+        (tester) async {
+      await _abrirEmAparelho(tester, const Size(412, 915));
+      await tester.tap(_botaoGoogle);
+      await tester.tap(_botaoFacebook);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(LoginScreen), findsOneWidget);
     });
   });
 
@@ -372,6 +454,9 @@ const _barraNavegacao = 48.0;
 final _card = find
     .ancestor(of: find.text('Login'), matching: find.byType(Container))
     .first;
+
+final _botaoGoogle = find.widgetWithText(OutlinedButton, 'Google');
+final _botaoFacebook = find.widgetWithText(OutlinedButton, 'Facebook');
 
 Future<void> _abrirEmAparelho(WidgetTester tester, Size tamanho) async {
   tester.view.physicalSize = tamanho;
