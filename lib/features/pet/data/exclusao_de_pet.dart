@@ -1,15 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Subcoleções de `Pets/{petId}` apagadas antes do próprio pet, tanto ao
-/// excluir um pet (`FirebasePetRepository.deletePet`) quanto ao excluir a
-/// conta (`FirebaseUsuarioRepository.deleteAccount`) — LGPD, RF09/RNF13. O
-/// Firestore não apaga subcoleções junto com o pai, e as regras só autorizam
-/// o `delete` delas enquanto o pet existe.
+/// Subcoleções de `Pets/{petId}` apagadas uma a uma antes do próprio pet,
+/// tanto ao excluir um pet (`FirebasePetRepository.deletePet`) quanto ao
+/// excluir a conta (`FirebaseUsuarioRepository.deleteAccount`) — LGPD,
+/// RF09/RNF13. O Firestore não apaga subcoleções junto com o pai, e as regras
+/// só autorizam o `delete` delas enquanto o pet existe.
 ///
-/// `eventosSituacao` (auditoria do Memorial) fica de fora: `firestore.rules`
-/// nega `delete` nela, inclusive para o dono. Apagar ou reter esses eventos é
-/// decisão pendente do proprietário (ver
-/// docs/security/firestore-isolamento-por-dono.md).
+/// `eventosSituacao` (auditoria do Memorial) não está aqui: `firestore.rules`
+/// só aceita apagar esses eventos no mesmo lote que apaga o perfil do dono,
+/// então só a exclusão de conta os apaga (ver
+/// docs/security/firestore-isolamento-por-dono.md, "Decisão:
+/// `eventosSituacao` é apagado na exclusão de conta").
 const subcolecoesApagadasComOPet = [
   'vacinas',
   'consultas',
@@ -18,10 +19,10 @@ const subcolecoesApagadasComOPet = [
   'fotos',
 ];
 
-/// Apaga cada subcoleção de [subcolecoesApagadasComOPet] e, por último, o
-/// pet. Os arquivos da galeria no Cloudinary não são apagados daqui — ver
-/// docs/features/galeria-fotos-pet.md, "Retenção".
-Future<void> apagarPetComSubcolecoes(
+/// Apaga os documentos de cada subcoleção de [subcolecoesApagadasComOPet];
+/// o pet fica para quem chamou. Os arquivos da galeria no Cloudinary não são
+/// apagados daqui — ver docs/features/galeria-fotos-pet.md, "Retenção".
+Future<void> apagarSubcolecoesDoPet(
     DocumentReference<Map<String, dynamic>> pet) async {
   for (final sub in subcolecoesApagadasComOPet) {
     final docs = await pet.collection(sub).get();
@@ -29,5 +30,4 @@ Future<void> apagarPetComSubcolecoes(
       await doc.reference.delete();
     }
   }
-  await pet.delete();
 }

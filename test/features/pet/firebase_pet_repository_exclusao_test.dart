@@ -61,7 +61,7 @@ void main() {
       expect(await _contar(db, 'Pets/rex/$sub'), 0,
           reason: 'Pets/rex/$sub não foi apagada antes do pet');
     }
-    // Retidos: a regra nega delete (decisão pendente do proprietário).
+    // Ficam: fora do lote da exclusão de conta, a regra nega o delete.
     expect(await _contar(db, 'Pets/rex/eventosSituacao'), 1);
   });
 

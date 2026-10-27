@@ -47,10 +47,13 @@ class FirebasePetRepository implements PetRepository {
   }
 
   /// Apaga antes as subcoleções de [subcolecoesApagadasComOPet] (registros
-  /// clínicos e galeria); `eventosSituacao` fica retido.
+  /// clínicos e galeria). `eventosSituacao` fica: a regra só aceita apagar
+  /// esses eventos no lote da exclusão de conta.
   @override
   Future<void> deletePet(String petId) async {
-    await apagarPetComSubcolecoes(_pets.doc(petId));
+    final pet = _pets.doc(petId);
+    await apagarSubcolecoesDoPet(pet);
+    await pet.delete();
   }
 
   @override
