@@ -7,6 +7,7 @@ import '../features/pet/domain/pet.dart';
 import '../features/pet/domain/vacina.dart';
 import '../features/pet/presentation/screens/consulta_form_screen.dart';
 import '../features/pet/presentation/screens/consulta_list_screen.dart';
+import '../features/pet/presentation/screens/galeria_screen.dart';
 import '../features/pet/presentation/screens/historico_form_screen.dart';
 import '../features/pet/presentation/screens/historico_list_screen.dart';
 import '../features/pet/presentation/screens/localizacao_form_screen.dart';
@@ -136,6 +137,15 @@ List<GoRoute> buildPetRoutes() => [
         builder: (context, state) => _soPetAtivo(
           state,
           LocalizacaoFormScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      // Galeria de fotos: pet ativo ou no Memorial, só do dono.
+      GoRoute(
+        path: '/pet/:id/fotos',
+        builder: (context, state) => PetSituacaoGuard(
+          petId: state.pathParameters['id']!,
+          exige: null,
+          child: GaleriaScreen(petId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(

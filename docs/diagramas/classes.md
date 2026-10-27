@@ -150,3 +150,8 @@ classDiagram
 - `Localizacao` entra como classe provisória — estrutura real pendente de confirmação.
 - Datas são `String` (formato `dd/MM/yyyy`), seguindo a convenção já usada no banco existente, não `DateTime`/`Timestamp` nativos.
 - Repositórios são interfaces (`abstract class` em Dart) na camada `domain`, implementadas na camada `data` com Firestore.
+
+## Galeria de fotos do pet
+
+`FotoPet`, `GaleriaRepository`, `EnvioDeFotos` e `GaleriaController`: ver o
+diagrama em `docs/features/galeria-fotos-pet.md` ("Arquitetura").

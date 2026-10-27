@@ -81,8 +81,29 @@ beforeEach(async () => {
       atorId: BETO,
     });
     await setDoc(doc(db, 'Localizacoes', 'l1'), { petId: 'x' });
+    for (const [petId, dono] of [
+      ['petAna', ANA],
+      ['petAnaFalecido', ANA],
+      ['petBeto', BETO],
+    ]) {
+      await setDoc(doc(db, 'Pets', petId, 'fotos', 'f1'), fotoValida(petId, dono, 1));
+    }
   });
 });
+
+// Mesmo registro que FirebaseGaleriaRepository.publicar grava.
+function fotoValida(petId, userId, criadoEm = serverTimestamp()) {
+  return {
+    petId,
+    userId,
+    url: `https://res.cloudinary.com/qgrx3f8s/image/upload/v1/users/${userId}/f.jpg`,
+    publicId: `users/${userId}/f`,
+    largura: 2048,
+    altura: 1536,
+    legenda: 'Na praia',
+    criadoEm,
+  };
+}
 
 const comoAna = () => env.authenticatedContext(ANA).firestore();
 const comoBeto = () => env.authenticatedContext(BETO).firestore();
@@ -323,13 +344,99 @@ describe('eventosSituacao (Memorial)', () => {
   });
 });
 
-// Mesma ordem de FirebaseUsuarioRepository.deleteAccount: as quatro
-// subcoleções clínicas (`subcolecoesApagadasNaExclusaoDeConta`) uma a uma;
+describe('fotos (galeria)', () => {
+  it('o dono lista, lê, publica e exclui', async () => {
+    const db = comoAna();
+    await assertSucceeds(getDocs(collection(db, 'Pets', 'petAna', 'fotos')));
+    await assertSucceeds(getDoc(doc(db, 'Pets', 'petAna', 'fotos', 'f1')));
+    await assertSucceeds(
+      setDoc(doc(db, 'Pets', 'petAna', 'fotos', 'f2'), fotoValida('petAna', ANA)),
+    );
+    await assertSucceeds(deleteDoc(doc(db, 'Pets', 'petAna', 'fotos', 'f1')));
+  });
+
+  it('legenda, largura e altura são opcionais', async () => {
+    const { legenda, largura, altura, ...minima } = fotoValida('petAna', ANA);
+    await assertSucceeds(setDoc(doc(comoAna(), 'Pets', 'petAna', 'fotos', 'f2'), minima));
+  });
+
+  it('pet no Memorial continua recebendo fotos', async () => {
+    const db = comoAna();
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'Pets', 'petAnaFalecido', 'fotos', 'f2'),
+        fotoValida('petAnaFalecido', ANA),
+      ),
+    );
+    await assertSucceeds(getDocs(collection(db, 'Pets', 'petAnaFalecido', 'fotos')));
+  });
+
+  it('outro tutor não lista, lê, publica nem exclui', async () => {
+    const db = comoAna();
+    await assertFails(getDocs(collection(db, 'Pets', 'petBeto', 'fotos')));
+    await assertFails(getDoc(doc(db, 'Pets', 'petBeto', 'fotos', 'f1')));
+    await assertFails(
+      setDoc(doc(db, 'Pets', 'petBeto', 'fotos', 'f2'), fotoValida('petBeto', ANA)),
+    );
+    await assertFails(
+      setDoc(doc(db, 'Pets', 'petBeto', 'fotos', 'f2'), fotoValida('petBeto', BETO)),
+    );
+    await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', 'fotos', 'f1')));
+  });
+
+  it('anônimo não lista nem publica', async () => {
+    const db = anonimo();
+    await assertFails(getDocs(collection(db, 'Pets', 'petAna', 'fotos')));
+    await assertFails(
+      setDoc(doc(db, 'Pets', 'petAna', 'fotos', 'f2'), fotoValida('petAna', ANA)),
+    );
+  });
+
+  it('pet que não existe: negado', async () => {
+    await assertFails(
+      setDoc(doc(comoAna(), 'Pets', 'naoExiste', 'fotos', 'f2'), fotoValida('naoExiste', ANA)),
+    );
+  });
+
+  it('registro fora do formato é negado', async () => {
+    const db = comoAna();
+    const ref = doc(db, 'Pets', 'petAna', 'fotos', 'f2');
+    const base = fotoValida('petAna', ANA);
+    const invalidas = {
+      'vínculo com outro pet': { ...base, petId: 'petBeto' },
+      'autor falso': { ...base, userId: BETO },
+      'URL fora do Cloudinary': { ...base, url: 'https://exemplo.com/image/upload/f.jpg' },
+      'URL de arquivo que não é imagem': {
+        ...base,
+        url: 'https://res.cloudinary.com/qgrx3f8s/raw/upload/v1/f.pdf',
+      },
+      'sem publicId': (({ publicId, ...resto }) => resto)(base),
+      'legenda longa': { ...base, legenda: 'x'.repeat(301) },
+      'horário do aparelho': { ...base, criadoEm: new Date() },
+      'campo extra': { ...base, curtidas: 10 },
+      'largura não numérica': { ...base, largura: '2048' },
+    };
+    for (const dados of Object.values(invalidas)) {
+      await assertFails(setDoc(ref, dados));
+    }
+  });
+
+  it('registro não é alterado, nem pelo dono', async () => {
+    await assertFails(
+      updateDoc(doc(comoAna(), 'Pets', 'petAna', 'fotos', 'f1'), { legenda: 'outra' }),
+    );
+  });
+});
+
+// Mesma ordem de FirebaseUsuarioRepository.deleteAccount: as subcoleções de
+// `subcolecoesApagadasNaExclusaoDeConta` (clínicas + fotos) uma a uma;
 // depois um lote só com os eventos do Memorial, os pets e o perfil.
+const SUBCOLECOES_APAGADAS_NA_EXCLUSAO = [...SUBCOLECOES_CLINICAS, 'fotos'];
+
 async function excluirConta(db, uid) {
   const pets = await getDocs(query(collection(db, 'Pets'), where('userId', '==', uid)));
   for (const pet of pets.docs) {
-    for (const sub of SUBCOLECOES_CLINICAS) {
+    for (const sub of SUBCOLECOES_APAGADAS_NA_EXCLUSAO) {
       const registros = await getDocs(collection(pet.ref, sub));
       for (const registro of registros.docs) {
         await deleteDoc(registro.ref);
@@ -362,7 +469,7 @@ describe('exclusão de conta (mesma ordem do app)', () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
       for (const petId of ['petAna', 'petAnaFalecido']) {
-        for (const sub of [...SUBCOLECOES_CLINICAS, 'eventosSituacao']) {
+        for (const sub of [...SUBCOLECOES_APAGADAS_NA_EXCLUSAO, 'eventosSituacao']) {
           const restantes = await getDocs(collection(db, 'Pets', petId, sub));
           assert.equal(restantes.size, 0, `Pets/${petId}/${sub} ficou órfã`);
         }
@@ -408,6 +515,7 @@ describe('exclusão de conta (mesma ordem do app)', () => {
     for (const sub of SUBCOLECOES_CLINICAS) {
       await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', sub, 'r1')));
     }
+    await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', 'fotos', 'f1')));
     await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto')));
   });
 });

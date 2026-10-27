@@ -18,6 +18,8 @@ rules_version = '2';
 //   - `eventosSituacao`: só criação pelo dono, junto com a mudança real de
 //     situação do pet; nunca alterado. Apagado só na exclusão de conta, na
 //     mesma escrita que apaga o perfil do dono.
+//   - `fotos` (galeria): só o dono, inclusive de pet falecido; criação
+//     validada campo a campo, sem edição.
 //
 // Pegadinhas que continuam valendo (aprendidas na FASE 11):
 //   - Blocos `match` somam por OR: um `if false` não vence outra regra que
@@ -95,6 +97,39 @@ service cloud.firestore {
       match /localizacoes/{id} {
         allow read, delete: if donoDoPet();
         allow create, update: if podeEscreverClinico();
+      }
+
+      // Galeria de fotos (docs/features/galeria-fotos-pet.md). Só o dono,
+      // também com o pet no Memorial (foto não é registro clínico). O
+      // registro nasce com o vínculo ao pet e ao autor e o horário do
+      // servidor, aponta para uma imagem do Cloudinary e não é editado
+      // nesta versão; o dono pode excluir.
+      match /fotos/{fotoId} {
+        allow read, delete: if donoDoPet();
+        allow create: if donoDoPet()
+            && request.resource.data.keys().hasOnly([
+                'petId', 'userId', 'url', 'publicId', 'largura', 'altura',
+                'legenda', 'criadoEm'])
+            && request.resource.data.keys().hasAll([
+                'petId', 'userId', 'url', 'publicId', 'criadoEm'])
+            && request.resource.data.petId == petId
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.url is string
+            && request.resource.data.url.size() <= 500
+            && request.resource.data.url.matches(
+                'https://res[.]cloudinary[.]com/[A-Za-z0-9_-]+/image/upload/.+')
+            && request.resource.data.publicId is string
+            && request.resource.data.publicId.size() > 0
+            && request.resource.data.publicId.size() <= 300
+            && (!('legenda' in request.resource.data)
+                || (request.resource.data.legenda is string
+                    && request.resource.data.legenda.size() <= 300))
+            && (!('largura' in request.resource.data)
+                || request.resource.data.largura is int)
+            && (!('altura' in request.resource.data)
+                || request.resource.data.altura is int)
+            && request.resource.data.criadoEm == request.time;
+        allow update: if false;
       }
 
       // Auditoria das mudanças de situação (Memorial). O evento só é aceito

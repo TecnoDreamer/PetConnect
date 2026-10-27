@@ -124,3 +124,34 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 ### CT28 — Outra conta não altera a situação (RF36, RF12)
 - **Passos**: com uma segunda conta, tentar atualizar `situacao` do pet de outro tutor.
 - **Resultado esperado**: negado pela regra de `update` de `Pets`. ⚠️ Não automatizado (ver `docs/features/memorial-pet.md`, "Testes").
+
+## Galeria de fotos do pet
+
+Automatizados em `test/features/pet/galeria_*_test.dart` e
+`tool/firestore-rules/regras.test.js`; roteiro de aparelho em
+`docs/validation/galeria-fotos-pet.md`. Rodar com `GALERIA_FOTOS=true`.
+
+### CT29 — Ver a galeria (RF37)
+- **Passos**: perfil do pet → Fotos; rolar até o fim com mais de 30 fotos.
+- **Resultado esperado**: 3 colunas, mais recentes primeiro, novas páginas ao rolar sem repetir; pet sem fotos mostra "Adicionar primeira foto".
+
+### CT30 — Publicar fotos (RF38)
+- **Passos**: Adicionar fotos → escolher 3 → legenda numa → Publicar; repetir com a rede caindo no meio.
+- **Resultado esperado**: progresso por foto; as publicadas entram no topo; com falha, "Tentar de novo" envia só as pendentes. GIF/PDF e arquivos acima de 10 MB ficam de fora com aviso.
+
+### CT31 — Visualizador (RF39)
+- **Passos**: tocar numa miniatura; pinçar; deslizar; voltar.
+- **Resultado esperado**: abre na foto tocada, zoom funciona, desliza entre as fotos, mostra legenda e data, voltar fecha.
+
+### CT32 — Excluir foto (RF40)
+- **Passos**: visualizador → Excluir → Cancelar; depois Excluir → Excluir; depois sem rede.
+- **Resultado esperado**: cancelar mantém; confirmar remove; sem rede, aviso e a foto continua.
+
+### CT33 — Fotos no Memorial (RF41)
+- **Passos**: abrir o memorial de um pet falecido → Adicionar fotos → Ver todas.
+- **Resultado esperado**: fotos publicadas e listadas; vacinas, consultas, histórico e localização continuam ocultos.
+
+### CT34 — Outra conta não acessa (RF42)
+- **Passos**: com uma segunda conta, tentar listar `Pets/<id do pet da primeira>/fotos` ou abrir `/pet/<id>/fotos`.
+- **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. ⚠️ Só vale depois do deploy das regras.
+

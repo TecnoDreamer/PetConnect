@@ -54,3 +54,15 @@ Convenção: `RNFxx`.
 | ID | Requisito |
 |----|-----------|
 | RNF18 | Erros não tratados no app devem ser registrados (ex: Firebase Crashlytics) para diagnóstico. |
+
+## Galeria de fotos do pet
+
+Ver `docs/features/galeria-fotos-pet.md`.
+
+| ID | Requisito |
+|----|-----------|
+| RNF19 | A grade carrega miniaturas reduzidas (nunca o original), decodificadas no tamanho exibido, em páginas de 30; a versão maior só ao abrir a foto. |
+| RNF20 | Envio com progresso por foto, cancelável, sem duplicar por toque duplo; sucesso parcial informado, com nova tentativa só das que falharam; nunca fica registro apontando para arquivo que não existe. |
+| RNF21 | Nenhum segredo do Cloudinary no app; fotos privadas por padrão (só o dono, pelas regras do Firestore), inclusive de pet falecido. |
+| RNF22 | A interface só exibe versões transformadas das fotos (sem metadados); o nome original do arquivo não sai do aparelho. |
+| RNF23 | Grade, visualizador e envio funcionam nos três temas, com fonte ampliada e em telas a partir de 320 dp, com rótulos para leitor de tela. |

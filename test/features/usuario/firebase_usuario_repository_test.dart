@@ -74,12 +74,13 @@ void main() {
     }
   });
 
-  test('cobre as quatro subcoleções clínicas', () {
+  test('cobre as quatro subcoleções clínicas e a galeria', () {
     expect(subcolecoesApagadasNaExclusaoDeConta, [
       'vacinas',
       'consultas',
       'historicoMedico',
       'localizacoes',
+      'fotos',
     ]);
   });
 
@@ -101,7 +102,8 @@ void main() {
     expect(usuario.excluido, isTrue);
   });
 
-  test('apaga as subcoleções clínicas antes do lote final', () async {
+  test('apaga as subcoleções clínicas e a galeria antes do lote final',
+      () async {
     // O lote final começa pelos eventos; falhando ali, nada dele é aplicado.
     for (final petId in ['rex', 'mel']) {
       final eventos = await db.collection('Pets/$petId/eventosSituacao').get();

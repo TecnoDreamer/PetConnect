@@ -5,7 +5,7 @@ import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
 
 /// Subcoleções de cada pet apagadas por [FirebaseUsuarioRepository.deleteAccount]
-/// antes do próprio pet (LGPD, RF09/RNF13).
+/// antes do próprio pet (LGPD, RF09/RNF13): as quatro clínicas e a galeria.
 ///
 /// `eventosSituacao` (auditoria do Memorial) não está aqui porque segue outro
 /// caminho: `firestore.rules` só aceita apagar esses eventos no mesmo lote que
@@ -15,6 +15,7 @@ const subcolecoesApagadasNaExclusaoDeConta = [
   'consultas',
   'historicoMedico',
   'localizacoes',
+  'fotos',
 ];
 
 class FirebaseUsuarioRepository implements UsuarioRepository {

@@ -179,6 +179,7 @@ Apenas registradas para o modelo não precisar de quebra estrutural depois (spec
 - **`sharing_requests`** — organização pede acesso ao pet de um tutor: `petId`, `organizationId`, `requestedBy`, `scope`, `status`.
 - **`sharing_consents`** — consentimento do tutor: `petId`, `organizationId`, `grantedBy`, `scope`, `expiresAt`, `revokedAt`.
 - **`notifications`** — fila de avisos (vacina vencendo, consulta próxima, avistamento): `userId`, `type`, `payload`, `readAt`.
+- **`pet_photos`** — galeria de fotos (hoje só no Firestore, `Pets/{petId}/fotos`; ver `docs/features/galeria-fotos-pet.md`): `petId`, `tutorId`, `url`, `cloudinaryPublicId`, `width`, `height`, `caption`, `createdAt`; índice `{petId: 1, createdAt: -1, _id: -1}`. Curtidas e comentários, se vierem, ficam em coleções próprias apontando para a foto.
 
 Nenhuma dessas é criada, escrita ou exposta pela API na migração inicial.
 

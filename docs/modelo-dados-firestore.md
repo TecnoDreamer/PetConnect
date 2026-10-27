@@ -114,13 +114,28 @@ gravado na mesma transação da mudança no pet.
 | `origem` | string | `"app"` |
 | `em` | timestamp | horário do servidor |
 
+### `Pets/{petId}/fotos/{fotoId}`
+
+Galeria de fotos do pet (ver `docs/features/galeria-fotos-pet.md`). O
+arquivo fica no Cloudinary; aqui só os metadados. Sem edição.
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `petId` | string | igual ao id do pet pai |
+| `userId` | string | uid de quem publicou |
+| `url` | string | URL original do Cloudinary |
+| `publicId` | string | `public_id` do Cloudinary |
+| `largura`, `altura` | int (opcional) | dimensões |
+| `legenda` | string (opcional) | até 300 caracteres |
+| `criadoEm` | timestamp | horário do servidor — exceção à convenção de datas abaixo, porque ordena e pagina a galeria |
+
 ## Convenção de datas
 
 O banco existente usa **strings no formato `dd/MM/yyyy`** para datas, não `Timestamp` do Firestore. Mantemos essa convenção nos novos campos/coleções para consistência, em vez de introduzir um formato diferente no meio do mesmo banco.
 
 ## Armazenamento de fotos
 
-`foto` em `Usuarios` e em `Pets`, além dos `anexos` do histórico médico, apontam para URLs do **Cloudinary** (ver `lib/core/config/cloudinary_config.dart`). Não é Firebase Storage — o Storage passou a exigir o plano pago (Blaze) no projeto Firebase real, então o upload foi trocado para um serviço com tier gratuito sem cartão.
+`foto` em `Usuarios` e em `Pets`, além dos `anexos` do histórico médico e da galeria (`Pets/{petId}/fotos`), apontam para URLs do **Cloudinary** (ver `lib/core/config/cloudinary_config.dart`). Não é Firebase Storage — o Storage passou a exigir o plano pago (Blaze) no projeto Firebase real, então o upload foi trocado para um serviço com tier gratuito sem cartão.
 
 ## Índices sugeridos
 
