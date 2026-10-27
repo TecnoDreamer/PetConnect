@@ -29,7 +29,7 @@ Além disso, centraliza para o tutor:
 - 🩺 **Histórico médico** — consultas, exames e anotações por pet.
 - 📅 **Agendamento de consultas** — com lembretes.
 - 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento.
-- 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada até o deploy das regras do Firestore).
+- 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada por padrão; regras já publicadas, falta liberar).
 
 ## Status do projeto
 

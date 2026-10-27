@@ -29,7 +29,8 @@ Memorial (`docs/features/galeria-fotos-pet.md`). Hoje:
    falhar, remove o arquivo (quando o modo permite). Na exclusão, arquivo
    primeiro, registro depois; se o arquivo falhar, nada muda. As duas
    etapas são idempotentes, então repetir é seguro.
-4. **Flag `GALERIA_FOTOS`, desligada por padrão**, até o deploy das regras.
+4. **Flag `GALERIA_FOTOS`, desligada por padrão**, até o deploy das regras
+   (feito em 2026-10-27) e a decisão D4.
 5. **Só modo Firestore.** No modo API a galeria fica oculta, como o
    Memorial.
 

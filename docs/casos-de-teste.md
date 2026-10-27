@@ -153,5 +153,5 @@ Automatizados em `test/features/pet/galeria_*_test.dart` e
 
 ### CT34 — Outra conta não acessa (RF42)
 - **Passos**: com uma segunda conta, tentar listar `Pets/<id do pet da primeira>/fotos` ou abrir `/pet/<id>/fotos`.
-- **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. ⚠️ Só vale depois do deploy das regras.
+- **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. Regras deployadas em 2026-10-27; pela tela, conferido no aparelho (G14 em `docs/validation/galeria-fotos-pet.md`).
 

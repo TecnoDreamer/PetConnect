@@ -93,7 +93,8 @@ Detalhes em `docs/features/memorial-pet.md`.
 ## Galeria de fotos do pet
 
 Detalhes em `docs/features/galeria-fotos-pet.md`. Desligada por padrão
-(`GALERIA_FOTOS`) até o deploy das regras do Firestore.
+(`GALERIA_FOTOS`). As regras foram deployadas em 2026-10-27; ligar para os
+usuários é a decisão D4 do ADR 0005.
 
 | ID | Requisito | Testes |
 |----|-----------|--------|
