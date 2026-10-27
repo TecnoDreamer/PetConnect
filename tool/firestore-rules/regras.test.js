@@ -322,16 +322,32 @@ describe('eventosSituacao (Memorial)', () => {
   });
 });
 
+// Mesma lista de subcoleções que FirebaseUsuarioRepository.deleteAccount
+// (`subcolecoesApagadasNaExclusaoDeConta`): as quatro clínicas.
 describe('exclusão de conta (mesma ordem do app)', () => {
   it('apaga subcoleções, pets e o perfil, inclusive de pet falecido', async () => {
     const db = comoAna();
     for (const petId of ['petAna', 'petAnaFalecido']) {
-      for (const sub of ['vacinas', 'historicoMedico']) {
+      for (const sub of SUBCOLECOES_CLINICAS) {
         await assertSucceeds(deleteDoc(doc(db, 'Pets', petId, sub, 'r1')));
       }
       await assertSucceeds(deleteDoc(doc(db, 'Pets', petId)));
     }
     await assertSucceeds(deleteDoc(doc(db, 'Usuarios', ANA)));
+  });
+
+  it('eventosSituacao não é apagado nem pelo dono (retenção: decisão pendente)', async () => {
+    // O app não tenta apagar: com a regra atual a exclusão de conta pararia
+    // aqui. Se o proprietário liberar o delete, este teste muda junto.
+    await assertFails(deleteDoc(doc(comoAna(), 'Pets', 'petAna', 'eventosSituacao', 'e1')));
+  });
+
+  it('não apaga registros nem pets de outro tutor', async () => {
+    const db = comoAna();
+    for (const sub of SUBCOLECOES_CLINICAS) {
+      await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', sub, 'r1')));
+    }
+    await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto')));
   });
 });
 

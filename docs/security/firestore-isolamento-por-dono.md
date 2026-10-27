@@ -27,7 +27,7 @@ Levantadas em `lib/features/*/data/firebase_*_repository.dart`.
 |---|---|---|
 | Cadastro | `set Usuarios/{uid}` com `usuarioID` (não `uid`) | ID do documento = UID |
 | Ver/editar perfil | `get`/`update Usuarios/{uid}` | idem |
-| Excluir conta | `delete` de `vacinas` e `historicoMedico` de cada pet, depois do pet, depois de `Usuarios/{uid}` | dono; exclusão permitida mesmo com pet falecido |
+| Excluir conta | `delete` de `vacinas`, `consultas`, `historicoMedico` e `localizacoes` de cada pet, depois do pet, depois de `Usuarios/{uid}`, depois do usuário do Auth. `eventosSituacao` não é apagado (ver abaixo) | dono; exclusão permitida mesmo com pet falecido |
 | Listar pets | `Pets where userId == uid` | `userId == uid` (a consulta é aceita porque filtra pelo dono) |
 | Abrir pet | `get Pets/{id}` | dono |
 | Criar pet | `add Pets` com `userId` = UID | `userId == uid` |
@@ -62,10 +62,36 @@ Levantadas em `lib/features/*/data/firebase_*_repository.dart`.
 - O dono ainda pode mudar `situacao` com um `update` direto, sem evento. Para
   auditoria à prova do próprio dono seria preciso escrever pelo servidor
   (Cloud Function ou API).
-- A exclusão de conta do app não apaga `consultas`, `localizacoes` nem
-  `eventosSituacao` (comportamento anterior, fora do escopo). Depois que o pet
-  é apagado, esses documentos ficam inacessíveis pelo app, porque a regra
-  depende do pet pai.
+- A exclusão de conta do app apaga as quatro subcoleções clínicas, mas
+  **não** apaga `eventosSituacao`: a regra nega `delete` nela, inclusive para
+  o dono. Depois que o pet é apagado, esses eventos ficam no banco, sem pet
+  pai, e inacessíveis pelo app (a regra depende do pet pai). Ver a decisão
+  pendente abaixo.
+
+### Decisão pendente: `eventosSituacao` na exclusão de conta
+
+Cada evento guarda `atorId` (Auth UID do tutor), a mudança de situação do
+pet (ATIVO ↔ FALECIDO), o motivo e o horário. Depois da exclusão de conta ele
+continua vinculado ao UID da pessoa que pediu para sair, então é dado pessoal
+retido (RF09, RNF13). O proprietário precisa escolher:
+
+| Opção | O que muda | Prós | Contras |
+|---|---|---|---|
+| **(a)** Liberar `delete` só para o dono durante a exclusão de conta | Regra de `eventosSituacao` passa a aceitar `delete` do dono quando o perfil `Usuarios/{uid}` está sendo apagado na mesma escrita (ou já não existe); o app inclui `eventosSituacao` na cascata, no mesmo lote do perfil | Exclusão completa, nada fica órfão | A trilha deixa de ser imutável para o dono; o critério "conta sendo excluída" precisa ser desenhado e testado com cuidado (lote atômico ou ordem fixa), senão vira um `delete` liberado na prática |
+| **(b)** Manter os eventos e documentar a retenção | Nada no código; política de privacidade passa a declarar a retenção, a finalidade (auditoria do Memorial) e o prazo | Auditoria continua imutável | Dado pessoal fica depois do pedido de exclusão; exige base legal e prazo definidos; sem pet pai, ninguém consegue ler nem apagar pelo app (só pelo console/Admin SDK) |
+
+Estado atual (até a decisão): opção (b) de fato, sem prazo definido. O app
+não tenta apagar os eventos (a regra atual faria a exclusão de conta parar no
+meio). Os testes cobrem esse estado:
+`test/features/usuario/firebase_usuario_repository_test.dart` e o bloco
+"exclusão de conta (mesma ordem do app)" de `tool/firestore-rules/regras.test.js`.
+Se a escolha for (a), mudam juntos: a regra, a lista
+`subcolecoesApagadasNaExclusaoDeConta` (ou um passo próprio no mesmo lote do
+perfil), os dois testes e esta seção.
+
+Documentos órfãos que já existem (contas excluídas antes desta correção, com
+`consultas` e `localizacoes` sem pet pai) não são limpos por esta mudança;
+limpar exige o Admin SDK e uma decisão à parte.
 - Um pet legado com `userID` não pode ser editado pelo app novo: o `toMap`
   grava `userId` vazio e a regra recusa (o pet deixaria de ter dono). Só afeta
   o pet de teste "teste2".
