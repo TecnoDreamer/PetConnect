@@ -67,11 +67,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // a altura que sobra na tela é dividida entre o cabeçalho e o espaço
         // entre o card e o rodapé, em vez de virar uma faixa vazia embaixo;
         // e o slogan não fica mais escondido atrás do card.
+        // Correção de 2026-10-27
+        // (docs/features/login-espacamento-acoes-sociais.md): o rodapé
+        // acompanha o card, a 28px dele, em vez de ficar ancorado na base.
         child: ComposicaoCabecalhoPainel(
           sobreposicao: _sobreposicao,
           margemHorizontal: 24,
           margemInferior: 16,
           fracaoDaSobraParaCabecalho: 0.5,
+          espacoAntesDoRodape: 28,
           cabecalho: const AuthHeader(sobreposicao: _sobreposicao),
           painel: _LoginCard(
             emailController: _emailController,
@@ -89,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const _SocialLoginRow(),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               _SignUpPrompt(onTap: () => context.push('/cadastro')),
             ],
           ),
