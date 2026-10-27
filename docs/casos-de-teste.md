@@ -107,7 +107,7 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 
 ### CT24 — Registrar falecimento (RF33)
 - **Passos**: Configurações do Pet → Registrar falecimento → (opcional) data e homenagem → confirmar.
-- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada.
+- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada. Voltar (seta, botão ou gesto do Android) leva à lista do Memorial, com o pet, e de novo Voltar leva à Home; o app nunca fecha.
 
 ### CT25 — Pet falecido sai da lista principal (RF34)
 - **Passos**: após o CT24, voltar à Home.
@@ -119,7 +119,7 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 
 ### CT27 — Corrigir marcação incorreta (RF36)
 - **Passos**: Memorial → Configurações do memorial → Corrigir informação de falecimento → confirmar.
-- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home.
+- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home. Voltar no perfil restaurado leva à Home, sem fechar o app.
 
 ### CT28 — Outra conta não altera a situação (RF36, RF12)
 - **Passos**: com uma segunda conta, tentar atualizar `situacao` do pet de outro tutor.

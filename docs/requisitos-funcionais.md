@@ -85,10 +85,10 @@ Detalhes em `docs/features/memorial-pet.md`.
 
 | ID | Requisito | Testes |
 |----|-----------|--------|
-| RF33 | O tutor dono pode registrar o falecimento de um pet ativo, a partir das Configurações do Pet, com explicação e confirmação explícita; data do falecimento e homenagem são opcionais. | `memorial_flow_test.dart` (Registrar falecimento), `memorial_repository_test.dart`, CT24 |
+| RF33 | O tutor dono pode registrar o falecimento de um pet ativo, a partir das Configurações do Pet, com explicação e confirmação explícita; data do falecimento e homenagem são opcionais. Ao concluir, o app abre o memorial; Voltar leva à lista do Memorial e, dela, à Home, sem fechar o app. | `memorial_flow_test.dart` (Registrar falecimento), `memorial_navegacao_test.dart`, `memorial_repository_test.dart`, CT24 |
 | RF34 | Pets falecidos saem da lista principal e aparecem na seção Memorial, privada, sem duplicação. | `memorial_flow_test.dart` (Home), CT25 |
 | RF35 | O memorial mostra nome, foto, capa, dados básicos existentes, homenagem e as fotos do próprio pet, e não exibe nem carrega recursos clínicos ou operacionais, inclusive por link direto. | `memorial_flow_test.dart` (Tela do memorial, Proteção de rotas), CT26 |
-| RF36 | O tutor pode corrigir um falecimento registrado por engano; o pet volta a ficar ativo com todos os dados preservados. Toda transição é auditada e nenhuma exclui dados. | `memorial_repository_test.dart`, `memorial_flow_test.dart` (Corrigir marcação), CT27 |
+| RF36 | O tutor pode corrigir um falecimento registrado por engano; o pet volta a ficar ativo com todos os dados preservados. Toda transição é auditada e nenhuma exclui dados. | `memorial_repository_test.dart`, `memorial_flow_test.dart` (Corrigir marcação), `memorial_navegacao_test.dart`, CT27 |
 
 ## Galeria de fotos do pet
 

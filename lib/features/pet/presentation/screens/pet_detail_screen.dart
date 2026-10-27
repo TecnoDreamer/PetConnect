@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_palette.dart';
+import '../../../../core/widgets/voltar_para_home.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../providers/galeria_providers.dart';
 import '../providers/pet_providers.dart';
@@ -31,46 +32,50 @@ class PetDetailScreen extends ConsumerWidget {
     final uid = ref.watch(currentUsuarioProvider).valueOrNull?.id;
     final colors = context.colors;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(),
-      body: SafeArea(
-        child: petAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => Center(
-            child: Text('Não foi possível carregar este pet.',
-                style: TextStyle(color: colors.error)),
-          ),
-          data: (pet) {
-            if (pet == null || pet.userId != uid) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Pet não encontrado.',
-                    style: TextStyle(color: colors.textMuted),
+    // Depois de restaurar um perfil do Memorial (ou por link direto), o
+    // perfil fica sozinho na pilha.
+    return VoltarParaHome(
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(leading: VoltarParaHome.seta(context)),
+        body: SafeArea(
+          child: petAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => Center(
+              child: Text('Não foi possível carregar este pet.',
+                  style: TextStyle(color: colors.error)),
+            ),
+            data: (pet) {
+              if (pet == null || pet.userId != uid) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Pet não encontrado.',
+                      style: TextStyle(color: colors.textMuted),
+                    ),
                   ),
+                );
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PetProfileHeader(pet: pet),
+                    const SizedBox(height: 28),
+                    PetFeatureGrid(pet: pet),
+                    const SizedBox(height: 20),
+                    PetSecondaryActions(
+                      petId: pet.id,
+                      mostrarFotos: ref.watch(galeriaDisponivelProvider),
+                    ),
+                  ],
                 ),
               );
-            }
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PetProfileHeader(pet: pet),
-                  const SizedBox(height: 28),
-                  PetFeatureGrid(pet: pet),
-                  const SizedBox(height: 20),
-                  PetSecondaryActions(
-                    petId: pet.id,
-                    mostrarFotos: ref.watch(galeriaDisponivelProvider),
-                  ),
-                ],
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );

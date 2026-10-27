@@ -51,6 +51,11 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Memorial: depois de registrar o falecimento, Voltar leva à lista do
+  Memorial e depois à Home, em vez de fechar o app. Vale para o botão e o
+  gesto do Android e para a seta da tela; o mesmo vale ao restaurar um
+  perfil e ao abrir o Memorial direto. Ver
+  `docs/features/memorial-retorno-navegacao.md`.
 - Login: Google, Facebook e "Cadastre-se" ficam logo abaixo do card, em vez
   de isolados na base da tela. Ver
   `docs/features/login-espacamento-acoes-sociais.md`.
