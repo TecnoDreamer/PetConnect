@@ -40,6 +40,7 @@ class Pet {
     this.capa,
     this.capaAlinhamentoY,
     this.qrCodeId,
+    this.qrPublicId,
     this.situacao = SituacaoPet.ativo,
     this.dataFalecimento,
     this.homenagem,
@@ -80,9 +81,20 @@ class Pet {
   /// automático.
   final double? capaAlinhamentoY;
 
-  /// Identificador usado na URL pública do QR code (RF16/RF19). Pode ser
-  /// igual a [id] até que a regeneração de QR code (RF19) seja implementada.
+  /// Campo do app antigo, mantido só para não apagar o valor de documentos
+  /// legados ao editar o pet. **Não** é usado no QR code: a API nunca
+  /// reconheceu esse valor — o QR usa [qrPublicId].
   final String? qrCodeId;
+
+  /// `publicId` atual do QR code (RF16/RF19), o mesmo que a API resolve na
+  /// página pública. No modo Firestore só existe depois que o tutor regenera
+  /// o QR; até lá, nulo, e o QR usa o id determinístico da migração (ver
+  /// `publicIdDoQr`). Pela API, vem sempre preenchido.
+  ///
+  /// Fora de [toMap] de propósito: só `PetQrRepository` grava este campo,
+  /// então salvar o formulário de edição com dados antigos nunca volta o QR
+  /// para um id já revogado.
+  final String? qrPublicId;
 
   final SituacaoPet situacao;
 
@@ -114,6 +126,7 @@ class Pet {
       capa: map['capa'] as String?,
       capaAlinhamentoY: (map['capaAlinhamentoY'] as num?)?.toDouble(),
       qrCodeId: map['qrCodeId'] as String?,
+      qrPublicId: map['qrPublicId'] as String?,
       situacao: SituacaoPet.doBanco(map['situacao']),
       dataFalecimento: map['dataFalecimento'] as String?,
       homenagem: map['homenagem'] as String?,
@@ -179,6 +192,7 @@ class Pet {
       capa: capa ?? this.capa,
       capaAlinhamentoY: capaAlinhamentoY ?? this.capaAlinhamentoY,
       qrCodeId: qrCodeId ?? this.qrCodeId,
+      qrPublicId: qrPublicId,
       situacao: situacao,
       dataFalecimento: dataFalecimento,
       homenagem: homenagem,

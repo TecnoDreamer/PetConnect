@@ -345,7 +345,11 @@ test/features/pet/ test/features/auth/ test/features/usuario/ test/android/
 2. **Tema nas telas restantes (#56).** Vacinas, consultas, histórico e localização
    ainda usam `AppColors` fixo. O título da issue cita Login e Cadastro, mas essas
    telas têm identidade fixa por decisão (ADR 0001) e saem do escopo.
+   **Andamento:** feito na PR #77 (mesclada em 2026-10-27).
 3. **QR regenerável (#29)**, depois **privacidade/contato público (#35)**.
+   **Andamento:** implementado no app e na API (`feat/qr-regeneravel` nos dois
+   repositórios), desligado por padrão (`USE_API_QR`) até a API ser publicada.
+   Ver `docs/features/qr-regeneravel.md` e ADR 0004.
 4. **Publicação (#28 e assinatura):** release assinado com a chave de debug, sem
    política de privacidade. Só planejamento por enquanto.
 5. **Validação no aparelho (#33)** — no Project está "In review"; checklists em

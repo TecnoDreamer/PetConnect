@@ -149,7 +149,7 @@ class ApiPetRepository implements PetRepository {
       capa: m['coverPhotoUrl'] as String?,
       capaAlinhamentoY: (m['coverPhotoAlignY'] as num?)?.toDouble(),
       // A API gerencia o id público do QR (RF16/RF19).
-      qrCodeId: m['publicId'] as String?,
+      qrPublicId: m['publicId'] as String?,
       // Só leitura: um pet que já esteja DECEASED na API aparece no
       // Memorial. Os demais status da API (LOST, FOUND, ARCHIVED) não têm
       // equivalente no app e continuam como ativos.

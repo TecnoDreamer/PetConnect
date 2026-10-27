@@ -5,9 +5,8 @@ import '../../../../core/theme/app_palette.dart';
 import '../../domain/pet.dart';
 import '../../domain/pet_qr_code.dart';
 
-/// QR code de identificação do pet (RF16), exibido no perfil. Regeneração
-/// (RF19) e a página pública que ele abre (RF17-RF18) ficam para uma
-/// próxima etapa.
+/// QR code de identificação do pet (RF16), exibido no perfil. A opção de
+/// gerar um novo (RF19) fica em `PetQrSheet`, em volta deste widget.
 ///
 /// O fundo do QR em si fica sempre branco, em qualquer tema — não é uma
 /// escolha de estilo, é o que garante contraste suficiente pra câmeras
@@ -29,6 +28,8 @@ class PetQrCode extends StatelessWidget {
       child: Column(
         children: [
           QrImageView(
+            // Chave pela URL: ao regenerar, o QR é redesenhado do zero.
+            key: ValueKey(publicPetUrl(pet)),
             data: publicPetUrl(pet),
             size: 180,
             backgroundColor: Colors.white,

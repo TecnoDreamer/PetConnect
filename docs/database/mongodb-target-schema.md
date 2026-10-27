@@ -48,7 +48,9 @@ Origem: `Pets` do Firestore.
 | Campo | Tipo | Obrig. | Notas |
 |---|---|---|---|
 | `_id` | ObjectId | sim | |
-| `publicId` | string (UUID v4) | sim | **único**; usado no QR → `https://<dominio>/p/{publicId}` |
+| `publicId` | string (UUID v4) | sim | **único**; usado no QR → `https://<dominio>/p/{publicId}`. Pets migrados usam o UUID determinístico de `"pet:" + legacyFirestoreId` até o tutor regenerar |
+| `publicIdRotatedAt` | Date | não | última regeneração do QR (RF19); a migração preserva o `publicId` de quem tem este campo |
+| `publicIdRotations` | int | não | quantas regenerações; ids antigos não são guardados |
 | `tutorId` | ObjectId | sim | → `users._id` ← resolvido a partir de `userId` (firebaseUid) |
 | `name` | string | sim | ← `nome` |
 | `species` | string enum | sim | `DOG` / `CAT` / `OTHER` ← `especie` |

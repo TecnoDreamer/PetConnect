@@ -178,6 +178,12 @@ describe('Pets', () => {
     await assertFails(deleteDoc(doc(comoAna(), 'Pets', 'petBeto')));
   });
 
+  it('só o dono grava a cópia do QR regenerado (qrPublicId)', async () => {
+    const qr = { qrPublicId: 'qr-novo', qrRegeneradoEm: serverTimestamp() };
+    await assertSucceeds(updateDoc(doc(comoAna(), 'Pets', 'petAna'), qr));
+    await assertFails(updateDoc(doc(comoBeto(), 'Pets', 'petAna'), qr));
+  });
+
   it('não transfere o pet para outra conta', async () => {
     await assertFails(updateDoc(doc(comoAna(), 'Pets', 'petAna'), { userId: BETO }));
   });

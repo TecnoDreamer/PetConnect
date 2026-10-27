@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
+import '../../data/api_pet_qr_repository.dart';
 import '../../data/api_pet_repository.dart';
 import '../../data/firebase_pet_repository.dart';
 import '../../domain/pet.dart';
+import '../../domain/pet_qr_repository.dart';
 import '../../domain/pet_repository.dart';
 
 final petRepositoryProvider = Provider<PetRepository>((ref) {
@@ -15,6 +17,21 @@ final petRepositoryProvider = Provider<PetRepository>((ref) {
     );
   }
   return FirebasePetRepository(firestore: ref.watch(firestoreProvider));
+});
+
+/// Regeneração do QR code (RF19). Sem nenhuma flag de API o app continua
+/// mostrando o QR normalmente, só sem a opção de gerar um novo.
+final petQrRepositoryProvider = Provider<PetQrRepository>((ref) {
+  if (AppConfig.useApiForPets) {
+    return ApiPetQrRepository(api: ref.watch(apiClientProvider));
+  }
+  if (AppConfig.useApiForQr) {
+    return ApiPetQrRepository(
+      api: ref.watch(apiClientProvider),
+      firestore: ref.watch(firestoreProvider),
+    );
+  }
+  return const QrRegeneracaoIndisponivel();
 });
 
 /// Pets do tutor autenticado (RF11). Vazio (sem emitir erro) enquanto
