@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/br_date.dart';
 import '../../../../core/utils/upload_error.dart';
 import '../../domain/historico_medico.dart';
@@ -147,16 +147,17 @@ class _HistoricoFormScreenState extends ConsumerState<HistoricoFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.background,
         elevation: 0,
         title: Text(
           widget.isEditing ? 'Editar histórico' : 'Novo registro',
-          style: const TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -170,10 +171,10 @@ class _HistoricoFormScreenState extends ConsumerState<HistoricoFormScreen> {
                   controller: _dataController,
                   readOnly: true,
                   onTap: _pickData,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Data:',
                     suffixIcon:
-                        Icon(Icons.calendar_today, color: AppColors.textMuted),
+                        Icon(Icons.calendar_today, color: colors.textMuted),
                   ),
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Informe a data.'
@@ -195,11 +196,10 @@ class _HistoricoFormScreenState extends ConsumerState<HistoricoFormScreen> {
                       hintText: 'Veterinário/clínica (opcional):'),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Anexos (exames, fotos)',
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
+                      fontWeight: FontWeight.bold, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -216,19 +216,18 @@ class _HistoricoFormScreenState extends ConsumerState<HistoricoFormScreen> {
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!,
-                      style: const TextStyle(
-                          color: AppColors.error, fontSize: 13)),
+                      style: TextStyle(color: colors.error, fontSize: 13)),
                 ],
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _submitting ? null : _handleSalvar,
                   child: _submitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textOnBrand,
+                            color: colors.textOnBrand,
                           ),
                         )
                       : const Text('SALVAR'),
@@ -250,6 +249,7 @@ class _AnexoThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Stack(
       children: [
         ClipRRect(
@@ -260,7 +260,7 @@ class _AnexoThumbnail extends StatelessWidget {
           top: -8,
           right: -8,
           child: IconButton(
-            icon: const Icon(Icons.cancel, color: AppColors.error),
+            icon: Icon(Icons.cancel, color: colors.error),
             tooltip: 'Remover anexo',
             onPressed: onRemover,
           ),
@@ -278,6 +278,7 @@ class _AdicionarAnexoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: enviando ? null : onTap,
@@ -285,9 +286,9 @@ class _AdicionarAnexoButton extends StatelessWidget {
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.4)),
+          border: Border.all(color: colors.textMuted.withValues(alpha: 0.4)),
         ),
         child: enviando
             ? const Center(
@@ -297,8 +298,7 @@ class _AdicionarAnexoButton extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               )
-            : const Icon(Icons.add_a_photo_outlined,
-                color: AppColors.textMuted),
+            : Icon(Icons.add_a_photo_outlined, color: colors.textMuted),
       ),
     );
   }

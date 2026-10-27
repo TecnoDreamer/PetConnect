@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/localizacao.dart';
 
 class LocalizacaoTile extends StatelessWidget {
@@ -10,16 +10,17 @@ class LocalizacaoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.location_on_outlined, color: AppColors.brandMedium),
+          Icon(Icons.location_on_outlined, color: colors.brandMedium),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -27,20 +28,18 @@ class LocalizacaoTile extends StatelessWidget {
               children: [
                 Text(
                   localizacao.data,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: colors.textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(localizacao.descricao,
-                    style: const TextStyle(color: AppColors.textPrimary)),
+                    style: TextStyle(color: colors.textPrimary)),
                 if (localizacao.contatoReportante != null &&
                     localizacao.contatoReportante!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Contato: ${localizacao.contatoReportante}',
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12),
+                    style: TextStyle(color: colors.textMuted, fontSize: 12),
                   ),
                 ],
               ],

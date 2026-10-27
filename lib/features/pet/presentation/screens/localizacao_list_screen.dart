@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../providers/localizacao_providers.dart';
 import '../widgets/localizacao_tile.dart';
 
@@ -14,29 +14,29 @@ class LocalizacaoListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final localizacoesAsync = ref.watch(localizacoesProvider(petId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text('Localização',
-            style: TextStyle(color: AppColors.textPrimary)),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        title: Text('Localização', style: TextStyle(color: colors.textPrimary)),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/pet/$petId/localizacao/nova'),
-        backgroundColor: AppColors.brandDark,
+        backgroundColor: colors.brandDark,
         tooltip: 'Registrar avistamento',
-        child: const Icon(Icons.add, color: AppColors.textOnBrand),
+        child: Icon(Icons.add, color: colors.textOnBrand),
       ),
       body: SafeArea(
         child: localizacoesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Center(
+          error: (_, __) => Center(
             child: Text('Não foi possível carregar os registros.',
-                style: TextStyle(color: AppColors.error)),
+                style: TextStyle(color: colors.error)),
           ),
           data: (localizacoes) {
             Future<void> atualizar() async {
@@ -49,14 +49,14 @@ class LocalizacaoListScreen extends ConsumerWidget {
                 onRefresh: atualizar,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(height: 120),
+                  children: [
+                    const SizedBox(height: 120),
                     Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Text(
                         'Nenhum avistamento registrado ainda.\nToque em "+" para registrar um.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(color: colors.textMuted),
                       ),
                     ),
                   ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/historico_medico.dart';
 
 class HistoricoTile extends StatelessWidget {
@@ -16,8 +16,9 @@ class HistoricoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Material(
-      color: AppColors.surface,
+      color: colors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -32,29 +33,28 @@ class HistoricoTile extends StatelessWidget {
                   children: [
                     Text(
                       historico.data,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary),
+                          color: colors.textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       historico.descricao,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 13),
+                      style: TextStyle(color: colors.textMuted, fontSize: 13),
                     ),
                     if (historico.anexos.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.attach_file,
-                              size: 14, color: AppColors.textMuted),
+                          Icon(Icons.attach_file,
+                              size: 14, color: colors.textMuted),
                           const SizedBox(width: 4),
                           Text(
                             '${historico.anexos.length} anexo(s)',
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 12),
+                            style: TextStyle(
+                                color: colors.textMuted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -63,8 +63,7 @@ class HistoricoTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline,
-                    color: AppColors.textMuted),
+                icon: Icon(Icons.delete_outline, color: colors.textMuted),
                 tooltip: 'Excluir registro',
                 onPressed: onDelete,
               ),

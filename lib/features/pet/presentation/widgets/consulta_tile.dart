@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/consulta.dart';
 import '../../domain/consulta_alerta.dart';
 
@@ -55,8 +55,8 @@ class _ConsultaTileState extends State<ConsultaTile> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sim, cancelar',
-                style: TextStyle(color: AppColors.error)),
+            child: Text('Sim, cancelar',
+                style: TextStyle(color: context.colors.error)),
           ),
         ],
       ),
@@ -86,11 +86,12 @@ class _ConsultaTileState extends State<ConsultaTile> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final consulta = widget.consulta;
     final proxima = consultaEstaProxima(consulta);
 
     return Material(
-      color: AppColors.surface,
+      color: colors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -112,52 +113,53 @@ class _ConsultaTileState extends State<ConsultaTile> {
                       consulta.horario != null && consulta.horario!.isNotEmpty
                           ? '${consulta.data} às ${consulta.horario}'
                           : consulta.data,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary),
+                          color: colors.textPrimary),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(consulta.veterinario,
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 13)),
+                  style: TextStyle(color: colors.textMuted, fontSize: 13)),
               if (consulta.motivo.isNotEmpty)
                 Text(
                   consulta.motivo,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style:
-                      const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  style: TextStyle(color: colors.textMuted, fontSize: 13),
                 ),
               if (widget.onMarcarRealizada != null ||
                   widget.onCancelar != null) ...[
                 const SizedBox(height: 8),
-                Row(
+                // Wrap (não Row): em tela estreita com fonte ampliada os
+                // dois botões não cabem lado a lado e a Row estourava; assim
+                // o segundo desce de linha. Em tamanhos normais nada muda.
+                Wrap(
                   children: [
                     if (widget.onMarcarRealizada != null)
                       TextButton.icon(
                         onPressed: widget.onMarcarRealizada,
-                        icon: const Icon(Icons.check_circle_outline,
-                            size: 18, color: Colors.green),
-                        label: const Text('Marcar realizada',
-                            style: TextStyle(color: Colors.green)),
+                        icon: Icon(Icons.check_circle_outline,
+                            size: 18, color: colors.success),
+                        label: Text('Marcar realizada',
+                            style: TextStyle(color: colors.success)),
                       ),
                     if (widget.onCancelar != null)
                       TextButton.icon(
                         onPressed: _cancelando ? null : _confirmarECancelar,
                         icon: _cancelando
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: AppColors.error),
+                                    strokeWidth: 2, color: colors.error),
                               )
-                            : const Icon(Icons.cancel_outlined,
-                                size: 18, color: AppColors.error),
-                        label: const Text('Cancelar',
-                            style: TextStyle(color: AppColors.error)),
+                            : Icon(Icons.cancel_outlined,
+                                size: 18, color: colors.error),
+                        label: Text('Cancelar',
+                            style: TextStyle(color: colors.error)),
                       ),
                   ],
                 ),
