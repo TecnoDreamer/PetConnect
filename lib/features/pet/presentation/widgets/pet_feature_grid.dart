@@ -9,15 +9,14 @@ import '../../domain/vacina_alerta.dart';
 import '../providers/consulta_providers.dart';
 import '../providers/vacina_providers.dart';
 import 'pet_feature_card.dart';
-import 'pet_qr_code.dart';
+import 'pet_qr_sheet.dart';
 
 /// As 4 ações principais do perfil do pet, em grade 2x2 (RF15 + RF20-23 +
 /// RF27-30 + RF16). Reaproveita a mesma lógica de alerta que já existia nos
 /// botões antigos de vacina/consulta — só muda a apresentação, não a regra.
 ///
-/// Não implementa QR code regenerável nem novas regras de QR nesta etapa:
-/// o card apenas abre, num bottom sheet, o mesmo widget [PetQrCode] que já
-/// existia inline no perfil.
+/// O card de QR abre, num bottom sheet, o [PetQrSheet]: o QR atual e a
+/// opção de gerar um novo (RF19).
 class PetFeatureGrid extends ConsumerWidget {
   const PetFeatureGrid({super.key, required this.pet});
 
@@ -107,6 +106,9 @@ class PetFeatureGrid extends ConsumerWidget {
   void _abrirQrCode(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      // Com fonte ampliada o QR + ações passam da altura padrão do sheet;
+      // o PetQrSheet rola por dentro.
+      isScrollControlled: true,
       backgroundColor: context.colors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -114,7 +116,7 @@ class PetFeatureGrid extends ConsumerWidget {
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: PetQrCode(pet: pet),
+          child: PetQrSheet(pet: pet),
         ),
       ),
     );

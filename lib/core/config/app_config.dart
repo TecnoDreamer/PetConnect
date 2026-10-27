@@ -43,4 +43,10 @@ class AppConfig {
 
   /// FASE 10 — upload/exclusão de anexo assinados pelo backend (Cloudinary).
   static const bool useApiForUpload = bool.fromEnvironment('USE_API_UPLOAD');
+
+  /// QR code regenerável (RF19, issue #29) com os pets ainda no Firestore:
+  /// a regeneração passa pela API, que é quem resolve o QR. Exige
+  /// [apiBaseUrl] apontando para a API publicada. Com [useApiForPets] a
+  /// regeneração já vem ligada e esta flag não é necessária.
+  static const bool useApiForQr = bool.fromEnvironment('USE_API_QR');
 }
