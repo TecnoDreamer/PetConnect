@@ -99,6 +99,18 @@ em vez de uma versão própria quase idêntica).
 > Login, Cadastro e Esqueci senha continuam com a identidade fixa (ADR
 > 0001), já com fundo branco.
 
+> **Atualização (2026-10-26, issue #56):** vacinas, consultas, histórico e
+> localização (listas, formulários e tiles) passam a responder ao tema,
+> via `context.colors`. Fundo e AppBar usam `background` (branco no Claro,
+> bege no Padrão, escuro no Escuro), cartões usam `surface`, textos
+> `textPrimary`/`textMuted`, e as ações "Marcar realizada" e "Cancelar"
+> usam `success` e `error` do tema (antes, verde fixo `Colors.green`). O
+> laranja de alerta (próxima dose, consulta próxima) continua fixo: não há
+> token de aviso e ele é legível nos três temas. Na mesma entrega, a linha
+> de ações do `consulta_tile.dart` virou `Wrap`, porque estourava em 360 px
+> com fonte 1.3 (bug anterior, achado pelos testes novos). Testes:
+> `test/features/pet/tema_telas_clinicas_test.dart`.
+
 ## Telas migradas (respondem ao tema)
 
 Núcleo do tema + os dois menus de configurações + toda a stack do perfil
@@ -116,7 +128,9 @@ capa fica fixo em todo modo, é um momento de marca, não conteúdo),
 branco do próprio QR fica fixo — requisito técnico de contraste pra
 leitura por câmera, não escolha de estilo), `cover_position_editor.dart`,
 `home_screen.dart`, `editar_perfil_screen.dart`, `pet_form_screen.dart`,
-`avatar_picker.dart`.
+`avatar_picker.dart`, e as telas de lista e formulário de vacina,
+consulta, histórico e localização com seus tiles (`vacina_tile.dart`,
+`consulta_tile.dart`, `historico_tile.dart`, `localizacao_tile.dart`).
 
 `fullscreen_image_viewer.dart` não precisou de mudança — já era
 preto/branco fixo de propósito (convenção universal de visualizador de
@@ -131,15 +145,9 @@ autoriza explicitamente não migrar tudo de uma vez):
 - `splash_screen.dart`, `auth_header.dart` — momento de marca, decisão
   similar ao gradiente da capa.
 - `login_screen.dart`, `cadastro_screen.dart`, `esqueci_senha_screen.dart`
-  — fluxo de autenticação.
-- Vacina/Consulta/Histórico/Localização — telas de lista e formulário, e
-  seus tiles (`vacina_tile.dart`, `consulta_tile.dart`,
-  `historico_tile.dart`, `localizacao_tile.dart`).
+  — fluxo de autenticação, com identidade fixa por decisão (ADR 0001).
 
-**Risco assumido**: navegar de uma tela migrada (ex.: perfil do pet, em
-Escuro) para uma dessas ainda mostra o visual Padrão — inconsistência
-visual conhecida, não um bug. Fica como próxima etapa de migração (issue
-de backlog criada).
+Não há mais telas de conteúdo do tutor fora do tema.
 
 ## Segurança
 

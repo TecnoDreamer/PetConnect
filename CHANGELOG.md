@@ -16,6 +16,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- Vacinas, consultas, histórico e localização seguem o tema escolhido
+  (Padrão, Claro ou Escuro), como o resto do app; no Escuro deixam de
+  aparecer com fundo branco e texto marrom. Ver
+  `docs/features/theme-and-settings-menu.md`.
 - O tema **Claro** passa a ser o tema principal: quem não escolheu um tema
   abre o app nele, com fundo sempre branco (campos e cartões em cinza bem
   claro para continuarem visíveis). As telas de vacinas, consultas,
@@ -32,6 +36,8 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Consultas: os botões "Marcar realizada" e "Cancelar" não estouram mais
+  a largura em telas estreitas com fonte ampliada.
 - Home: a linha "Meus Pets" com o botão "Adicionar pet" não estoura mais
   em telas estreitas com fonte ampliada; o rótulo do botão quebra dentro
   da pílula.
