@@ -3,6 +3,12 @@
 > Projeto `pet-connect-c53f1`. A partir de 2026-09-11 as regras **vivem em
 > `firestore.rules`** na raiz do repo (referenciado por `firebase.json`) —
 > este arquivo passa a ser só o histórico/análise, não a fonte da verdade.
+>
+> **Atenção (2026-10-26):** `firestore.rules` no repositório passou a conter
+> as regras de isolamento por dono, **ainda não deployadas**
+> ([`firestore-isolamento-por-dono.md`](firestore-isolamento-por-dono.md)).
+> Até o deploy, o que vale em produção é o último estado registrado abaixo
+> (FASE 11, passo 2).
 
 ## ✅ 2026-09-11 — FASE 11, passo 1: leitura/escrita anônima fechada
 

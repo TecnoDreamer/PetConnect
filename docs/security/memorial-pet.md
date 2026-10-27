@@ -6,47 +6,23 @@ Complementa `docs/seguranca.md` e `docs/features/memorial-pet.md`.
 
 | Ação | Onde é garantida | Situação |
 |---|---|---|
-| Registrar falecimento / corrigir marcação | App: só o dono chega à tela (`PetSituacaoGuard`). Regras: `Pets/{petId}` tem `allow update` só para o dono, **mas o catch-all `/{document=**}` (`allow write` para logado) também casa `Pets/{id}` e, como os blocos somam por OR, libera o update para qualquer conta logada. | ⛔ Servidor não garante (correção na Fase 1, #31) |
-| Ver memorial ou lista do Memorial | Consulta por `userId` + `PetSituacaoGuard` confere o dono | ✅ App. ⚠️ As regras permitem **leitura** de `Pets` a qualquer usuário logado (situação anterior, ver `firestore.rules`). |
-| Criar vacina, consulta, histórico ou localização para pet falecido | Rotas bloqueadas pelo `PetSituacaoGuard` | ✅ App. ⛔ Servidor pendente (abaixo). |
-| Gravar evento de auditoria | Subcoleção sob o catch-all (`write` para logado) | ⚠️ Pendente de restrição |
+| Registrar falecimento / corrigir marcação | App: só o dono chega à tela (`PetSituacaoGuard`). Regras deployadas: o catch-all `/{document=**}` (`allow write` para logado) também casa `Pets/{id}` e anula a condição de dono. | ⛔ Servidor não garante até o deploy da Fase 1 |
+| Ver memorial ou lista do Memorial | Consulta por `userId` + `PetSituacaoGuard` confere o dono | ✅ App. ⛔ Regras deployadas liberam leitura de `Pets` a qualquer logado |
+| Criar vacina, consulta, histórico ou localização para pet falecido | Rotas bloqueadas pelo `PetSituacaoGuard` | ✅ App. ⛔ Servidor só após o deploy |
+| Gravar evento de auditoria | Subcoleção sob o catch-all (`write` para logado) | ⛔ Servidor só após o deploy |
 | Modo API | `PetService.ownedOr404` no backend | Memorial desligado no app (exposição pública) |
 
-## Proposta de regras (NÃO deployada; depende de aprovação)
+## Regras propostas (NÃO deployadas; dependem de aprovação)
 
-```text
-match /Pets/{petId} {
-  // (regras atuais de Pets mantidas)
+Ficam em `firestore.rules`, com testes no emulador. Detalhes, limites e
+plano de deploy em [`firestore-isolamento-por-dono.md`](firestore-isolamento-por-dono.md).
+Em resumo, para o Memorial:
 
-  function donoDoPet() {
-    return request.auth != null
-      && get(/databases/$(database)/documents/Pets/$(petId)).data.userId
-         == request.auth.uid;
-  }
-  function petAtivo() {
-    return get(/databases/$(database)/documents/Pets/$(petId))
-      .data.get('situacao', 'ATIVO') != 'FALECIDO';
-  }
-
-  match /vacinas/{id}         { allow read: if donoDoPet(); allow write: if donoDoPet() && petAtivo(); }
-  match /consultas/{id}       { allow read: if donoDoPet(); allow write: if donoDoPet() && petAtivo(); }
-  match /historicoMedico/{id} { allow read: if donoDoPet(); allow write: if donoDoPet() && petAtivo(); }
-  match /localizacoes/{id}    { allow read: if donoDoPet(); allow write: if donoDoPet() && petAtivo(); }
-
-  match /eventosSituacao/{id} {
-    allow read, create: if donoDoPet();
-    allow update, delete: if false;   // auditoria imutável
-  }
-}
-```
-
-Atenção à observação já registrada em `firestore.rules`: blocos `match`
-se somam por **OR**. O catch-all `/{document=**}` precisaria **excluir**
-as subcoleções de `Pets`, senão continua liberando escrita por cima destas
-regras. Correção de 2026-10-26: o catch-all também casa os próprios
-documentos `Pets/{id}` e `Usuarios/{id}`, então precisa excluí-los também
-(ou ser removido), não só as subcoleções. Antes do deploy, a proposta precisa ser validada no Firestore
-Emulator (que não roda nesta máquina) ou num projeto de staging.
+- Sem catch-all; só o dono lê e escreve o pet e as subcoleções.
+- Pet `FALECIDO`: criar ou alterar vacina, consulta, histórico ou
+  localização é negado; ler e apagar continua permitido.
+- `eventosSituacao`: só criação pelo dono, na mesma escrita que muda a
+  situação do pet e descrevendo essa mudança; nunca alterado nem apagado.
 
 ## Exposição pública
 

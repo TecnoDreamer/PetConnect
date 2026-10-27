@@ -38,7 +38,9 @@
 
 Regra central: **um tutor só lê/escreve os próprios documentos**; dados de pet só são acessíveis pelo `userId` proprietário (campo real já existente em `Pets`, ver `docs/modelo-dados-firestore.md`).
 
-Esboço de regras (a refinar quando o uso do campo `dono`/`usuarioID` for confirmado):
+Regras implementadas (proposta, aguardando deploy): [`security/firestore-isolamento-por-dono.md`](security/firestore-isolamento-por-dono.md). O dono do perfil é o ID do documento (= Auth UID) e o dono do pet é `userId`; `dono` e `usuarioID` não são usados para autorização.
+
+Esboço original:
 
 ```
 match /Usuarios/{userId} {
