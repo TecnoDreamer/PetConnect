@@ -23,6 +23,9 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Home: a linha "Meus Pets" com o botão "Adicionar pet" não estoura mais
+  em telas estreitas com fonte ampliada; o rótulo do botão quebra dentro
+  da pílula.
 - Android: o app aparece como **PetConnect** (não `pet_connect`) e usa o
   logo oficial (marcador com cachorro e gato) no launcher, com adaptive
   icon e ícone temático, em vez do ícone padrão do Flutter. A abertura
