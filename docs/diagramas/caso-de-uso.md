@@ -80,3 +80,4 @@ graph LR
 | Gerenciar carteira de vacina | Tutor | RF20–RF23 |
 | Gerenciar histórico médico | Tutor | RF24–RF26 |
 | Agendar consultas | Tutor | RF27–RF30 |
+| Ver, publicar e excluir fotos do pet (também no Memorial) | Tutor | RF37–RF42 |

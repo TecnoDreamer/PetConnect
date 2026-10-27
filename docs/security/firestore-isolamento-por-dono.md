@@ -27,13 +27,14 @@ Levantadas em `lib/features/*/data/firebase_*_repository.dart`.
 |---|---|---|
 | Cadastro | `set Usuarios/{uid}` com `usuarioID` (não `uid`) | ID do documento = UID |
 | Ver/editar perfil | `get`/`update Usuarios/{uid}` | idem |
-| Excluir conta | `delete` de `vacinas` e `historicoMedico` de cada pet, depois do pet, depois de `Usuarios/{uid}` | dono; exclusão permitida mesmo com pet falecido |
+| Excluir conta | `delete` de `vacinas`, `historicoMedico` e `fotos` de cada pet, depois do pet, depois de `Usuarios/{uid}` | dono; exclusão permitida mesmo com pet falecido |
 | Listar pets | `Pets where userId == uid` | `userId == uid` (a consulta é aceita porque filtra pelo dono) |
 | Abrir pet | `get Pets/{id}` | dono |
 | Criar pet | `add Pets` com `userId` = UID | `userId == uid` |
 | Editar/apagar pet | `update`/`delete Pets/{id}` (o `toMap` reenvia `userId`) | dono antes e depois (sem transferir) |
 | Registrar falecimento / corrigir | transação: `update Pets/{id}` (`situacao`) + `set eventosSituacao/{novo}` | dono; evento descreve a mudança real |
 | Vacinas, consultas, histórico, localizações | listar, `add`/`set`, `update`, `delete` em `Pets/{id}/<sub>` | dono do pet pai; criar/alterar bloqueado se `FALECIDO` |
+| Galeria de fotos (`GALERIA_FOTOS`) | listar (`orderBy criadoEm`), `set`, `delete` em `Pets/{id}/fotos`; `deletePet` apaga a subcoleção antes do pet | dono do pet pai, também com pet `FALECIDO`; criação validada campo a campo; sem `update` |
 | Página pública do QR | **não usa o Firestore**: `GET /api/v1/public/pets/{id}` na API (Render/MongoDB) | não afetada |
 
 ## Regras novas, em resumo
@@ -54,6 +55,10 @@ Levantadas em `lib/features/*/data/firebase_*_repository.dart`.
   que muda `situacao` do pet (`get` antes × `getAfter` depois), com
   `atorId` = UID, `em` = horário do servidor e só os campos conhecidos;
   `update`/`delete` sempre negados.
+- `fotos` (galeria): dono do pet pai, inclusive pet `FALECIDO` (foto não é
+  registro clínico). Criação só com os campos conhecidos, `petId` igual ao
+  pai, `userId` = UID, URL de imagem do Cloudinary, `publicId`, legenda de
+  até 300 caracteres e `criadoEm` = horário do servidor. `update` negado.
 - `Localizacoes` (raiz, legado): igual a hoje — leitura para logado, escrita
   fechada.
 

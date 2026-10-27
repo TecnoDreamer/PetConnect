@@ -90,10 +90,25 @@ Detalhes em `docs/features/memorial-pet.md`.
 | RF35 | O memorial mostra nome, foto, capa, dados básicos existentes, homenagem e as fotos do próprio pet, e não exibe nem carrega recursos clínicos ou operacionais, inclusive por link direto. | `memorial_flow_test.dart` (Tela do memorial, Proteção de rotas), CT26 |
 | RF36 | O tutor pode corrigir um falecimento registrado por engano; o pet volta a ficar ativo com todos os dados preservados. Toda transição é auditada e nenhuma exclui dados. | `memorial_repository_test.dart`, `memorial_flow_test.dart` (Corrigir marcação), CT27 |
 
+## Galeria de fotos do pet
+
+Detalhes em `docs/features/galeria-fotos-pet.md`. Desligada por padrão
+(`GALERIA_FOTOS`) até o deploy das regras do Firestore.
+
+| ID | Requisito | Testes |
+|----|-----------|--------|
+| RF37 | O tutor vê as fotos de cada pet seu numa grade de 3 colunas, mais recentes primeiro, carregada em páginas. | `galeria_telas_test.dart` (Grade), `galeria_repository_test.dart` (listar), CT29 |
+| RF38 | O tutor publica até 10 fotos por vez, com prévia e legenda opcional de até 300 caracteres; só JPEG, PNG, WebP e HEIC de até 10 MB. | `galeria_telas_test.dart` (Publicar), `galeria_dominio_test.dart`, CT30 |
+| RF39 | O tutor abre uma foto em tela cheia, com zoom e navegação entre as fotos, legenda e data. | `galeria_telas_test.dart` (Visualizador), CT31 |
+| RF40 | O tutor exclui uma foto, com confirmação; se a exclusão falhar, a foto continua. | `galeria_telas_test.dart` (Visualizador), `galeria_repository_test.dart` (excluir), CT32 |
+| RF41 | Pet no Memorial continua recebendo e mostrando fotos, sem reativar recursos clínicos. | `galeria_telas_test.dart` (Memorial e perfil), `regras.test.js`, CT33 |
+| RF42 | Só o tutor dono lista, lê, publica e exclui as fotos de um pet; outra conta e quem não está logado não. | `regras.test.js` (fotos), `galeria_telas_test.dart` (outro tutor), CT34 |
+
 ## Fora de escopo nesta fase
 
 - Chat entre tutor e quem encontrou o pet.
 - Geolocalização em tempo real do pet.
 - Múltiplos tutores compartilhando o mesmo pet (ex: casais, famílias).
+- Curtidas, comentários, feed e perfis públicos na galeria de fotos.
 
 Esses itens podem voltar como requisitos futuros, mas não fazem parte da primeira versão.
