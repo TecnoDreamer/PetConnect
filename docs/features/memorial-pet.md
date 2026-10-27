@@ -88,7 +88,8 @@ sequenceDiagram
         Note over FS: regra de update do dono anulada pelo<br/>catch-all hoje (ver "Autorização da transição")
     end
     UI->>UI: invalidate(petsProvider, petProvider)
-    UI-->>Tutor: abre /memorial/petId
+    UI-->>Tutor: go('/memorial/petId'): pilha lista → memorial
+    Note over UI,Tutor: Voltar → lista do Memorial → Home<br/>(docs/features/memorial-retorno-navegacao.md)
 ```
 
 A transação lê a situação e só grava se ela mudar. Por isso, um toque
@@ -103,6 +104,7 @@ sem evento, ou o contrário).
 | Registrar | Perfil do pet → Configurações do Pet → seção **Memorial** → "Registrar falecimento" (`/pet/:id/falecimento`) → explicação + data e homenagem opcionais → **diálogo de confirmação** → Memorial do pet |
 | Visitar | Home → entrada **Memorial** (só aparece se houver pet falecido) → lista (`/memorial`) → memorial (`/memorial/:id`) |
 | Corrigir | Memorial → ⚙ Configurações do memorial (`/memorial/:id/configuracoes`) → "Corrigir informação de falecimento" → confirmação → perfil ativo (`/pet/:id`) |
+| Voltar | Depois do registro: memorial → lista do Memorial → Home. Lista ou perfil sozinhos na pilha (link direto, perfil restaurado): Voltar e seta da AppBar levam à Home, nunca fecham o app. Ver `docs/features/memorial-retorno-navegacao.md` |
 
 - A ação **não** está na Home nem no menu do tutor. Fica numa seção
   própria das Configurações do Pet, longe de toques acidentais.
@@ -178,6 +180,7 @@ sem evento, ou o contrário).
 |---|---|
 | `test/features/pet/memorial_repository_test.dart` (11) | Domínio: legado é ativo, valor desconhecido é ativo, `toMap` sem situação, campos vazios. `FirebasePetRepository` com `fake_cloud_firestore`: registro com data, homenagem e auditoria; sem data não inventa; repetição e concorrência sem evento duplicado; correção restaura sem tocar em vacinas, consultas e histórico; editar perfil mantém a situação; pet inexistente. |
 | `test/features/pet/memorial_flow_test.dart` (28) | Rotas reais (`buildPetRoutes`): Home só com ativos e entrada do Memorial; lista sem duplicação; fluxo de registro com cancelamento e confirmação; falha de gravação; modo sem suporte; memorial com dados, campos ausentes e galeria só do pet; nada clínico exibido ou buscado; 12 deep links bloqueados; memorial de pet ativo bloqueado; pet de outra conta; correção restaura e volta para a Home; 320×568 com fonte 1.3 nos três temas. |
+| `test/features/pet/memorial_navegacao_test.dart` (14) | Pilha de navegação: registrar → Voltar → lista → Voltar → Home nos três temas, com seta da AppBar e botão do sistema; último pet vivo; vários no Memorial; link direto; falha ao gravar; toque duplo; Memorial aberto sem histórico; pet já falecido; app reaberto; perfil restaurado volta à Home. Nenhum caso fecha o app. |
 | `test/features/pet/api_pet_repository_memorial_test.dart` (2) | Modo API: `DECEASED` é lido como falecido; registrar não chama a API. |
 
 Verificação de mutação: sem o `PetSituacaoGuard`, os 12 testes de deep
