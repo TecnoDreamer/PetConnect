@@ -12,6 +12,8 @@ import '../providers/pet_providers.dart';
 /// - Rotas operacionais (perfil, vacinas, consultas, histórico,
 ///   localização, edição, configurações): exigem [SituacaoPet.ativo].
 /// - Rotas do memorial: exigem [SituacaoPet.falecido].
+/// - Galeria de fotos: [exige] nulo, vale para as duas situações (só
+///   confere o dono).
 ///
 /// Aplicado no router (app_router.dart), então vale também para links
 /// antigos e navegação direta, não só para os botões visíveis. Também
@@ -25,7 +27,7 @@ class PetSituacaoGuard extends ConsumerWidget {
   });
 
   final String petId;
-  final SituacaoPet exige;
+  final SituacaoPet? exige;
   final Widget child;
 
   @override
@@ -43,7 +45,7 @@ class PetSituacaoGuard extends ConsumerWidget {
         if (pet == null || pet.userId != uid) {
           return const _Moldura(child: _Aviso(mensagem: 'Pet não encontrado.'));
         }
-        if (pet.situacao == exige) return child;
+        if (exige == null || pet.situacao == exige) return child;
         return _Moldura(
           child: pet.falecido
               ? _Aviso(

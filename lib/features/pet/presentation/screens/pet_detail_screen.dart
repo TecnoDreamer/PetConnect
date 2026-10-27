@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_palette.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
+import '../providers/galeria_providers.dart';
 import '../providers/pet_providers.dart';
 import '../widgets/pet_feature_grid.dart';
 import '../widgets/pet_profile_header.dart';
@@ -62,7 +63,10 @@ class PetDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 28),
                   PetFeatureGrid(pet: pet),
                   const SizedBox(height: 20),
-                  PetSecondaryActions(petId: pet.id),
+                  PetSecondaryActions(
+                    petId: pet.id,
+                    mostrarFotos: ref.watch(galeriaDisponivelProvider),
+                  ),
                 ],
               ),
             );
