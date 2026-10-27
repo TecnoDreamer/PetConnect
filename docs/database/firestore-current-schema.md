@@ -52,7 +52,9 @@ Legenda de origem: **base** = já existia antes deste ciclo de desenvolvimento �
 | `dono` | string \| null | não | ? | base | **redundante com `userId`**, observado `null`; propósito não confirmado |
 | `telefone` | string \| null | não | — | base | contato público de fallback no QR |
 | `foto` | string (URL) \| null | não | Cloudinary | app | |
-| `qrCodeId` | string \| null | não | — | app | usado para regenerar o QR (RF19) sem trocar o doc id |
+| `qrCodeId` | string \| null | não | — | app | legado do app antigo; preservado, mas **não** usado no QR (a API nunca reconheceu) |
+| `qrPublicId` | string | não | — | app (2026-10) | cópia do `publicId` atual do QR depois que o tutor o regenera (RF19); ausente = QR determinístico. Só `PetQrRepository` grava. Ver `docs/features/qr-regeneravel.md` |
+| `qrRegeneradoEm` | timestamp | não | — | app (2026-10) | `serverTimestamp` da última cópia de `qrPublicId` |
 
 **Sem** `status`, `publicId`, `createdAt`, `updatedAt`, `especie/porte` como enum.
 
