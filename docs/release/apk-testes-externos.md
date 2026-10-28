@@ -139,15 +139,32 @@ guardar, usar uma Release privada do GitHub, se aprovado.
 ## Registro do build
 
 ```text
-Commit:
-Data:
+Commit: 3aa2a90 (branch build/apk-testes-externos)
+Data: 2026-10-27 21:49 (-03)
 Arquivo: build/app/outputs/flutter-apk/app-release.apk
-Tamanho:
-SHA-256 do APK:
-Certificado (SHA-256, público):
+Cópia entregue: Downloads/PetConnect-0.1.0-teste.apk (mesmo SHA-256)
+Tamanho: 61.401.984 bytes (58,6 MB)
+SHA-256 do APK: e4c7b330e450d27f9de4152b98c6b54633077b470673ebf3981296871493810c
+Certificado (SHA-256, público): 8123e0f9b1c1015c1dc4988f53b6f6d10aafd8c3ed12a43d6e9894003bf9dbef
+Assinatura: chave de upload (alias upload), APK Signature Scheme v2 (apksigner verify OK)
+Pacote: com.petconnect.pet_connect, versionCode 1, versionName 0.1.0
+SDK: minSdk 24 (Android 7.0), targetSdk 36
+ABIs: arm64-v8a, armeabi-v7a, x86_64 (universal)
 Variante / flags: release, universal, GALERIA_FOTOS=true
-Instalação testada em:
+Instalação testada em: pendente (proprietário)
 ```
+
+Permissões no manifesto final (`aapt2 dump badging`):
+- **Rede:** `INTERNET` e `ACCESS_NETWORK_STATE`.
+- **Biometria:** `USE_BIOMETRIC` e `USE_FINGERPRINT`, que vêm das
+  dependências; o app não usa biometria.
+- **Identificador de anúncios:** `AD_ID` e `ACCESS_ADSERVICES_*`, que entram
+  pelas dependências, provavelmente o SDK do Facebook
+  (`flutter_facebook_auth`). O app não mostra anúncios.
+  - Revisar na Fase 3 (login social) e antes da Play Store, que pede
+    declaração de uso do ID de publicidade.
+  - Para remover, basta `tools:node="remove"` no manifesto, se não forem
+    necessárias.
 
 ## Instruções para os testadores
 
