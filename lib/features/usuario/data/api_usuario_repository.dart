@@ -3,20 +3,35 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/br_date.dart';
+import '../domain/login_social.dart';
 import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
+import 'entrada_social.dart';
+import 'provedores_sociais.dart';
 
 /// Implementação de [UsuarioRepository] contra a API Spring (FASE 4).
 ///
 /// Autenticação (login, cadastro, reset, logout) continua no **Firebase Auth**.
 /// Só o *perfil* do tutor passa a vir de `GET`/`PATCH`/`DELETE /api/v1/me`.
 class ApiUsuarioRepository implements UsuarioRepository {
-  ApiUsuarioRepository({required FirebaseAuth auth, required ApiClient api})
-      : _auth = auth,
-        _api = api;
+  ApiUsuarioRepository({
+    required FirebaseAuth auth,
+    required ApiClient api,
+    Map<ProvedorSocial, ProvedorDeCredencial> provedores = const {},
+  })  : _auth = auth,
+        _api = api {
+    // O 1º `GET /me` provisiona o tutor no MongoDB com nome e e-mail do
+    // token; nas próximas vezes só confirma que ele existe.
+    _social = EntradaSocial(
+      auth: auth,
+      provedores: provedores,
+      aposEntrar: (_) => _api.get('/me'),
+    );
+  }
 
   final FirebaseAuth _auth;
   final ApiClient _api;
+  late final EntradaSocial _social;
 
   static const _generoParaApi = {
     'Homem': 'MALE',
@@ -77,8 +92,29 @@ class ApiUsuarioRepository implements UsuarioRepository {
   }
 
   @override
+  Future<void> entrarComProvedor(ProvedorSocial provedor) =>
+      _social.entrar(provedor);
+
+  @override
+  Future<void> entrarComSenhaEVincular({
+    required String email,
+    required String senha,
+    required ContaExisteComOutroMetodo pendente,
+  }) =>
+      _social.entrarComSenhaEVincular(
+          email: email, senha: senha, pendente: pendente);
+
+  @override
+  Future<void> entrarComProvedorEVincular(
+    ProvedorSocial provedor,
+    ContaExisteComOutroMetodo pendente,
+  ) =>
+      _social.entrarComProvedorEVincular(provedor, pendente);
+
+  @override
   Future<void> signOut() async {
     await _auth.signOut();
+    await _social.sairDosProvedores();
   }
 
   @override

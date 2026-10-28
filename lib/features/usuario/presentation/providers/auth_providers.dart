@@ -6,6 +6,8 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
 import '../../data/api_usuario_repository.dart';
 import '../../data/firebase_usuario_repository.dart';
+import '../../data/provedores_sociais.dart';
+import '../../domain/login_social.dart';
 import '../../domain/usuario.dart';
 import '../../domain/usuario_repository.dart';
 
@@ -26,16 +28,28 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   return client;
 });
 
+/// Google e Facebook (docs/features/login-social.md). Sem a configuração do
+/// Console (Firebase, Google Cloud, Meta), os botões avisam que o login
+/// ainda não está disponível em vez de quebrar.
+final provedoresSociaisProvider =
+    Provider<Map<ProvedorSocial, ProvedorDeCredencial>>((ref) => {
+          ProvedorSocial.google: GoogleProvedorDeCredencial(
+              serverClientId: AppConfig.googleServerClientId),
+          ProvedorSocial.facebook: FacebookProvedorDeCredencial(),
+        });
+
 final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
   if (AppConfig.useApiForUsuario) {
     return ApiUsuarioRepository(
       auth: ref.watch(firebaseAuthProvider),
       api: ref.watch(apiClientProvider),
+      provedores: ref.watch(provedoresSociaisProvider),
     );
   }
   return FirebaseUsuarioRepository(
     auth: ref.watch(firebaseAuthProvider),
     firestore: ref.watch(firestoreProvider),
+    provedores: ref.watch(provedoresSociaisProvider),
   );
 });
 
