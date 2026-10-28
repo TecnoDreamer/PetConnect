@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pet_connect/core/theme/app_theme.dart';
 import 'package:pet_connect/core/theme/theme_providers.dart';
+import 'package:pet_connect/features/usuario/domain/login_social.dart';
 import 'package:pet_connect/features/usuario/domain/usuario.dart';
 import 'package:pet_connect/features/usuario/domain/usuario_repository.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
@@ -47,6 +48,25 @@ class _FakeUsuarioRepository implements UsuarioRepository {
 
   @override
   Future<void> sendPasswordReset({required String email}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> entrarComProvedor(ProvedorSocial provedor) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> entrarComSenhaEVincular({
+    required String email,
+    required String senha,
+    required ContaExisteComOutroMetodo pendente,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> entrarComProvedorEVincular(
+    ProvedorSocial provedor,
+    ContaExisteComOutroMetodo pendente,
+  ) =>
       throw UnimplementedError();
 
   @override
