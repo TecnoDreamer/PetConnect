@@ -29,8 +29,8 @@ sequenceDiagram
     end
 ```
 
-Login com Google e Facebook (RF04-A, RF04-B), incluindo a vinculação de
-conta existente: diagramas em `docs/features/login-social.md`.
+Login com Google (RF04-A), incluindo a vinculação de conta existente:
+diagramas em `docs/features/login-social.md`.
 
 ## 2. Cadastro de pet e geração de QR code (RF10, RF16)
 

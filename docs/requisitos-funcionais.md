@@ -10,8 +10,8 @@ Convenção: `RFxx` — identificador único, usado também para rastrear casos 
 | RF02 | O sistema deve validar formato de e-mail e força mínima de senha no cadastro. |
 | RF03 | O sistema deve impedir cadastro com e-mail já existente, informando erro claro. |
 | RF04 | O sistema deve permitir login com e-mail e senha. |
-| RF04-A | O sistema deve permitir login/cadastro via Google (Firebase Auth + Google Sign-In). Código pronto; validação real bloqueada até a configuração do Console (`docs/features/login-social.md`). Testes: `login_social_repository_test.dart`, `provedores_sociais_test.dart`, `login_social_screen_test.dart`, CT04-A. |
-| RF04-B | O sistema deve permitir login/cadastro via Facebook (Firebase Auth + Facebook Login). Mesma situação do RF04-A. Conta com o mesmo e-mail por outro método só é vinculada depois de o tutor entrar nela (ADR 0006). CT04-B, CT04-C. |
+| RF04-A | O sistema deve permitir login/cadastro via Google (Firebase Auth + Google Sign-In). Conta com o mesmo e-mail por senha só é vinculada depois de o tutor entrar nela (ADR 0006). Firebase configurado em 2026-10-27; validação no aparelho em `docs/validation/login-social.md`. Testes: `login_social_repository_test.dart`, `provedores_sociais_test.dart`, `login_social_screen_test.dart`, CT04-A, CT04-C. |
+| RF04-B | ~~Login/cadastro via Facebook.~~ **Fora do escopo** por decisão do proprietário (2026-10-27). Ver `docs/features/login-social.md`. |
 | RF05 | O sistema deve permitir recuperação de senha via e-mail ("Esqueci minha senha"). |
 | RF06 | O sistema deve manter a sessão do tutor autenticado entre aberturas do app. |
 | RF07 | O sistema deve permitir logout. |

@@ -42,7 +42,7 @@ Além disso, centraliza para o tutor:
 | Cadastro, login e recuperação de senha (e-mail/senha) | ✅ Concluído | RF01–RF03, RF05 |
 | Sessão persistida + rotas protegidas | ✅ Concluído | RF06 |
 | Logout | ✅ Concluído | RF07 |
-| Login social (Google / Facebook) | 🔍 Em revisão — código pronto, aguardando configuração do Console | RF04-A, RF04-B |
+| Login com Google | 🔍 Em revisão — Firebase configurado, falta validar no aparelho (Facebook fora do escopo) | RF04-A |
 | Edição/exclusão da conta do tutor (nome, sobrenome, telefone, nascimento, gênero, foto) | ✅ Concluído | RF08–RF09 |
 | Gestão de pets (cadastro, listagem, edição, exclusão) | ✅ Concluído | RF10–RF15 |
 | QR code de identificação (exibido no app) | ✅ Concluído | RF16 |

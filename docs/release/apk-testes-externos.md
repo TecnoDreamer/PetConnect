@@ -12,8 +12,11 @@
 | Ambiente | **Firebase atual** (`pet-connect-c53f1`), com contas de teste e dados fictícios. Sem projeto de staging. |
 | Galeria de fotos | **Ligada** neste APK (`--dart-define=GALERIA_FOTOS=true`). |
 
-Login com Google e Facebook **não** entra: é a Fase 3. Os botões continuam
-na tela de login, mas ainda não fazem nada.
+Login social **não** entra neste APK: é a Fase 3. Os botões continuam na
+tela de login, mas ainda não fazem nada. **Atualização (2026-10-27):** a
+Fase 3 ficou só com o Google, e o Facebook saiu do escopo
+(`docs/features/login-social.md`). O próximo APK traz o "Entrar com
+Google".
 
 ## O que entra no APK
 
@@ -163,6 +166,9 @@ Permissões no manifesto final (`aapt2 dump badging`):
   (`flutter_facebook_auth`). O app não mostra anúncios.
   - Revisar na Fase 3 (login social) e antes da Play Store, que pede
     declaração de uso do ID de publicidade.
+  - **Atualização (2026-10-27):** com a remoção do `flutter_facebook_auth`
+    na Fase 3, o próximo APK é conferido de novo com `aapt2 dump badging`
+    (`docs/features/login-social.md`).
   - Para remover, basta `tools:node="remove"` no manifesto, se não forem
     necessárias.
 

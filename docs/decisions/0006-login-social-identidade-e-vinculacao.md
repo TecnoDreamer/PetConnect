@@ -2,51 +2,50 @@
 
 - **Data:** 2026-10-27
 - **Status:** aceita (implementada em `feat/login-social-google-facebook`)
-- **Contexto:** RF04-A e RF04-B, `docs/features/login-social.md`
+- **Contexto:** RF04-A, `docs/features/login-social.md`
 
 ## Contexto
 
-O tutor pode entrar com e-mail e senha, Google ou Facebook. Os pets são
-ligados ao tutor pelo `userId`, que é o UID do Firebase Auth. Um login por
-outro provedor não pode criar um segundo tutor, nem juntar contas de
-pessoas diferentes que tenham o mesmo e-mail.
+O tutor pode entrar com e-mail e senha ou com o Google. Os pets são ligados
+ao tutor pelo `userId`, que é o UID do Firebase Auth. Um login por outro
+método não pode criar um segundo tutor, nem juntar contas de pessoas
+diferentes que tenham o mesmo e-mail.
 
 ## Decisões
 
-1. **O UID do Firebase Auth continua sendo a identidade canônica.**
+1. **Só o Google como login social.** O Facebook (RF04-B) saiu do escopo
+   por decisão do proprietário. A estrutura aceita um novo provedor sem
+   mudar o fluxo.
+2. **O UID do Firebase Auth continua sendo a identidade canônica.**
    - O perfil (`Usuarios/{uid}` ou `GET /me`) é criado só se ainda não
      existir.
    - Um login repetido nunca altera o perfil.
-2. **Sem união automática pelo e-mail.**
+3. **Sem união automática pelo e-mail feita pelo app.**
    - Quando o Firebase responde `account-exists-with-different-credential`,
-     o app pede que o tutor entre pelo método que já usa, com senha ou
-     outro provedor.
-   - Só depois disso o provedor novo é vinculado (`linkWithCredential`).
+     o app pede a senha da conta existente.
+   - Só depois disso o Google é vinculado (`linkWithCredential`).
    - A credencial pendente fica só em memória, durante o diálogo.
-3. **Nenhuma migração de pets entre UIDs.** Se algum dia for necessária,
+4. **Nenhuma migração de pets entre UIDs.** Se algum dia for necessária,
    será um procedimento próprio, transacional e auditado, com aprovação.
-4. **Perfil social mínimo.**
-   - Do provedor, o app usa só o nome e o e-mail. A foto não é copiada.
-   - Os campos que faltam ficam vazios, como nas contas antigas, e o tutor
-     completa em Editar perfil, sem tela nova.
-5. **Sair encerra o Firebase e os SDKs dos provedores**, para o próximo login
-   perguntar a conta de novo.
-6. **Configuração fora do código:**
-   - o App ID e o Client Token do Facebook ficam em
-     `android/facebook.properties`, fora do Git;
-   - o App Secret fica só no Firebase Console;
-   - o cliente OAuth do Google vem do `google-services.json`, ou do
-     `--dart-define=GOOGLE_SERVER_CLIENT_ID`.
+5. **Perfil social mínimo.**
+   - Do Google, o app usa só o nome e o e-mail. A foto não é copiada.
+   - Os campos que faltam ficam vazios e o tutor completa em Editar perfil.
+6. **Sair encerra o Firebase e o Google Sign-In**, para o próximo login
+   perguntar a conta.
+7. **Configuração fora do código.** O cliente OAuth vem do
+   `google-services.json` (fora do Git) ou de
+   `--dart-define=GOOGLE_SERVER_CLIENT_ID`. A chave secreta do cliente web
+   não é usada pelo app.
 
 ## Consequências
 
-- Mais seguro contra tomada de conta, ao custo de um passo a mais para quem
-  já tinha conta e entra pela primeira vez com outro provedor.
-- **Comportamento do Firebase:** com "uma conta por e-mail" e conta por
-  senha **não verificada**, entrar com Google faz o Firebase manter o UID e
-  substituir o método.
+- Mais seguro contra tomada de conta, ao custo de um passo a mais no
+  conflito.
+- **Comportamento do Firebase com o Google:** o Google é um provedor
+  confiável. Com "uma conta por e-mail" e conta por senha **não
+  verificada**, o Firebase mantém o UID e troca o método pelo Google, sem
+  conflito.
   - Os dados continuam com o tutor.
-  - Fica registrado para não ser confundido com união automática feita
-    pelo app.
-- Sem configuração no Console, os botões avisam que o login não está
+  - Fica registrado para não ser confundido com união feita pelo app.
+- Sem o cliente OAuth no build, o botão avisa que o login não está
   disponível, em vez de quebrar.

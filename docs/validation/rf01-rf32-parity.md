@@ -21,7 +21,8 @@
 | RF02 | Validação e-mail/senha | Validação client-side (Flutter Form) | Idêntica (client-side, não migrou) | `cadastro_screen.dart` | — | — | — | `NOT_APPLICABLE` (não faz parte da migração — validação sempre foi só client-side) |
 | RF03 | Impedir e-mail duplicado | Firebase Auth (erro nativo) | Firebase Auth (inalterado) | `cadastro_screen.dart` | — | — | — | `NOT_APPLICABLE` (Firebase Auth continua sendo a fonte de identidade em qualquer flag) |
 | RF04 | Login e-mail/senha | Firebase Auth | Firebase Auth (inalterado) | `login_screen.dart` | — | `auth_flow_test.dart` (ver observação) | DV02 | `PASS_MANUAL_PENDENTE` |
-| RF04-A/B | Login social | `google_sign_in`/`flutter_facebook_auth` + Firebase Auth | Mesmo fluxo; perfil provisionado por `GET /me` | `login_screen.dart`, `entrada_social.dart` | — | `login_social_*_test.dart`, `provedores_sociais_test.dart` | LS01–LS16 | `BLOCKED` (código pronto; aguardando configuração do Console — `docs/features/login-social.md`) |
+| RF04-A | Login com Google | `google_sign_in` + Firebase Auth | Mesmo fluxo; perfil provisionado por `GET /me` | `login_screen.dart`, `entrada_social.dart` | — | `login_social_*_test.dart`, `provedores_sociais_test.dart` | LS01–LS13 | `PASS_MANUAL_PENDENTE` (Firebase configurado em 2026-10-27) |
+| RF04-B | Login com Facebook | — | — | — | — | — | — | `FORA_DO_ESCOPO` (decisão do proprietário, 2026-10-27) |
 | RF05 | Recuperação de senha | Firebase Auth | Inalterado | `esqueci_senha_screen.dart` | — | — | — | `NOT_APPLICABLE` |
 | RF06 | Sessão persistente | Firebase Auth (`authStateChanges`) | Inalterado | `app_router.dart` (guard) | — | DV05 (manual) | DV05 | `PASS_MANUAL_PENDENTE` |
 | RF07 | Logout | Firebase Auth | Inalterado | `configuracoes_screen.dart` | — | — | DV06 | `PASS_MANUAL_PENDENTE` |

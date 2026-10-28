@@ -1,16 +1,16 @@
-# Validação manual — Login com Google e Facebook
+# Validação manual — Login com Google
 
 > Branch: `feat/login-social-google-facebook`. Detalhes em
-> `docs/features/login-social.md`.
+> `docs/features/login-social.md`. O Facebook saiu do escopo (2026-10-27).
 >
-> **Bloqueado até a configuração do Console** (checklist na mesma página).
+> Pré-requisitos (feitos em 2026-10-27):
+> - provedor Google ativado no Firebase;
+> - SHA-1 e SHA-256 de debug e upload cadastradas;
+> - `google-services.json` novo em `android/app/`.
 >
 > Testar com as duas assinaturas:
 > - debug: `flutter run`;
 > - upload: APK de release.
->
-> Usar contas de teste do Google e do Facebook. Contas pessoais só se o
-> proprietário quiser.
 
 ## Identificação
 
@@ -18,7 +18,6 @@
 Aparelho / Android:
 Assinatura (debug / upload):
 Build (commit):
-App do Facebook instalado? (sim / não):
 Data:
 Testado por:
 ```
@@ -27,22 +26,18 @@ Testado por:
 
 | ID | Caso | Resultado |
 |---|---|---|
-| LS00 | **Antes da configuração:** tocar em Google e em Facebook mostra "ainda não está disponível nesta versão", sem fechar o app | |
-| LS01 | Google, primeira vez: escolher a conta → Home; Editar perfil mostra nome e e-mail do Google, telefone vazio | |
-| LS02 | Sair → Google de novo: o app pergunta a conta; entra na mesma conta, com os mesmos pets | |
-| LS03 | Google: fechar o seletor de conta → volta ao Login sem mensagem | |
-| LS04 | Facebook com o app do Facebook instalado → autorizar → Home | |
-| LS05 | Facebook **sem** o app instalado → abre o navegador → autorizar → volta ao app → Home | |
-| LS06 | Facebook: cancelar na tela de autorização → Login sem mensagem | |
-| LS07 | Conta por e-mail existente + Facebook com o **mesmo e-mail** → diálogo "Você já tem uma conta" → senha certa → Home com os pets da conta de e-mail | |
-| LS08 | Mesmo caso do LS07 com senha errada → "E-mail ou senha inválidos."; nada é vinculado | |
-| LS09 | Depois do LS07: sair e entrar só com o Facebook → mesma conta e mesmos pets | |
-| LS10 | Modo avião → tocar em Google → mensagem de conexão; o app não trava | |
-| LS11 | Tocar várias vezes rápido no botão: um único seletor ou login | |
-| LS12 | Enquanto o Google carrega, Facebook e ENTRAR ficam desabilitados | |
-| LS13 | Tema do tutor Escuro → sair → Login continua na identidade original | |
-| LS14 | Segundo plano durante o login (Home do Android) e volta: o login continua ou dá para tentar de novo | |
-| LS15 | Outra conta (Google diferente) não vê os pets da primeira | |
-| LS16 | APK de release (chave de upload) também entra com Google e Facebook (SHA de upload cadastrado) | |
+| LS01 | "Entrar com Google", primeira vez: escolher a conta → Home; Editar perfil mostra nome e e-mail do Google, telefone vazio | |
+| LS02 | Sair → "Entrar com Google" de novo: o app pergunta a conta; entra na mesma conta, com os mesmos pets | |
+| LS03 | Fechar o seletor de conta → volta ao Login sem mensagem | |
+| LS04 | Conta Google com outro e-mail → outra conta PetConnect, sem os pets da primeira | |
+| LS05 | Conta por e-mail e senha existente + Google com o **mesmo e-mail**: entra na mesma conta (os mesmos pets), direto ou pelo diálogo "Você já tem uma conta" com a senha certa | |
+| LS06 | Mesmo caso do LS05, se aparecer o diálogo: senha errada → "E-mail ou senha inválidos."; nada é vinculado | |
+| LS07 | Depois do LS05: sair e entrar só com o Google → mesma conta e mesmos pets; entrar por e-mail e senha também funciona, se a senha foi mantida | |
+| LS08 | Modo avião → "Entrar com Google" → mensagem de conexão; o app não trava | |
+| LS09 | Tocar várias vezes rápido no botão: um único seletor | |
+| LS10 | Enquanto o Google carrega, ENTRAR fica desabilitado | |
+| LS11 | Tema do tutor Escuro → sair → o Login continua na identidade original | |
+| LS12 | Segundo plano durante o seletor (Home do Android) e volta: dá para continuar ou tentar de novo | |
+| LS13 | APK de release (chave de upload) também entra com Google | |
 
 Marcar `OK`, `FALHOU: <o que aconteceu>` ou `BLOQUEADO: <motivo>`.
