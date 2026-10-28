@@ -9,7 +9,8 @@
 > - O botão, o código, a dependência `flutter_facebook_auth` e a
 >   configuração Android foram removidos.
 > - Com isso saíram também as permissões de ID de publicidade que o SDK da
->   Meta trazia.
+>   Meta trazia: `AD_ID` e `ACCESS_ADSERVICES_*`. Conferido com
+>   `aapt2 dump badging` no APK de release do commit `e8b292d`.
 > - Se voltar, a estrutura (`ProvedorSocial`, `ProvedorDeCredencial`,
 >   `EntradaSocial`) aceita um novo provedor sem mudar o fluxo.
 
