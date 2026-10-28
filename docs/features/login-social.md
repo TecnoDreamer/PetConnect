@@ -21,7 +21,7 @@
 | Código (app) | Pronto. Testado com fakes |
 | Firebase | **Feito pelo proprietário (2026-10-27):** provedor Google ativado, SHA-1 e SHA-256 das chaves de debug e upload cadastradas, `google-services.json` novo baixado |
 | `google-services.json` | Conferido: mesmo projeto e mesmos apps, cliente OAuth web (tipo 3) e clientes Android (tipo 1) para as duas chaves. O arquivo é ignorado pelo Git (`.gitignore`), então fica só no computador que gera o build |
-| Teste real no aparelho | Pendente com o proprietário: roteiro em `docs/validation/login-social.md` |
+| Teste real no aparelho | **Parcial (2026-10-28):** conta criada com o Google no APK de release (chave de upload). Os outros casos seguem pendentes: roteiro em `docs/validation/login-social.md` |
 
 Num build sem o cliente OAuth no `google-services.json`, o botão não
 quebra: mostra "Entrar com o Google ainda não está disponível nesta
@@ -162,8 +162,10 @@ precisam ser cadastradas antes do lançamento. Depois, baixe o
 | `test/features/auth/login_social_screen_test.dart` (13) | Sem botão do Facebook; carregamento e ENTRAR bloqueado; toque duplo faz um login só; cancelado sem mensagem; 5 mensagens sem mover o card; diálogo com senha certa, senha errada e cancelar; login por e-mail inalterado |
 | `test/features/auth/login_screen_test.dart` | Botão do Google 24–32 px abaixo do card, na largura dele, e "Cadastre-se" 16–24 px abaixo, em 320, 360, 390 e 412 de largura |
 
-**Pendente no aparelho:** login real, cancelamento, segundo plano, modo
-avião, conta revogada e conflito com conta por senha (LS01–LS12).
+**No aparelho (2026-10-28):** primeiro login com o Google no APK de
+release (LS01 parcial, LS13). **Pendente:** perfil em Editar perfil, entrar
+de novo, cancelamento, segundo plano, modo avião e conflito com conta por
+senha (LS02–LS12), e o build de debug.
 
 ## Riscos e pendências
 
@@ -173,7 +175,8 @@ avião, conta revogada e conflito com conta por senha (LS01–LS12).
 - **Novo computador de build:** é preciso baixar o `google-services.json`
   do Firebase, porque ele não está no Git.
 - **APK dos testadores:** a versão 0.1.0 já distribuída ainda não tem o
-  login com Google. Ele entra no próximo APK.
+  login com Google. Ele entra no próximo APK, que só sai com a aprovação
+  do proprietário.
 
 ## Rollback
 

@@ -15,18 +15,18 @@
 ## Identificação
 
 ```text
-Aparelho / Android:
-Assinatura (debug / upload):
-Build (commit):
-Data:
-Testado por:
+Aparelho / Android: motorola edge 60 fusion (0089368537) / Android 16
+Assinatura (debug / upload): upload (APK de release)
+Build (commit): e8b292d (código igual ao merge da PR #87), release
+Data: 2026-10-28
+Testado por: proprietário
 ```
 
 ## Casos
 
 | ID | Caso | Resultado |
 |---|---|---|
-| LS01 | "Entrar com Google", primeira vez: escolher a conta → Home; Editar perfil mostra nome e e-mail do Google, telefone vazio | |
+| LS01 | "Entrar com Google", primeira vez: escolher a conta → Home; Editar perfil mostra nome e e-mail do Google, telefone vazio | PARCIAL: 2026-10-28, a conta foi criada com o Google e o app entrou. Não registrado: nome, e-mail e telefone em Editar perfil |
 | LS02 | Sair → "Entrar com Google" de novo: o app pergunta a conta; entra na mesma conta, com os mesmos pets | |
 | LS03 | Fechar o seletor de conta → volta ao Login sem mensagem | |
 | LS04 | Conta Google com outro e-mail → outra conta PetConnect, sem os pets da primeira | |
@@ -38,6 +38,10 @@ Testado por:
 | LS10 | Enquanto o Google carrega, ENTRAR fica desabilitado | |
 | LS11 | Tema do tutor Escuro → sair → o Login continua na identidade original | |
 | LS12 | Segundo plano durante o seletor (Home do Android) e volta: dá para continuar ou tentar de novo | |
-| LS13 | APK de release (chave de upload) também entra com Google | |
+| LS13 | APK de release (chave de upload) também entra com Google | OK: 2026-10-28, mesmo teste do LS01, no APK de release |
 
-Marcar `OK`, `FALHOU: <o que aconteceu>` ou `BLOQUEADO: <motivo>`.
+Marcar `OK`, `PARCIAL: <o que faltou conferir>`, `FALHOU: <o que aconteceu>`
+ou `BLOQUEADO: <motivo>`. Em branco: ainda não testado.
+
+LS02–LS12 continuam pendentes. A assinatura de debug (`flutter run`) ainda
+não foi testada.
