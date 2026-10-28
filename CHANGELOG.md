@@ -19,6 +19,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- Build Android: o release passa a ser assinado com a chave de upload do
+  proprietário (`android/key.properties`, fora do Git); sem ela, o build de
+  release falha em vez de usar a chave de debug. Versão `0.1.0+1`. Ver
+  `docs/release/apk-testes-externos.md`.
 - Vacinas, consultas, histórico e localização seguem o tema escolhido
   (Padrão, Claro ou Escuro), como o resto do app; no Escuro deixam de
   aparecer com fundo branco e texto marrom. Ver

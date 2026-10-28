@@ -110,6 +110,14 @@ python tool/branding/gerar_icones_android.py
 APK de teste: `flutter build apk --debug`. Detalhes em
 [`docs/branding/icone-e-splash-android.md`](docs/branding/icone-e-splash-android.md).
 
+APK para testadores (release, assinado com a chave de upload do
+proprietário, que fica fora do Git): `flutter build apk --release
+--dart-define=GALERIA_FOTOS=true`. Sem `android/key.properties`, o build de
+release falha de propósito. Passo a passo da chave, segurança e guia do
+testador em
+[`docs/release/apk-testes-externos.md`](docs/release/apk-testes-externos.md)
+e [`docs/validation/apk-testes-externos.md`](docs/validation/apk-testes-externos.md).
+
 ### Rodando os testes
 
 ```bash
