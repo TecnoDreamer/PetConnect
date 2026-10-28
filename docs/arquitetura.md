@@ -89,7 +89,10 @@ A UI nunca importa o Firebase SDK diretamente — sempre por meio de um reposit�
 Pets têm uma situação (`SituacaoPet.ativo` / `falecido`). As rotas de pet
 ficam em `lib/routing/pet_routes.dart`, protegidas por `PetSituacaoGuard`:
 rotas operacionais só abrem para pets ativos e as do memorial só para
-falecidos, inclusive por link direto. A transição passa sempre por
+falecidos, inclusive por link direto. As rotas do memorial são aninhadas
+em `/memorial`, para que um `go` monte a pilha lista → memorial, e telas
+que podem ficar sozinhas na pilha usam `VoltarParaHome`
+(`docs/features/memorial-retorno-navegacao.md`). A transição passa sempre por
 `PetRepository.alterarSituacao` (transação + auditoria). Ver
 `docs/features/memorial-pet.md` e
 `docs/decisions/0002-arquivamento-logico-pets-falecidos.md`.

@@ -10,8 +10,8 @@ Convenção: `RFxx` — identificador único, usado também para rastrear casos 
 | RF02 | O sistema deve validar formato de e-mail e força mínima de senha no cadastro. |
 | RF03 | O sistema deve impedir cadastro com e-mail já existente, informando erro claro. |
 | RF04 | O sistema deve permitir login com e-mail e senha. |
-| RF04-A | O sistema deve permitir login/cadastro via Google (Firebase Auth + Google Sign-In). |
-| RF04-B | O sistema deve permitir login/cadastro via Facebook (Firebase Auth + Facebook Login). |
+| RF04-A | O sistema deve permitir login/cadastro via Google (Firebase Auth + Google Sign-In). Conta com o mesmo e-mail por senha só é vinculada depois de o tutor entrar nela (ADR 0006). Firebase configurado em 2026-10-27; validação no aparelho em `docs/validation/login-social.md`. Testes: `login_social_repository_test.dart`, `provedores_sociais_test.dart`, `login_social_screen_test.dart`, CT04-A, CT04-C. |
+| RF04-B | ~~Login/cadastro via Facebook.~~ **Fora do escopo** por decisão do proprietário (2026-10-27). Ver `docs/features/login-social.md`. |
 | RF05 | O sistema deve permitir recuperação de senha via e-mail ("Esqueci minha senha"). |
 | RF06 | O sistema deve manter a sessão do tutor autenticado entre aberturas do app. |
 | RF07 | O sistema deve permitir logout. |
@@ -85,15 +85,16 @@ Detalhes em `docs/features/memorial-pet.md`.
 
 | ID | Requisito | Testes |
 |----|-----------|--------|
-| RF33 | O tutor dono pode registrar o falecimento de um pet ativo, a partir das Configurações do Pet, com explicação e confirmação explícita; data do falecimento e homenagem são opcionais. | `memorial_flow_test.dart` (Registrar falecimento), `memorial_repository_test.dart`, CT24 |
+| RF33 | O tutor dono pode registrar o falecimento de um pet ativo, a partir das Configurações do Pet, com explicação e confirmação explícita; data do falecimento e homenagem são opcionais. Ao concluir, o app abre o memorial; Voltar leva à lista do Memorial e, dela, à Home, sem fechar o app. | `memorial_flow_test.dart` (Registrar falecimento), `memorial_navegacao_test.dart`, `memorial_repository_test.dart`, CT24 |
 | RF34 | Pets falecidos saem da lista principal e aparecem na seção Memorial, privada, sem duplicação. | `memorial_flow_test.dart` (Home), CT25 |
 | RF35 | O memorial mostra nome, foto, capa, dados básicos existentes, homenagem e as fotos do próprio pet, e não exibe nem carrega recursos clínicos ou operacionais, inclusive por link direto. | `memorial_flow_test.dart` (Tela do memorial, Proteção de rotas), CT26 |
-| RF36 | O tutor pode corrigir um falecimento registrado por engano; o pet volta a ficar ativo com todos os dados preservados. Toda transição é auditada e nenhuma exclui dados. | `memorial_repository_test.dart`, `memorial_flow_test.dart` (Corrigir marcação), CT27 |
+| RF36 | O tutor pode corrigir um falecimento registrado por engano; o pet volta a ficar ativo com todos os dados preservados. Toda transição é auditada e nenhuma exclui dados. | `memorial_repository_test.dart`, `memorial_flow_test.dart` (Corrigir marcação), `memorial_navegacao_test.dart`, CT27 |
 
 ## Galeria de fotos do pet
 
 Detalhes em `docs/features/galeria-fotos-pet.md`. Desligada por padrão
-(`GALERIA_FOTOS`) até o deploy das regras do Firestore.
+(`GALERIA_FOTOS`). As regras foram deployadas em 2026-10-27; ligar para os
+usuários é a decisão D4 do ADR 0005.
 
 | ID | Requisito | Testes |
 |----|-----------|--------|

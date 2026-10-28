@@ -9,8 +9,8 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 - Regras do Firestore para a galeria de fotos (`Pets/{petId}/fotos`): só o
   dono lê, publica e exclui; criação validada campo a campo; sem edição.
-  Testes no emulador, no CI. Junto do deploy das regras de isolamento.
-- Regras do Firestore com isolamento por dono (aguardando deploy): cada
+  Testes no emulador, no CI. Deployadas com as de isolamento em 2026-10-27.
+- Regras do Firestore com isolamento por dono (deployadas em 2026-10-27): cada
   tutor só lê e escreve o próprio perfil, os próprios pets e os registros
   deles; pet falecido não aceita novos registros clínicos; eventos do
   Memorial ficam imutáveis. Corrige a regra genérica que deixava qualquer
@@ -19,6 +19,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- Build Android: o release passa a ser assinado com a chave de upload do
+  proprietário (`android/key.properties`, fora do Git); sem ela, o build de
+  release falha em vez de usar a chave de debug. Versão `0.1.0+1`. Ver
+  `docs/release/apk-testes-externos.md`.
 - Vacinas, consultas, histórico e localização seguem o tema escolhido
   (Padrão, Claro ou Escuro), como o resto do app; no Escuro deixam de
   aparecer com fundo branco e texto marrom. Ver
@@ -31,12 +35,20 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- "Entrar com Google" na tela de Login. Na primeira vez a conta é criada
+  com o nome e o e-mail do Google; depois, entra na mesma conta. Se o
+  e-mail já tem conta por senha e o Firebase pedir confirmação, o app pede
+  a senha dessa conta e então liga o Google, sem juntar contas sozinho. O
+  botão do Facebook saiu da tela (fora do escopo), e com ele as permissões
+  de ID de publicidade que o SDK da Meta trazia. Ver
+  `docs/features/login-social.md`.
 - Galeria de fotos por pet: em "Fotos", no perfil do pet, o tutor vê as
   fotos em grade de 3 colunas (mais recentes primeiro, em páginas), abre
   em tela cheia com zoom, publica até 10 por vez com legenda e progresso,
   e exclui com confirmação. Pet no Memorial continua recebendo fotos, sem
   reativar recursos clínicos. Privada (só o dono, pelas regras do
-  Firestore). Desligada até o deploy das regras (`GALERIA_FOTOS`). Ver
+  Firestore). Desligada por padrão (`GALERIA_FOTOS`) até a liberação; regras
+  deployadas em 2026-10-27 e 1ª rodada no aparelho feita. Ver
   `docs/features/galeria-fotos-pet.md`.
 - QR code regenerável: em "QR Code do Pet", o tutor pode gerar um novo QR
   (com confirmação); o anterior para de funcionar na hora. Depende da API
@@ -50,6 +62,14 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Memorial: depois de registrar o falecimento, Voltar leva à lista do
+  Memorial e depois à Home, em vez de fechar o app. Vale para o botão e o
+  gesto do Android e para a seta da tela; o mesmo vale ao restaurar um
+  perfil e ao abrir o Memorial direto. Ver
+  `docs/features/memorial-retorno-navegacao.md`.
+- Login: Google, Facebook e "Cadastre-se" ficam logo abaixo do card, em vez
+  de isolados na base da tela. Ver
+  `docs/features/login-espacamento-acoes-sociais.md`.
 - Consultas: os botões "Marcar realizada" e "Cancelar" não estouram mais
   a largura em telas estreitas com fonte ampliada.
 - Home: a linha "Meus Pets" com o botão "Adicionar pet" não estoura mais

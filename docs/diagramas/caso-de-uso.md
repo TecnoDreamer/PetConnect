@@ -69,7 +69,7 @@ graph LR
 | Caso de uso | Ator | RF relacionado |
 |---|---|---|
 | Cadastrar-se | Tutor | RF01–RF03 |
-| Fazer login (e-mail, Google ou Facebook) | Tutor | RF04, RF04-A, RF04-B, RF06 |
+| Fazer login (e-mail ou Google; Facebook fora do escopo) | Tutor | RF04, RF04-A, RF06 |
 | Recuperar senha | Tutor | RF05 |
 | Gerenciar conta | Tutor | RF08, RF09 |
 | Cadastrar pet | Tutor | RF10 |

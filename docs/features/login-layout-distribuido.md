@@ -4,6 +4,10 @@
 > aparelho (≈412×915) com todos os elementos agrupados no topo e cerca de
 > 30% da tela vazia embaixo.
 
+> **Atualização (2026-10-27):** o rodapé deixou de ficar ancorado embaixo
+> e passou a acompanhar o card. Ver
+> `docs/features/login-espacamento-acoes-sociais.md`.
+
 ## Causa raiz
 
 O layout da correção anterior (`docs/features/login-layout-static-fix.md`)

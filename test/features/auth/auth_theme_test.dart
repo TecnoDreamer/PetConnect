@@ -10,6 +10,7 @@ import 'package:pet_connect/core/theme/app_palette.dart';
 import 'package:pet_connect/core/theme/app_theme.dart';
 import 'package:pet_connect/core/theme/app_theme_mode.dart';
 import 'package:pet_connect/core/theme/theme_providers.dart';
+import 'package:pet_connect/features/usuario/domain/login_social.dart';
 import 'package:pet_connect/features/usuario/domain/usuario.dart';
 import 'package:pet_connect/features/usuario/domain/usuario_repository.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
@@ -35,6 +36,18 @@ class _FakeUsuarioRepository implements UsuarioRepository {
 
   @override
   Stream<Usuario?> watchUsuario(String uid) => throw UnimplementedError();
+
+  @override
+  Future<void> entrarComProvedor(ProvedorSocial provedor) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> entrarComSenhaEVincular({
+    required String email,
+    required String senha,
+    required ContaExisteComOutroMetodo pendente,
+  }) =>
+      throw UnimplementedError();
 
   @override
   Future<void> signOut() async {}

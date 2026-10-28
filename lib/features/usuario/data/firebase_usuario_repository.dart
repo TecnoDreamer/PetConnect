@@ -2,18 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../pet/data/exclusao_de_pet.dart';
+import '../domain/login_social.dart';
 import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
+import 'entrada_social.dart';
+import 'provedores_sociais.dart';
 
 class FirebaseUsuarioRepository implements UsuarioRepository {
   FirebaseUsuarioRepository({
     required FirebaseAuth auth,
     required FirebaseFirestore firestore,
+    Map<ProvedorSocial, ProvedorDeCredencial> provedores = const {},
   })  : _auth = auth,
-        _firestore = firestore;
+        _firestore = firestore {
+    _social = EntradaSocial(
+      auth: auth,
+      provedores: provedores,
+      aposEntrar: _garantirPerfil,
+    );
+  }
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  late final EntradaSocial _social;
 
   CollectionReference<Map<String, dynamic>> get _usuarios =>
       _firestore.collection('Usuarios');
@@ -67,8 +78,44 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
   }
 
   @override
+  Future<void> entrarComProvedor(ProvedorSocial provedor) =>
+      _social.entrar(provedor);
+
+  @override
+  Future<void> entrarComSenhaEVincular({
+    required String email,
+    required String senha,
+    required ContaExisteComOutroMetodo pendente,
+  }) =>
+      _social.entrarComSenhaEVincular(
+          email: email, senha: senha, pendente: pendente);
+
+  /// Primeiro login social: cria `Usuarios/{uid}` com o que o provedor
+  /// informa (nome e e-mail). Telefone e nascimento ficam vazios, como em
+  /// contas antigas, e o tutor completa em Editar perfil. A foto do
+  /// provedor não é copiada. Se o perfil já existe (conta por e-mail ou
+  /// outro provedor), nada é alterado.
+  Future<void> _garantirPerfil(User user) async {
+    final doc = _usuarios.doc(user.uid);
+    if ((await doc.get()).exists) return;
+
+    final partes = (user.displayName ?? '').trim().split(RegExp(r'\s+'));
+    await doc.set({
+      'usuarioID': user.uid,
+      'nome': partes.first,
+      'sobrenome': partes.skip(1).join(' '),
+      'email': user.email ?? '',
+      'telefone': '',
+      'dataNascimento': '',
+      'genero': '',
+      'foto': null,
+    });
+  }
+
+  @override
   Future<void> signOut() async {
     await _auth.signOut();
+    await _social.sairDosProvedores();
   }
 
   @override

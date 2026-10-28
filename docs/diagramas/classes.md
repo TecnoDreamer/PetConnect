@@ -85,8 +85,8 @@ classDiagram
         <<interface>>
         +signIn(email, senha) Future~Usuario~
         +signUp(nome, email, senha) Future~Usuario~
-        +signInWithGoogle() Future~Usuario~
-        +signInWithFacebook() Future~Usuario~
+        +entrarComProvedor(ProvedorSocial) Future~void~
+        +entrarComSenhaEVincular(email, senha, pendente) Future~void~
         +sendPasswordReset(email) Future~void~
         +signOut() Future~void~
         +currentUser() Stream~Usuario?~

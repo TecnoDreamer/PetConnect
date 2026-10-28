@@ -21,6 +21,17 @@ Convenção: `CTxx`, referenciando o(s) `RFxx`/`RNFxx` cobertos. Formato: pré-c
 ### CT04 — Login com credenciais válidas (RF04)
 - **Resultado esperado**: usuário autenticado, redirecionado à Home.
 
+### CT04-A — Login com Google (RF04-A)
+- **Passos**: Login → Entrar com Google → escolher a conta; depois sair e entrar de novo com Google.
+- **Resultado esperado**: entra na Home; na primeira vez o perfil é criado com nome e e-mail do Google; na segunda, mesma conta e mesmos pets. Cancelar no seletor volta ao Login sem mensagem. Automatizado com fakes (`login_social_repository_test.dart`); real em `docs/validation/login-social.md` (LS01–LS03).
+
+### CT04-B — Login com Facebook (RF04-B)
+- **Fora do escopo** (decisão do proprietário, 2026-10-27).
+
+### CT04-C — Mesmo e-mail por senha e Google (RF04-A)
+- **Passos**: com conta por e-mail e senha, entrar com Google usando o mesmo e-mail.
+- **Resultado esperado**: mesma conta (mesmo UID, mesmos pets). Se o Firebase devolver o conflito, aparece o diálogo "Você já tem uma conta"; com a senha certa o Google é vinculado; senha errada não vincula nada. O app nunca une contas só pelo e-mail. Automatizado (`login_social_screen_test.dart`, `login_social_repository_test.dart`); real: LS05–LS07.
+
 ### CT05 — Login com senha incorreta (RF04)
 - **Resultado esperado**: erro genérico "e-mail ou senha inválidos" (não revela se o e-mail existe).
 
@@ -107,7 +118,7 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 
 ### CT24 — Registrar falecimento (RF33)
 - **Passos**: Configurações do Pet → Registrar falecimento → (opcional) data e homenagem → confirmar.
-- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada.
+- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada. Voltar (seta, botão ou gesto do Android) leva à lista do Memorial, com o pet, e de novo Voltar leva à Home; o app nunca fecha.
 
 ### CT25 — Pet falecido sai da lista principal (RF34)
 - **Passos**: após o CT24, voltar à Home.
@@ -119,7 +130,7 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 
 ### CT27 — Corrigir marcação incorreta (RF36)
 - **Passos**: Memorial → Configurações do memorial → Corrigir informação de falecimento → confirmar.
-- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home.
+- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home. Voltar no perfil restaurado leva à Home, sem fechar o app.
 
 ### CT28 — Outra conta não altera a situação (RF36, RF12)
 - **Passos**: com uma segunda conta, tentar atualizar `situacao` do pet de outro tutor.
@@ -153,5 +164,5 @@ Automatizados em `test/features/pet/galeria_*_test.dart` e
 
 ### CT34 — Outra conta não acessa (RF42)
 - **Passos**: com uma segunda conta, tentar listar `Pets/<id do pet da primeira>/fotos` ou abrir `/pet/<id>/fotos`.
-- **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. ⚠️ Só vale depois do deploy das regras.
+- **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. Regras deployadas em 2026-10-27; pela tela, conferido no aparelho (G14 em `docs/validation/galeria-fotos-pet.md`).
 

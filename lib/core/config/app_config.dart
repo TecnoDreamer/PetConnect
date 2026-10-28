@@ -56,4 +56,10 @@ class AppConfig {
   /// (docs/security/firestore-isolamento-por-dono.md). Só no modo Firestore;
   /// com [useApiForPets] fica oculta, como o Memorial.
   static const bool galeriaFotos = bool.fromEnvironment('GALERIA_FOTOS');
+
+  /// ID do cliente OAuth **web** do projeto, para o login com Google
+  /// (docs/features/login-social.md). Opcional: sem ele, o Google Sign-In
+  /// lê o valor do `google-services.json`. Não é segredo.
+  static const String googleServerClientId =
+      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 }

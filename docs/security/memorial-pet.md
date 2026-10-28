@@ -4,6 +4,11 @@ Complementa `docs/seguranca.md` e `docs/features/memorial-pet.md`.
 
 ## Autorização
 
+> **Atualização (2026-10-27):** a Fase 1 foi deployada
+> (`firestore-rules-deployed.md`). O catch-all saiu, e as linhas marcadas
+> "⛔ … até o deploy" abaixo passaram a ser garantidas pelas regras. A
+> tabela fica como registro da análise original.
+
 | Ação | Onde é garantida | Situação |
 |---|---|---|
 | Registrar falecimento / corrigir marcação | App: só o dono chega à tela (`PetSituacaoGuard`). Regras deployadas: o catch-all `/{document=**}` (`allow write` para logado) também casa `Pets/{id}` e anula a condição de dono. | ⛔ Servidor não garante até o deploy da Fase 1 |
