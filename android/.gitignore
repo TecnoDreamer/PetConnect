@@ -12,7 +12,5 @@ GeneratedPluginRegistrant.java
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/to/reference-keystore
 key.properties
-# App ID e Client Token do Facebook Login (docs/features/login-social.md).
-facebook.properties
 **/*.keystore
 **/*.jks

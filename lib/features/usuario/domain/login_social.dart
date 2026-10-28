@@ -1,10 +1,10 @@
-/// Login com Google e Facebook (RF04-A, RF04-B; docs/features/login-social.md).
+/// Login com Google (RF04-A; docs/features/login-social.md). O Facebook
+/// (RF04-B) saiu do escopo por decisão do proprietário em 2026-10-27.
 ///
 /// A identidade continua sendo o UID do Firebase Auth: entrar por outro
 /// provedor nunca cria um segundo tutor para uma conta que já existe.
 enum ProvedorSocial {
-  google('Google'),
-  facebook('Facebook');
+  google('Google');
 
   const ProvedorSocial(this.nome);
 
@@ -22,8 +22,8 @@ class LoginSocialCancelado implements Exception {
   String toString() => 'LoginSocialCancelado(${provedor.name})';
 }
 
-/// O provedor não está configurado nesta build (Firebase, Google Cloud ou
-/// Meta) ou não existe neste aparelho.
+/// O provedor não está configurado nesta build (Firebase ou Google Cloud)
+/// ou não existe neste aparelho.
 class LoginSocialIndisponivel implements Exception {
   const LoginSocialIndisponivel(this.provedor, [this.causa]);
 
@@ -48,8 +48,8 @@ class LoginSocialFalhou implements Exception {
 
 /// Já existe uma conta PetConnect com este e-mail, criada por outro método.
 /// As contas **nunca** são unidas automaticamente pelo e-mail: o tutor entra
-/// primeiro pelo método que já usa e só então o novo provedor é vinculado
-/// (UsuarioRepository.entrarComSenhaEVincular / entrarComProvedorEVincular).
+/// primeiro com a senha que já usa e só então o provedor é vinculado
+/// (UsuarioRepository.entrarComSenhaEVincular).
 class ContaExisteComOutroMetodo implements Exception {
   const ContaExisteComOutroMetodo({
     required this.provedor,

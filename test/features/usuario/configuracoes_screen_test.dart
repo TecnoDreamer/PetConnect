@@ -63,13 +63,6 @@ class _FakeUsuarioRepository implements UsuarioRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> entrarComProvedorEVincular(
-    ProvedorSocial provedor,
-    ContaExisteComOutroMetodo pendente,
-  ) =>
-      throw UnimplementedError();
-
-  @override
   Future<void> signOut() async => signOutChamado = true;
 
   @override

@@ -105,13 +105,6 @@ class ApiUsuarioRepository implements UsuarioRepository {
           email: email, senha: senha, pendente: pendente);
 
   @override
-  Future<void> entrarComProvedorEVincular(
-    ProvedorSocial provedor,
-    ContaExisteComOutroMetodo pendente,
-  ) =>
-      _social.entrarComProvedorEVincular(provedor, pendente);
-
-  @override
   Future<void> signOut() async {
     await _auth.signOut();
     await _social.sairDosProvedores();

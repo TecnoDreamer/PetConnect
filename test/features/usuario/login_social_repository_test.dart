@@ -1,6 +1,6 @@
-// Login com Google e Facebook no repositório (docs/features/login-social.md):
-// criação do perfil sem duplicar tutor, cancelamento, provedor indisponível,
-// conflito de conta sem união automática pelo e-mail e vinculação segura.
+// Login com Google no repositório (docs/features/login-social.md): criação
+// do perfil sem duplicar tutor, cancelamento, provedor indisponível, conflito
+// de conta sem união automática pelo e-mail e vinculação segura.
 import 'dart:convert';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -44,8 +44,8 @@ class _FakeUserCredential extends Fake implements UserCredential {
 }
 
 class _FakeAuth extends Fake implements FirebaseAuth {
-  /// Conta que o Firebase devolve para qualquer credencial social.
-  _FakeUser? contaSocial;
+  /// Conta que o Firebase devolve para a credencial do Google.
+  _FakeUser? contaGoogle;
   Object? erroSocial;
   final credenciaisRecebidas = <AuthCredential>[];
 
@@ -57,7 +57,7 @@ class _FakeAuth extends Fake implements FirebaseAuth {
   Future<UserCredential> signInWithCredential(AuthCredential credential) async {
     credenciaisRecebidas.add(credential);
     if (erroSocial != null) throw erroSocial!;
-    return _FakeUserCredential(contaSocial);
+    return _FakeUserCredential(contaGoogle);
   }
 
   @override
@@ -75,24 +75,17 @@ class _FakeAuth extends Fake implements FirebaseAuth {
   Future<void> signOut() async => saidas++;
 }
 
-class _FakeProvedor implements ProvedorDeCredencial {
-  _FakeProvedor(this.provedor);
-
-  @override
-  final ProvedorSocial provedor;
+class _FakeGoogle implements ProvedorDeCredencial {
   Object? erro;
-  int pedidos = 0;
   int saidas = 0;
 
   @override
+  ProvedorSocial get provedor => ProvedorSocial.google;
+
+  @override
   Future<AuthCredential> obterCredencial() async {
-    pedidos++;
     if (erro != null) throw erro!;
-    return switch (provedor) {
-      ProvedorSocial.google =>
-        GoogleAuthProvider.credential(idToken: 'id-token-teste'),
-      ProvedorSocial.facebook => FacebookAuthProvider.credential('token-teste'),
-    };
+    return GoogleAuthProvider.credential(idToken: 'id-token-teste');
   }
 
   @override
@@ -102,22 +95,17 @@ class _FakeProvedor implements ProvedorDeCredencial {
 void main() {
   late _FakeAuth auth;
   late FakeFirebaseFirestore firestore;
-  late _FakeProvedor google;
-  late _FakeProvedor facebook;
+  late _FakeGoogle google;
   late FirebaseUsuarioRepository repo;
 
   setUp(() {
     auth = _FakeAuth();
     firestore = FakeFirebaseFirestore();
-    google = _FakeProvedor(ProvedorSocial.google);
-    facebook = _FakeProvedor(ProvedorSocial.facebook);
+    google = _FakeGoogle();
     repo = FirebaseUsuarioRepository(
       auth: auth,
       firestore: firestore,
-      provedores: {
-        ProvedorSocial.google: google,
-        ProvedorSocial.facebook: facebook,
-      },
+      provedores: {ProvedorSocial.google: google},
     );
   });
 
@@ -125,9 +113,8 @@ void main() {
       (await firestore.collection('Usuarios').doc(uid).get()).data();
 
   group('primeiro login', () {
-    test('Google cria o perfil com nome, sobrenome e e-mail do provedor',
-        () async {
-      auth.contaSocial = _FakeUser('uid-g',
+    test('cria o perfil com nome, sobrenome e e-mail do Google', () async {
+      auth.contaGoogle = _FakeUser('uid-g',
           displayName: 'Ana Maria Souza', email: 'ana@teste.com');
 
       await repo.entrarComProvedor(ProvedorSocial.google);
@@ -145,13 +132,12 @@ void main() {
       });
     });
 
-    test('Facebook sem e-mail e sem nome: perfil com campos vazios', () async {
-      auth.contaSocial = _FakeUser('uid-f');
+    test('sem nome nem e-mail no provedor: perfil com campos vazios', () async {
+      auth.contaGoogle = _FakeUser('uid-g');
 
-      await repo.entrarComProvedor(ProvedorSocial.facebook);
+      await repo.entrarComProvedor(ProvedorSocial.google);
 
-      expect(auth.credenciaisRecebidas.single.providerId, 'facebook.com');
-      final dados = await perfil('uid-f');
+      final dados = await perfil('uid-g');
       expect(dados?['nome'], '');
       expect(dados?['email'], '');
     });
@@ -168,7 +154,7 @@ void main() {
       'genero': 'Mulher',
       'foto': 'https://res.cloudinary.com/x/image/upload/v1/a.jpg',
     });
-    auth.contaSocial = _FakeUser('uid-g', displayName: 'Outro Nome');
+    auth.contaGoogle = _FakeUser('uid-g', displayName: 'Outro Nome');
 
     await repo.entrarComProvedor(ProvedorSocial.google);
     await repo.entrarComProvedor(ProvedorSocial.google);
@@ -199,7 +185,7 @@ void main() {
     test('provedor desligado no Firebase Console: indisponível', () async {
       auth.erroSocial = FirebaseAuthException(code: 'operation-not-allowed');
 
-      await expectLater(repo.entrarComProvedor(ProvedorSocial.facebook),
+      await expectLater(repo.entrarComProvedor(ProvedorSocial.google),
           throwsA(isA<LoginSocialIndisponivel>()));
     });
 
@@ -213,47 +199,44 @@ void main() {
     });
   });
 
-  group('conta existente com outro método', () {
-    final pendenteFacebook = FacebookAuthProvider.credential('token-pendente');
+  group('conta existente por e-mail e senha', () {
+    final pendenteGoogle =
+        GoogleAuthProvider.credential(idToken: 'id-token-pendente');
+    final pendente = ContaExisteComOutroMetodo(
+        provedor: ProvedorSocial.google,
+        email: 'ana@teste.com',
+        credencialPendente: pendenteGoogle);
 
-    setUp(() {
+    test('não une as contas: avisa com o e-mail e não cria perfil', () async {
       auth.erroSocial = FirebaseAuthException(
         code: 'account-exists-with-different-credential',
         email: 'ana@teste.com',
-        credential: pendenteFacebook,
+        credential: pendenteGoogle,
       );
-    });
 
-    test('não une as contas: avisa com o e-mail e não cria perfil', () async {
       final erro = await repo
-          .entrarComProvedor(ProvedorSocial.facebook)
+          .entrarComProvedor(ProvedorSocial.google)
           .then<Object?>((_) => null, onError: (Object e) => e);
 
       expect(
           erro,
           isA<ContaExisteComOutroMetodo>()
               .having((e) => e.email, 'email', 'ana@teste.com')
-              .having((e) => e.provedor, 'provedor', ProvedorSocial.facebook)
               .having((e) => e.credencialPendente, 'credencial',
-                  same(pendenteFacebook)));
+                  same(pendenteGoogle)));
       expect((await firestore.collection('Usuarios').get()).docs, isEmpty);
     });
 
-    test('senha certa: entra na conta existente e vincula o Facebook',
-        () async {
+    test('senha certa: entra na conta existente e vincula o Google', () async {
       final existente = _FakeUser('uid-senha', email: 'ana@teste.com');
       auth.contaComSenha = existente;
       await firestore.collection('Usuarios').doc('uid-senha').set(
           {'usuarioID': 'uid-senha', 'nome': 'Ana', 'email': 'ana@teste.com'});
-      final pendente = ContaExisteComOutroMetodo(
-          provedor: ProvedorSocial.facebook,
-          email: 'ana@teste.com',
-          credencialPendente: pendenteFacebook);
 
       await repo.entrarComSenhaEVincular(
           email: 'ana@teste.com', senha: 'certa', pendente: pendente);
 
-      expect(existente.vinculadas.single, same(pendenteFacebook));
+      expect(existente.vinculadas.single, same(pendenteGoogle));
       expect((await firestore.collection('Usuarios').get()).docs, hasLength(1),
           reason: 'mesmo tutor, mesmo UID: nenhum perfil novo');
       expect((await perfil('uid-senha'))?['nome'], 'Ana');
@@ -265,61 +248,31 @@ void main() {
 
       await expectLater(
           repo.entrarComSenhaEVincular(
-              email: 'ana@teste.com',
-              senha: 'errada',
-              pendente: ContaExisteComOutroMetodo(
-                  provedor: ProvedorSocial.facebook,
-                  email: 'ana@teste.com',
-                  credencialPendente: pendenteFacebook)),
+              email: 'ana@teste.com', senha: 'errada', pendente: pendente),
           throwsA(isA<FirebaseAuthException>()));
       expect(existente.vinculadas, isEmpty);
     });
 
-    test('entra com o Google da conta existente e vincula o Facebook',
-        () async {
-      final existente = _FakeUser('uid-g', email: 'ana@teste.com');
-      auth
-        ..erroSocial = null
-        ..contaSocial = existente;
-
-      await repo.entrarComProvedorEVincular(
-          ProvedorSocial.google,
-          ContaExisteComOutroMetodo(
-              provedor: ProvedorSocial.facebook,
-              email: 'ana@teste.com',
-              credencialPendente: pendenteFacebook));
-
-      expect(auth.credenciaisRecebidas.single.providerId, 'google.com');
-      expect(existente.vinculadas.single, same(pendenteFacebook));
-    });
-
-    test('provedor já vinculado (tentativa repetida) não é erro', () async {
-      final existente = _FakeUser('uid-senha')
+    test('Google já vinculado (tentativa repetida) não é erro', () async {
+      auth.contaComSenha = _FakeUser('uid-senha')
         ..erroAoVincular =
             FirebaseAuthException(code: 'provider-already-linked');
-      auth.contaComSenha = existente;
 
       await repo.entrarComSenhaEVincular(
-          email: 'ana@teste.com',
-          senha: 'certa',
-          pendente: ContaExisteComOutroMetodo(
-              provedor: ProvedorSocial.facebook,
-              email: 'ana@teste.com',
-              credencialPendente: pendenteFacebook));
+          email: 'ana@teste.com', senha: 'certa', pendente: pendente);
     });
   });
 
-  test('sair encerra o Firebase e a sessão dos dois provedores', () async {
+  test('sair encerra o Firebase e a sessão do Google', () async {
     await repo.signOut();
 
     expect(auth.saidas, 1);
     expect(google.saidas, 1);
-    expect(facebook.saidas, 1);
   });
 
   test('falha ao criar o perfil: sai da conta em vez de entrar pela metade',
       () async {
-    auth.contaSocial = _FakeUser('uid-g');
+    auth.contaGoogle = _FakeUser('uid-g');
     final social = EntradaSocial(
       auth: auth,
       provedores: {ProvedorSocial.google: google},
@@ -332,7 +285,7 @@ void main() {
   });
 
   test('modo API: o primeiro login provisiona o tutor com GET /me', () async {
-    auth.contaSocial = _FakeUser('uid-g', displayName: 'Ana');
+    auth.contaGoogle = _FakeUser('uid-g', displayName: 'Ana');
     final chamadas = <String>[];
     final api = ApiClient(
       baseUrl: 'https://api.teste',

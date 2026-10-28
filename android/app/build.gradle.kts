@@ -11,18 +11,6 @@ if (keystorePropertiesFile.exists()) {
     FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
 }
 
-// Login com Facebook (docs/features/login-social.md): App ID e Client Token
-// do app na Meta ficam em `android/facebook.properties`, fora do Git. Sem o
-// arquivo, os valores ficam vazios: o app abre normalmente e o botão do
-// Facebook avisa que o login ainda não está disponível.
-val facebookProperties = Properties()
-val facebookPropertiesFile = rootProject.file("facebook.properties")
-if (facebookPropertiesFile.exists()) {
-    FileInputStream(facebookPropertiesFile).use { facebookProperties.load(it) }
-}
-val facebookAppId = facebookProperties.getProperty("facebookAppId", "")
-val facebookClientToken = facebookProperties.getProperty("facebookClientToken", "")
-
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -36,11 +24,6 @@ android {
     namespace = "com.petconnect.pet_connect"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
-
-    // Os textos do Facebook Login são gerados por resValue (abaixo).
-    buildFeatures {
-        resValues = true
-    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -60,10 +43,6 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-
-        resValue("string", "facebook_app_id", facebookAppId)
-        resValue("string", "facebook_client_token", facebookClientToken)
-        resValue("string", "fb_login_protocol_scheme", "fb$facebookAppId")
     }
 
     signingConfigs {

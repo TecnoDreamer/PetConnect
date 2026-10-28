@@ -1,6 +1,6 @@
-// Botões Google e Facebook da tela de Login (docs/features/login-social.md):
-// carregamento por provedor, proteção contra toque repetido, mensagens em
-// português e vinculação de conta existente. Repositório falso, sem SDK.
+// Botão "Entrar com Google" da tela de Login (docs/features/login-social.md):
+// carregamento, proteção contra toque repetido, mensagens em português e
+// vinculação de conta existente. Repositório falso, sem SDK.
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,7 +24,6 @@ class _FakeRepo implements UsuarioRepository {
 
   final entradas = <ProvedorSocial>[];
   final vinculosComSenha = <({String email, String senha})>[];
-  final vinculosComProvedor = <ProvedorSocial>[];
   int loginsComSenha = 0;
 
   @override
@@ -41,15 +40,6 @@ class _FakeRepo implements UsuarioRepository {
     required ContaExisteComOutroMetodo pendente,
   }) async {
     vinculosComSenha.add((email: email, senha: senha));
-    if (erroAoVincular != null) throw erroAoVincular!;
-  }
-
-  @override
-  Future<void> entrarComProvedorEVincular(
-    ProvedorSocial provedor,
-    ContaExisteComOutroMetodo pendente,
-  ) async {
-    vinculosComProvedor.add(provedor);
     if (erroAoVincular != null) throw erroAoVincular!;
   }
 
@@ -93,8 +83,7 @@ class _FakeRepo implements UsuarioRepository {
   Future<void> deleteAccount() => throw UnimplementedError();
 }
 
-final _google = find.widgetWithText(OutlinedButton, 'Google');
-final _facebook = find.widgetWithText(OutlinedButton, 'Facebook');
+final _google = find.widgetWithText(OutlinedButton, 'Entrar com Google');
 final _entrar = find.widgetWithText(ElevatedButton, 'ENTRAR');
 
 bool _habilitado(WidgetTester tester, Finder botao) =>
@@ -117,51 +106,55 @@ Future<void> _abrir(WidgetTester tester, _FakeRepo repo) async {
   await tester.pumpAndSettle();
 }
 
-ContaExisteComOutroMetodo _pendente(ProvedorSocial provedor) =>
-    ContaExisteComOutroMetodo(
-      provedor: provedor,
-      email: 'ana@teste.com',
-      credencialPendente: Object(),
-    );
+const _pendente = ContaExisteComOutroMetodo(
+  provedor: ProvedorSocial.google,
+  email: 'ana@teste.com',
+  credencialPendente: 'credencial-teste',
+);
 
 void main() {
+  testWidgets('não há mais botão do Facebook', (tester) async {
+    await _abrir(tester, _FakeRepo());
+
+    expect(find.textContaining('Facebook'), findsNothing);
+    expect(_google, findsOneWidget);
+  });
+
   group('carregamento e toques repetidos', () {
-    testWidgets(
-        'Google em andamento: carregamento só no Google e os outros logins '
-        'bloqueados', (tester) async {
+    testWidgets('Google em andamento: carregamento no botão e ENTRAR bloqueado',
+        (tester) async {
       final repo = _FakeRepo()..segurar = Completer<void>();
       await _abrir(tester, repo);
 
       await tester.tap(_google);
       await tester.pump();
 
-      final carregando = find.byType(CircularProgressIndicator);
       expect(
-          find.descendant(of: _google, matching: carregando), findsOneWidget);
-      expect(
-          find.descendant(of: _facebook, matching: carregando), findsNothing);
+          find.descendant(
+              of: _google, matching: find.byType(CircularProgressIndicator)),
+          findsOneWidget);
       expect(_habilitado(tester, _google), isFalse);
-      expect(_habilitado(tester, _facebook), isFalse);
       expect(_habilitado(tester, _entrar), isFalse);
 
       repo.segurar!.complete();
       await tester.pumpAndSettle();
-      expect(_habilitado(tester, _facebook), isTrue);
+      expect(_habilitado(tester, _google), isTrue);
       expect(_habilitado(tester, _entrar), isTrue);
     });
 
-    testWidgets('toque duplo no Facebook faz um só login', (tester) async {
+    testWidgets('toque duplo no Google faz um só login', (tester) async {
       final repo = _FakeRepo()..segurar = Completer<void>();
       await _abrir(tester, repo);
 
-      await tester.tap(_facebook);
-      await tester.tap(_facebook, warnIfMissed: false);
+      await tester.tap(_google);
       await tester.tap(_google, warnIfMissed: false);
+      await tester.tap(_entrar, warnIfMissed: false);
       await tester.pump();
       repo.segurar!.complete();
       await tester.pumpAndSettle();
 
-      expect(repo.entradas, [ProvedorSocial.facebook]);
+      expect(repo.entradas, [ProvedorSocial.google]);
+      expect(repo.loginsComSenha, 0);
     });
   });
 
@@ -179,42 +172,36 @@ void main() {
       expect(_habilitado(tester, _google), isTrue);
     });
 
-    final casos = <String, (ProvedorSocial, Object, String)>{
+    final casos = <String, (Object, String)>{
       'sem configuração': (
-        ProvedorSocial.google,
         const LoginSocialIndisponivel(ProvedorSocial.google),
         'Entrar com o Google ainda não está disponível nesta versão.',
       ),
       'falha do provedor': (
-        ProvedorSocial.facebook,
-        const LoginSocialFalhou(ProvedorSocial.facebook),
-        'Não foi possível entrar com o Facebook. Tente novamente.',
+        const LoginSocialFalhou(ProvedorSocial.google),
+        'Não foi possível entrar com o Google. Tente novamente.',
       ),
       'token expirado ou revogado': (
-        ProvedorSocial.google,
         FirebaseAuthException(code: 'invalid-credential'),
         'O Google não confirmou o login. Tente novamente.',
       ),
       'sem internet': (
-        ProvedorSocial.facebook,
         FirebaseAuthException(code: 'network-request-failed'),
         'Falha de conexão. Verifique sua internet.',
       ),
       'conta desativada': (
-        ProvedorSocial.google,
         FirebaseAuthException(code: 'user-disabled'),
         'Esta conta está desativada.',
       ),
     };
     casos.forEach((nome, caso) {
-      final (provedor, erro, mensagem) = caso;
+      final (erro, mensagem) = caso;
       testWidgets('$nome: "$mensagem"', (tester) async {
         final repo = _FakeRepo()..erroSocial = erro;
         await _abrir(tester, repo);
         final tituloAntes = tester.getTopLeft(find.text('Login'));
 
-        await tester
-            .tap(provedor == ProvedorSocial.google ? _google : _facebook);
+        await tester.tap(_google);
         await tester.pumpAndSettle();
 
         expect(find.text(mensagem), findsOneWidget);
@@ -225,13 +212,13 @@ void main() {
     });
   });
 
-  group('conta existente com outro método', () {
-    testWidgets('senha da conta existente: vincula o Facebook a ela',
+  group('conta existente por e-mail e senha', () {
+    testWidgets('senha da conta existente: vincula o Google a ela',
         (tester) async {
-      final repo = _FakeRepo()..erroSocial = _pendente(ProvedorSocial.facebook);
+      final repo = _FakeRepo()..erroSocial = _pendente;
       await _abrir(tester, repo);
 
-      await tester.tap(_facebook);
+      await tester.tap(_google);
       await tester.pumpAndSettle();
 
       expect(find.text('Você já tem uma conta'), findsOneWidget);
@@ -254,11 +241,11 @@ void main() {
 
     testWidgets('senha errada: avisa sem revelar mais nada', (tester) async {
       final repo = _FakeRepo()
-        ..erroSocial = _pendente(ProvedorSocial.facebook)
+        ..erroSocial = _pendente
         ..erroAoVincular = FirebaseAuthException(code: 'wrong-password');
       await _abrir(tester, repo);
 
-      await tester.tap(_facebook);
+      await tester.tap(_google);
       await tester.pumpAndSettle();
       await tester.enterText(
           find.widgetWithText(TextField, 'Senha da conta'), 'errada');
@@ -270,23 +257,8 @@ void main() {
       expect(find.text('E-mail ou senha inválidos.'), findsOneWidget);
     });
 
-    testWidgets('conta existente é Google: entra com Google e vincula',
-        (tester) async {
-      final repo = _FakeRepo()..erroSocial = _pendente(ProvedorSocial.facebook);
-      await _abrir(tester, repo);
-
-      await tester.tap(_facebook);
-      await tester.pumpAndSettle();
-      expect(find.text('Entrar com Facebook e ligar'), findsNothing,
-          reason: 'não oferece o próprio provedor pendente');
-      await tester.tap(find.text('Entrar com Google e ligar'));
-      await tester.pumpAndSettle();
-
-      expect(repo.vinculosComProvedor, [ProvedorSocial.google]);
-    });
-
     testWidgets('cancelar: nada é vinculado nem mostrado', (tester) async {
-      final repo = _FakeRepo()..erroSocial = _pendente(ProvedorSocial.google);
+      final repo = _FakeRepo()..erroSocial = _pendente;
       await _abrir(tester, repo);
 
       await tester.tap(_google);
@@ -295,12 +267,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.vinculosComSenha, isEmpty);
-      expect(repo.vinculosComProvedor, isEmpty);
       expect(_habilitado(tester, _google), isTrue);
     });
   });
 
-  testWidgets('login por e-mail continua igual e não dispara o social',
+  testWidgets('login por e-mail continua igual e não dispara o Google',
       (tester) async {
     final repo = _FakeRepo();
     await _abrir(tester, repo);

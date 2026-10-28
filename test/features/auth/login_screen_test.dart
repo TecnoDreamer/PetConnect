@@ -66,13 +66,6 @@ class _FakeUsuarioRepository implements UsuarioRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> entrarComProvedorEVincular(
-    ProvedorSocial provedor,
-    ContaExisteComOutroMetodo pendente,
-  ) =>
-      throw UnimplementedError();
-
-  @override
   Future<void> signOut() => throw UnimplementedError();
 
   @override
@@ -158,8 +151,7 @@ void main() {
           'Conectando corações perdidos aos seus lares',
           'Login',
           'Esqueceu a senha?',
-          'Google',
-          'Facebook',
+          'Entrar com Google',
         ]) {
           final r = tester.getRect(find.text(texto));
           expect(r.top, greaterThanOrEqualTo(_barraStatus), reason: texto);
@@ -229,27 +221,23 @@ void main() {
       Size(412, 915),
     ]) {
       testWidgets(
-          '${tamanho.width.toInt()}x${tamanho.height.toInt()}: Google e '
-          'Facebook logo abaixo do card, lado a lado, e Cadastre-se junto',
+          '${tamanho.width.toInt()}x${tamanho.height.toInt()}: Google logo '
+          'abaixo do card, na largura dele, e Cadastre-se junto',
           (tester) async {
         await _abrirEmAparelho(tester, tamanho);
         expect(tester.takeException(), isNull);
 
         final card = tester.getRect(_card);
         final google = tester.getRect(_botaoGoogle);
-        final facebook = tester.getRect(_botaoFacebook);
         final cadastreSe = tester.getRect(find.text('Cadastre-se'));
 
         final espacoAposCard = google.top - card.bottom;
         expect(espacoAposCard, inInclusiveRange(24, 32),
-            reason: 'espaço entre o card e os botões sociais');
-        expect(facebook.top, google.top, reason: 'na mesma linha');
-        expect(facebook.height, google.height);
-        expect(facebook.width, closeTo(google.width, 0.5),
-            reason: 'tamanhos equilibrados');
-        expect(
-            google.left - card.left, closeTo(card.right - facebook.right, 0.5),
-            reason: 'linha centralizada sob o card');
+            reason: 'espaço entre o card e o botão do Google');
+        expect(google.left, closeTo(card.left, 0.5),
+            reason: 'alinhado ao card');
+        expect(google.right, closeTo(card.right, 0.5),
+            reason: 'na largura do card');
 
         final espacoAteCadastro = cadastreSe.top - google.bottom;
         expect(espacoAteCadastro, inInclusiveRange(16, 24),
@@ -264,24 +252,18 @@ void main() {
     }
 
     testWidgets(
-        'fonte do sistema ampliada (1,3x): sem overflow e com os três '
-        'acessos alcançáveis', (tester) async {
+        'fonte do sistema ampliada (1,3x): sem overflow e com Google e '
+        'Cadastre-se alcançáveis', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.3;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await _abrirEmAparelho(tester, const Size(360, 800));
       expect(tester.takeException(), isNull);
 
-      for (final alvo in [
-        _botaoGoogle,
-        _botaoFacebook,
-        find.text('Cadastre-se')
-      ]) {
+      for (final alvo in [_botaoGoogle, find.text('Cadastre-se')]) {
         await tester.ensureVisible(alvo);
         await tester.pumpAndSettle();
         expect(tester.getRect(alvo).bottom, lessThanOrEqualTo(800));
       }
-      expect(
-          tester.getRect(_botaoFacebook).top, tester.getRect(_botaoGoogle).top);
     });
 
     testWidgets('Cadastre-se continua abrindo o cadastro', (tester) async {
@@ -291,11 +273,10 @@ void main() {
       expect(find.text('Tela Cadastro'), findsOneWidget);
     });
 
-    testWidgets('Google e Facebook continuam tocáveis, sem erro nem navegação',
+    testWidgets('Google continua tocável, sem erro nem navegação',
         (tester) async {
       await _abrirEmAparelho(tester, const Size(412, 915));
       await tester.tap(_botaoGoogle);
-      await tester.tap(_botaoFacebook);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.byType(LoginScreen), findsOneWidget);
@@ -377,15 +358,14 @@ void main() {
       expect(find.widgetWithText(TextField, 'Senha:'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'ENTRAR'), findsOneWidget);
       expect(find.text('Esqueceu a senha?'), findsOneWidget);
-      expect(find.text('Google'), findsOneWidget);
-      expect(find.text('Facebook'), findsOneWidget);
+      expect(find.text('Entrar com Google'), findsOneWidget);
       expect(find.text('Cadastre-se'), findsOneWidget);
 
       final ordemY = [
         tester.getTopLeft(find.byType(AuthHeader)).dy,
         tester.getTopLeft(find.text('Login')).dy,
         tester.getTopLeft(find.widgetWithText(ElevatedButton, 'ENTRAR')).dy,
-        tester.getTopLeft(find.text('Google')).dy,
+        tester.getTopLeft(find.text('Entrar com Google')).dy,
         tester.getTopLeft(find.text('Cadastre-se')).dy,
       ];
       for (var i = 1; i < ordemY.length; i++) {
@@ -475,8 +455,7 @@ final _card = find
     .ancestor(of: find.text('Login'), matching: find.byType(Container))
     .first;
 
-final _botaoGoogle = find.widgetWithText(OutlinedButton, 'Google');
-final _botaoFacebook = find.widgetWithText(OutlinedButton, 'Facebook');
+final _botaoGoogle = find.widgetWithText(OutlinedButton, 'Entrar com Google');
 
 Future<void> _abrirEmAparelho(WidgetTester tester, Size tamanho) async {
   tester.view.physicalSize = tamanho;

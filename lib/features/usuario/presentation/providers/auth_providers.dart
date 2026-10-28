@@ -28,14 +28,13 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   return client;
 });
 
-/// Google e Facebook (docs/features/login-social.md). Sem a configuração do
-/// Console (Firebase, Google Cloud, Meta), os botões avisam que o login
-/// ainda não está disponível em vez de quebrar.
+/// Google (docs/features/login-social.md). Sem a configuração do Firebase
+/// (cliente OAuth no google-services.json), o botão avisa que o login ainda
+/// não está disponível em vez de quebrar.
 final provedoresSociaisProvider =
     Provider<Map<ProvedorSocial, ProvedorDeCredencial>>((ref) => {
           ProvedorSocial.google: GoogleProvedorDeCredencial(
               serverClientId: AppConfig.googleServerClientId),
-          ProvedorSocial.facebook: FacebookProvedorDeCredencial(),
         });
 
 final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {

@@ -46,15 +46,6 @@ class EntradaSocial {
     await _vincular(resultado.user!, pendente);
   }
 
-  Future<void> entrarComProvedorEVincular(
-    ProvedorSocial provedor,
-    ContaExisteComOutroMetodo pendente,
-  ) async {
-    final credencial = await _provedor(provedor).obterCredencial();
-    final usuario = await _entrarComCredencial(provedor, credencial);
-    await _vincular(usuario, pendente);
-  }
-
   /// Sai dos SDKs dos provedores (a sessão do Firebase é encerrada por quem
   /// chama). Sem isso, o próximo login poderia reaproveitar a conta anterior
   /// sem perguntar.

@@ -89,13 +89,6 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
       _social.entrarComSenhaEVincular(
           email: email, senha: senha, pendente: pendente);
 
-  @override
-  Future<void> entrarComProvedorEVincular(
-    ProvedorSocial provedor,
-    ContaExisteComOutroMetodo pendente,
-  ) =>
-      _social.entrarComProvedorEVincular(provedor, pendente);
-
   /// Primeiro login social: cria `Usuarios/{uid}` com o que o provedor
   /// informa (nome e e-mail). Telefone e nascimento ficam vazios, como em
   /// contas antigas, e o tutor completa em Editar perfil. A foto do
