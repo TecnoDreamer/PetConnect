@@ -152,9 +152,9 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
     }
 
     // Eventos do Memorial, pets e perfil numa escrita só: a regra só aceita
-    // apagar `eventosSituacao` junto com o perfil, e lê o pet para conferir
-    // o dono (por isso o pet sai no mesmo lote, não antes). Limites de um
-    // lote: 500 operações e 20 leituras de regra (cerca de 18 pets com
+    // apagar `eventosSituacao` junto com o pet ou o perfil, e lê o pet para
+    // conferir o dono (por isso o pet sai no mesmo lote, não antes). Limites
+    // de um lote: 500 operações e 20 leituras de regra (cerca de 18 pets com
     // eventos).
     final batch = _firestore.batch();
     for (final pet in pets.docs) {

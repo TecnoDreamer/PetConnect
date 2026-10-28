@@ -7,10 +7,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// só autorizam o `delete` delas enquanto o pet existe.
 ///
 /// `eventosSituacao` (auditoria do Memorial) não está aqui: `firestore.rules`
-/// só aceita apagar esses eventos no mesmo lote que apaga o perfil do dono,
-/// então só a exclusão de conta os apaga (ver
+/// só aceita apagar esses eventos no mesmo lote que apaga o pet ou o perfil
+/// do dono, então `deletePet` e `deleteAccount` os apagam nesse lote (ver
 /// docs/security/firestore-isolamento-por-dono.md, "Decisão:
-/// `eventosSituacao` é apagado na exclusão de conta").
+/// `eventosSituacao` sai também ao excluir um pet").
 const subcolecoesApagadasComOPet = [
   'vacinas',
   'consultas',

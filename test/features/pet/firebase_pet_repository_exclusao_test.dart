@@ -3,7 +3,9 @@
 //
 // O fake_cloud_firestore apaga as subcoleções junto com o documento pai; o
 // Firestore real não. Por isso a cascata é verificada com o `delete` do pet
-// falhando: o que sumiu antes dele foi apagado pelo app.
+// falhando: o que sumiu antes dele foi apagado pelo app. O lote do fake
+// aplica os `delete` em ordem, então os eventos que entram no lote antes do
+// pet também somem.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -47,8 +49,7 @@ void main() {
     expect((await db.doc('Pets/mel').get()).exists, isFalse);
   });
 
-  test('apaga cada subcoleção antes do pet e não toca em eventosSituacao',
-      () async {
+  test('apaga cada subcoleção e os eventos do Memorial antes do pet', () async {
     final erro = FirebaseException(plugin: 'cloud_firestore', code: 'teste');
     whenCalling(Invocation.method(#delete, null))
         .on(db.doc('Pets/rex'))
@@ -61,8 +62,8 @@ void main() {
       expect(await _contar(db, 'Pets/rex/$sub'), 0,
           reason: 'Pets/rex/$sub não foi apagada antes do pet');
     }
-    // Ficam: fora do lote da exclusão de conta, a regra nega o delete.
-    expect(await _contar(db, 'Pets/rex/eventosSituacao'), 1);
+    expect(await _contar(db, 'Pets/rex/eventosSituacao'), 0,
+        reason: 'os eventos não entraram no lote antes do pet');
   });
 
   test('não toca em outro pet', () async {

@@ -37,8 +37,8 @@ const SUBCOLECOES_CLINICAS = [
 ];
 // Mesma lista que `subcolecoesApagadasComOPet`
 // (lib/features/pet/data/exclusao_de_pet.dart), usada por deletePet e
-// deleteAccount. `eventosSituacao` não está aqui: só sai no lote da exclusão
-// de conta.
+// deleteAccount. `eventosSituacao` não está aqui: só sai no lote que apaga o
+// pet.
 const SUBCOLECOES_APAGADAS_COM_O_PET = [...SUBCOLECOES_CLINICAS, 'fotos'];
 
 // Mesma ordem que apagarSubcolecoesDoPet: cada subcoleção, um documento por vez.
@@ -51,10 +51,18 @@ async function apagarSubcolecoesComoOApp(db, petId) {
   }
 }
 
-// Mesma ordem que FirebasePetRepository.deletePet: subcoleções, depois o pet.
+// Mesma ordem que FirebasePetRepository.deletePet: subcoleções, depois um
+// lote com os eventos do Memorial e o pet.
 async function apagarPetComoOApp(db, petId) {
   await apagarSubcolecoesComoOApp(db, petId);
-  await deleteDoc(doc(db, 'Pets', petId));
+  const pet = doc(db, 'Pets', petId);
+  const batch = writeBatch(db);
+  const eventos = await getDocs(collection(pet, 'eventosSituacao'));
+  for (const evento of eventos.docs) {
+    batch.delete(evento.ref);
+  }
+  batch.delete(pet);
+  await batch.commit();
 }
 
 let env;
@@ -216,22 +224,28 @@ describe('Pets', () => {
     await assertSucceeds(deleteDoc(doc(comoAna(), 'Pets', 'petAna')));
   });
 
-  it('apaga o pet na ordem do app: subcoleções antes, inclusive pet falecido', async () => {
+  it('apaga o pet na ordem do app: subcoleções e eventos, inclusive pet falecido', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'Pets', 'petAnaFalecido', 'eventosSituacao', 'e1'), {
+        atorId: ANA,
+        situacaoAnterior: 'ATIVO',
+        situacaoNova: 'FALECIDO',
+      });
+    });
     for (const petId of ['petAna', 'petAnaFalecido']) {
       await assertSucceeds(apagarPetComoOApp(comoAna(), petId));
     }
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
       for (const petId of ['petAna', 'petAnaFalecido']) {
-        for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
+        for (const sub of [...SUBCOLECOES_APAGADAS_COM_O_PET, 'eventosSituacao']) {
           const restantes = await getDocs(collection(db, 'Pets', petId, sub));
           assert.equal(restantes.size, 0, `Pets/${petId}/${sub} ficou órfã`);
         }
+        assert.equal((await getDoc(doc(db, 'Pets', petId))).exists(), false);
       }
-      // Fica, sem pet pai: fora do lote que apaga o perfil, a regra nega o
-      // delete de eventos (ver "Limites conhecidos" no doc de segurança).
-      const evento = await getDoc(doc(db, 'Pets', 'petAna', 'eventosSituacao', 'e1'));
-      assert.ok(evento.exists());
+      // Beto não foi tocado.
+      assert.equal((await getDoc(doc(db, 'Pets', 'petBeto', 'eventosSituacao', 'e1'))).exists(), true);
     });
   });
 
@@ -518,34 +532,32 @@ describe('exclusão de conta (mesma ordem do app)', () => {
     });
   });
 
-  it('evento só sai no lote que apaga o perfil do dono', async () => {
+  it('evento só sai no lote que apaga o próprio pet ou o perfil', async () => {
     const db = comoAna();
     const evento = doc(db, 'Pets', 'petAna', 'eventosSituacao', 'e1');
 
-    // Lote com o pet, mas sem o perfil.
-    const semPerfil = writeBatch(db);
-    semPerfil.delete(evento);
-    semPerfil.delete(doc(db, 'Pets', 'petAna'));
-    await assertFails(semPerfil.commit());
+    // Lote que apaga outro pet do mesmo tutor.
+    const comOutroPet = writeBatch(db);
+    comOutroPet.delete(evento);
+    comOutroPet.delete(doc(db, 'Pets', 'petAnaFalecido'));
+    await assertFails(comOutroPet.commit());
 
     // Perfil já apagado numa escrita anterior: o evento não sai depois.
     await assertSucceeds(deleteDoc(doc(db, 'Usuarios', ANA)));
     await assertFails(deleteDoc(evento));
   });
 
-  it('pet apagado antes do lote: o evento não sai (a regra lê o pet)', async () => {
+  it('pet apagado antes do lote: o evento não sai depois (a regra lê o pet)', async () => {
     const db = comoAna();
     await assertSucceeds(deleteDoc(doc(db, 'Pets', 'petAna')));
-    const batch = writeBatch(db);
-    batch.delete(doc(db, 'Pets', 'petAna', 'eventosSituacao', 'e1'));
-    batch.delete(doc(db, 'Usuarios', ANA));
-    await assertFails(batch.commit());
+    await assertFails(deleteDoc(doc(db, 'Pets', 'petAna', 'eventosSituacao', 'e1')));
   });
 
-  it('apagar o próprio perfil não libera eventos nem registros de outro tutor', async () => {
+  it('apagar o próprio pet ou perfil não libera eventos nem registros de outro tutor', async () => {
     const db = comoAna();
     const comEventoAlheio = writeBatch(db);
     comEventoAlheio.delete(doc(db, 'Pets', 'petBeto', 'eventosSituacao', 'e1'));
+    comEventoAlheio.delete(doc(db, 'Pets', 'petAna'));
     comEventoAlheio.delete(doc(db, 'Usuarios', ANA));
     await assertFails(comEventoAlheio.commit());
 

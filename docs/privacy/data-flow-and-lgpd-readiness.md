@@ -83,8 +83,9 @@ apaga, um documento por vez, `vacinas`, `consultas`, `historicoMedico`,
 `localizacoes` e `fotos` (só os registros da galeria; os arquivos no
 Cloudinary seguem o item 3 acima).
 
-- **Excluir pet** (`FirebasePetRepository.deletePet`): a cascata acima,
-  depois o pet. Os eventos de situação do Memorial **ficam** (ver abaixo).
+- **Excluir pet** (`FirebasePetRepository.deletePet`): a cascata acima;
+  depois, num lote atômico, os eventos de situação do Memorial
+  (`eventosSituacao`) e o pet.
 - **Excluir conta** (`FirebaseUsuarioRepository.deleteAccount`):
   1. A cascata acima para cada pet do tutor (`Pets where userId == uid`).
   2. Num lote atômico: apaga os eventos de situação do Memorial
@@ -98,18 +99,14 @@ Cloudinary seguem o item 3 acima).
 | Consultas, localizações/avistamentos do pet | ✅ Sim (antes desta correção ficavam órfãos, nas duas exclusões) |
 | Registros da galeria (`fotos`) | ✅ Sim (os arquivos no Cloudinary, não — ver acima) |
 | Eventos de situação do Memorial (`eventosSituacao`: `atorId` = UID, mudança de situação, motivo, horário) — exclusão de conta | ✅ Sim. Decisão do proprietário (2026-10-27): a auditoria é imutável, exceto na exclusão de conta, quando o dono pode apagá-la no mesmo lote do perfil. Detalhes em `docs/security/firestore-isolamento-por-dono.md` ("Decisão: `eventosSituacao` é apagado na exclusão de conta") |
-| Eventos de situação do Memorial — exclusão de um pet sozinho | ❌ **Ficam**, sem pet pai: fora do lote que apaga o perfil, a regra nega o `delete`. Uma exclusão de conta posterior também não os alcança (a busca parte dos pets do tutor). Ver "Limites conhecidos" no mesmo documento |
+| Eventos de situação do Memorial — exclusão de um pet sozinho | ✅ Sim. Decisão do proprietário (2026-10-28): excluir um pet apaga de vez tudo dele. Ver "Decisão: `eventosSituacao` sai também ao excluir um pet" no mesmo documento |
 | Documentos já órfãos de pets e contas excluídos antes desta correção | ❌ Não tratados — limpeza exige Admin SDK e decisão à parte |
 
 Depende do deploy de `firestore.rules`: com as regras antigas no ar, a
-exclusão de conta para no passo 2.
+exclusão de conta para no passo 2, e a exclusão de um pet com eventos para
+antes de apagar o pet.
 
 ## Decisões pendentes (jurídicas/de produto, não técnicas)
-
-- Excluir um pet sozinho no modo Firestore deixa os eventos de situação do
-  Memorial (`eventosSituacao`, com `atorId` = UID) no banco, sem pet pai — ver
-  a seção acima. Decidir se a regra também libera o `delete` no lote que
-  apaga o próprio pet, ou se esses eventos ficam e com que base legal e prazo.
 
 - Base legal para cada categoria de dado (provavelmente "execução de
   contrato"/"legítimo interesse" para a maioria, mas isso precisa de
