@@ -35,6 +35,13 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Login com Google e Facebook na tela de Login. Na primeira vez a conta é
+  criada com o nome e o e-mail do provedor; depois, entra na mesma conta.
+  Se o e-mail já tem conta por outro método, o app pede para entrar nela
+  primeiro e então liga o provedor, sem juntar contas sozinho. Enquanto o
+  Console (Firebase, Google Cloud, Meta) não estiver configurado, os botões
+  avisam que o login ainda não está disponível. Ver
+  `docs/features/login-social.md`.
 - Galeria de fotos por pet: em "Fotos", no perfil do pet, o tutor vê as
   fotos em grade de 3 colunas (mais recentes primeiro, em páginas), abre
   em tela cheia com zoom, publica até 10 por vez com legenda e progresso,

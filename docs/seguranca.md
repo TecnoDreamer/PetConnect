@@ -32,6 +32,10 @@
 - Mensagens de erro de login devem ser genéricas ("e-mail ou senha inválidos"), sem indicar se o e-mail existe, para não facilitar enumeração de contas (ver CT05).
 - Recuperação de senha (RF05) sempre mostra a mesma mensagem de confirmação, exista ou não o e-mail informado (mesmo motivo).
 - Login social (Google/Facebook, RF04-A/RF04-B) usa os SDKs oficiais (`google_sign_in`, `flutter_facebook_auth`) + Firebase Auth — o token do provedor é validado pelo Firebase, nunca confiamos em dados de perfil vindos direto do client sem essa validação.
+  - O UID do Firebase é a identidade. Contas com o mesmo e-mail **não** são unidas automaticamente: o tutor entra pelo método que já usa e só então o provedor é vinculado (ADR 0006).
+  - Permissões mínimas: Facebook `email` e `public_profile`; Google só autenticação.
+  - O App Secret do Facebook fica só no Firebase Console; App ID e Client Token ficam em `android/facebook.properties`, fora do Git.
+  - Nenhuma regra do Firestore foi relaxada. Detalhes em `docs/features/login-social.md`.
 - Recomenda-se ativar **Firebase App Check** para reduzir abuso automatizado dos endpoints (login, Cloud Functions da página pública).
 
 ## Autorização e isolamento de dados (Firestore Security Rules)
