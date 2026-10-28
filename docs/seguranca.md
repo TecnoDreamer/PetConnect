@@ -31,7 +31,10 @@
 - Autenticação via **Firebase Authentication** (e-mail/senha, Google, Facebook). Senhas nunca passam pelo nosso código em texto puro — o SDK do Firebase cuida do hashing/transporte.
 - Mensagens de erro de login devem ser genéricas ("e-mail ou senha inválidos"), sem indicar se o e-mail existe, para não facilitar enumeração de contas (ver CT05).
 - Recuperação de senha (RF05) sempre mostra a mesma mensagem de confirmação, exista ou não o e-mail informado (mesmo motivo).
-- Login social (Google/Facebook, RF04-A/RF04-B) usa os SDKs oficiais (`google_sign_in`, `flutter_facebook_auth`) + Firebase Auth — o token do provedor é validado pelo Firebase, nunca confiamos em dados de perfil vindos direto do client sem essa validação.
+- Login com Google (RF04-A) usa o SDK oficial (`google_sign_in`) + Firebase Auth — o token do provedor é validado pelo Firebase, nunca confiamos em dados de perfil vindos direto do client sem essa validação. O Facebook (RF04-B) saiu do escopo (2026-10-27).
+  - O UID do Firebase é a identidade. Contas com o mesmo e-mail **não** são unidas pelo app: no conflito, o tutor entra com a senha e só então o Google é vinculado (ADR 0006).
+  - Só autenticação básica, sem escopos extras. A chave secreta do cliente web não é usada pelo app.
+  - Nenhuma regra do Firestore foi relaxada. Detalhes em `docs/features/login-social.md`.
 - Recomenda-se ativar **Firebase App Check** para reduzir abuso automatizado dos endpoints (login, Cloud Functions da página pública).
 
 ## Autorização e isolamento de dados (Firestore Security Rules)

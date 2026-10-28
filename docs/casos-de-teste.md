@@ -21,6 +21,17 @@ Convenção: `CTxx`, referenciando o(s) `RFxx`/`RNFxx` cobertos. Formato: pré-c
 ### CT04 — Login com credenciais válidas (RF04)
 - **Resultado esperado**: usuário autenticado, redirecionado à Home.
 
+### CT04-A — Login com Google (RF04-A)
+- **Passos**: Login → Entrar com Google → escolher a conta; depois sair e entrar de novo com Google.
+- **Resultado esperado**: entra na Home; na primeira vez o perfil é criado com nome e e-mail do Google; na segunda, mesma conta e mesmos pets. Cancelar no seletor volta ao Login sem mensagem. Automatizado com fakes (`login_social_repository_test.dart`); real em `docs/validation/login-social.md` (LS01–LS03).
+
+### CT04-B — Login com Facebook (RF04-B)
+- **Fora do escopo** (decisão do proprietário, 2026-10-27).
+
+### CT04-C — Mesmo e-mail por senha e Google (RF04-A)
+- **Passos**: com conta por e-mail e senha, entrar com Google usando o mesmo e-mail.
+- **Resultado esperado**: mesma conta (mesmo UID, mesmos pets). Se o Firebase devolver o conflito, aparece o diálogo "Você já tem uma conta"; com a senha certa o Google é vinculado; senha errada não vincula nada. O app nunca une contas só pelo e-mail. Automatizado (`login_social_screen_test.dart`, `login_social_repository_test.dart`); real: LS05–LS07.
+
 ### CT05 — Login com senha incorreta (RF04)
 - **Resultado esperado**: erro genérico "e-mail ou senha inválidos" (não revela se o e-mail existe).
 

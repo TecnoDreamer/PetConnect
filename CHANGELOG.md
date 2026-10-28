@@ -35,6 +35,13 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- "Entrar com Google" na tela de Login. Na primeira vez a conta é criada
+  com o nome e o e-mail do Google; depois, entra na mesma conta. Se o
+  e-mail já tem conta por senha e o Firebase pedir confirmação, o app pede
+  a senha dessa conta e então liga o Google, sem juntar contas sozinho. O
+  botão do Facebook saiu da tela (fora do escopo), e com ele as permissões
+  de ID de publicidade que o SDK da Meta trazia. Ver
+  `docs/features/login-social.md`.
 - Galeria de fotos por pet: em "Fotos", no perfil do pet, o tutor vê as
   fotos em grade de 3 colunas (mais recentes primeiro, em páginas), abre
   em tela cheia com zoom, publica até 10 por vez com legenda e progresso,

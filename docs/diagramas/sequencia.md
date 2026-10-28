@@ -29,6 +29,9 @@ sequenceDiagram
     end
 ```
 
+Login com Google (RF04-A), incluindo a vinculação de conta existente:
+diagramas em `docs/features/login-social.md`.
+
 ## 2. Cadastro de pet e geração de QR code (RF10, RF16)
 
 ```mermaid

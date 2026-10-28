@@ -4,6 +4,11 @@
 > do aparelho com um vão grande entre o card de login e os botões Google e
 > Facebook, que ficavam colados na base da tela junto com "Cadastre-se".
 
+> **Atualização (2026-10-27):** o Facebook saiu do escopo
+> (`docs/features/login-social.md`). No lugar dos dois botões lado a lado,
+> fica um só, "Entrar com Google", na largura do card. Os espaçamentos
+> continuam os mesmos.
+
 ## Causa raiz
 
 A correção de 2026-10-26 (`docs/features/login-layout-distribuido.md`)

@@ -7,6 +7,7 @@ import '../../../../core/errors/auth_error_translator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/auth_header.dart';
 import '../../../../core/widgets/composicao_cabecalho_painel.dart';
+import '../../../usuario/domain/login_social.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _senhaVisivel = false;
   String? _error;
 
+  /// Provedor social em andamento. Enquanto houver um, nenhum outro login
+  /// começa (nem o de e-mail): evita toques repetidos e logins cruzados.
+  ProvedorSocial? _entrandoCom;
+
+  bool get _ocupado => _submitting || _entrandoCom != null;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -31,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    if (_ocupado) return;
     setState(() {
       _submitting = true;
       _error = null;
@@ -53,6 +61,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _entrarCom(ProvedorSocial provedor) async {
+    if (_ocupado) return;
+    setState(() {
+      _entrandoCom = provedor;
+      _error = null;
+    });
+    try {
+      await ref.read(usuarioRepositoryProvider).entrarComProvedor(provedor);
+      // Como no e-mail/senha, o redirect do go_router leva à Home.
+    } on ContaExisteComOutroMetodo catch (pendente) {
+      if (mounted) await _resolverContaExistente(pendente);
+    } catch (e) {
+      _mostrarErroSocial(provedor, e);
+    } finally {
+      if (mounted) setState(() => _entrandoCom = null);
+    }
+  }
+
+  /// Já existe conta com o e-mail do provedor: o tutor prova que é dono
+  /// dela entrando com a senha, e só então o provedor é vinculado. Nada é
+  /// unido automaticamente pelo e-mail.
+  Future<void> _resolverContaExistente(
+      ContaExisteComOutroMetodo pendente) async {
+    final email = pendente.email;
+    // O botão para de carregar enquanto o tutor decide; volta a carregar
+    // só durante a vinculação.
+    setState(() => _entrandoCom = null);
+    if (email == null || email.isEmpty) {
+      setState(() => _error = 'Já existe uma conta com este e-mail. Entre '
+          'com o método que você já usa.');
+      return;
+    }
+    final senha = await showDialog<String>(
+      context: context,
+      builder: (_) => _VincularContaDialog(pendente: pendente, email: email),
+    );
+    if (senha == null || !mounted) return;
+
+    setState(() => _entrandoCom = pendente.provedor);
+    try {
+      await ref.read(usuarioRepositoryProvider).entrarComSenhaEVincular(
+          email: email, senha: senha, pendente: pendente);
+    } catch (e) {
+      _mostrarErroSocial(pendente.provedor, e, comSenha: true);
+    }
+  }
+
+  void _mostrarErroSocial(ProvedorSocial provedor, Object erro,
+      {bool comSenha = false}) {
+    if (!mounted || erro is LoginSocialCancelado) return;
+    final String mensagem;
+    if (erro is LoginSocialIndisponivel) {
+      mensagem = 'Entrar com o ${provedor.nome} ainda não está disponível '
+          'nesta versão.';
+    } else if (erro is FirebaseAuthException) {
+      mensagem = switch (erro.code) {
+        // Com senha, é senha errada; com provedor, o token não valeu
+        // (expirado ou acesso revogado).
+        'invalid-credential' ||
+        'wrong-password' ||
+        'user-not-found' when comSenha =>
+          translateAuthError(erro.code),
+        'invalid-credential' =>
+          'O ${provedor.nome} não confirmou o login. Tente novamente.',
+        'user-disabled' => 'Esta conta está desativada.',
+        'credential-already-in-use' =>
+          'Esta conta ${provedor.nome} já está ligada a outro cadastro.',
+        _ => translateAuthError(erro.code),
+      };
+    } else {
+      mensagem = 'Não foi possível entrar com o ${provedor.nome}. Tente '
+          'novamente.';
+    }
+    setState(() => _error = mensagem);
   }
 
   /// Faixa da base do cabeçalho coberta pelo card.
@@ -85,6 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             onToggleSenhaVisivel: () =>
                 setState(() => _senhaVisivel = !_senhaVisivel),
             error: _error,
+            ocupado: _ocupado,
             onSubmit: _handleLogin,
             onForgotPassword: () => context.push('/esqueci-senha'),
           ),
@@ -92,7 +177,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _SocialLoginRow(),
+              _BotaoGoogle(
+                carregando: _entrandoCom == ProvedorSocial.google,
+                habilitado: !_ocupado,
+                aoTocar: () => _entrarCom(ProvedorSocial.google),
+              ),
               const SizedBox(height: 16),
               _SignUpPrompt(onTap: () => context.push('/cadastro')),
             ],
@@ -111,6 +200,7 @@ class _LoginCard extends StatelessWidget {
     required this.senhaVisivel,
     required this.onToggleSenhaVisivel,
     required this.error,
+    required this.ocupado,
     required this.onSubmit,
     required this.onForgotPassword,
   });
@@ -121,6 +211,9 @@ class _LoginCard extends StatelessWidget {
   final bool senhaVisivel;
   final VoidCallback onToggleSenhaVisivel;
   final String? error;
+
+  /// Algum login (e-mail ou social) em andamento.
+  final bool ocupado;
   final VoidCallback onSubmit;
   final VoidCallback onForgotPassword;
 
@@ -240,7 +333,7 @@ class _LoginCard extends StatelessWidget {
               ),
             ),
             child: ElevatedButton(
-              onPressed: submitting ? null : onSubmit,
+              onPressed: ocupado ? null : onSubmit,
               child: submitting
                   ? const SizedBox(
                       width: 20,
@@ -268,8 +361,18 @@ class _LoginCard extends StatelessWidget {
   }
 }
 
-class _SocialLoginRow extends StatelessWidget {
-  const _SocialLoginRow();
+/// Entrar com Google (RF04-A). Ocupa a largura do card; o Facebook saiu do
+/// escopo (docs/features/login-social.md).
+class _BotaoGoogle extends StatelessWidget {
+  const _BotaoGoogle({
+    required this.carregando,
+    required this.habilitado,
+    required this.aoTocar,
+  });
+
+  final bool carregando;
+  final bool habilitado;
+  final VoidCallback aoTocar;
 
   @override
   Widget build(BuildContext context) {
@@ -278,26 +381,100 @@ class _SocialLoginRow extends StatelessWidget {
     // piso via tapTargetSize independente de minimumSize, então não dá
     // pra encolher mais sem violar acessibilidade (seção 23 do
     // documento-fonte). Nada a reduzir aqui.
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              // TODO(auth): ligar ao UsuarioRepository.signInWithGoogle()
-            },
-            icon: const Icon(Icons.g_mobiledata, size: 28),
-            label: const Text('Google'),
-          ),
+    return OutlinedButton.icon(
+      onPressed: habilitado ? aoTocar : null,
+      icon: carregando
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                semanticsLabel: 'Entrando com Google',
+              ),
+            )
+          : const Icon(Icons.g_mobiledata, size: 28),
+      label: const Text('Entrar com Google'),
+    );
+  }
+}
+
+/// Pede a senha da conta existente; devolve a senha, ou nulo se o tutor
+/// cancelar.
+class _VincularContaDialog extends StatefulWidget {
+  const _VincularContaDialog({required this.pendente, required this.email});
+
+  final ContaExisteComOutroMetodo pendente;
+  final String email;
+
+  @override
+  State<_VincularContaDialog> createState() => _VincularContaDialogState();
+}
+
+class _VincularContaDialogState extends State<_VincularContaDialog> {
+  final _senha = TextEditingController();
+  bool _senhaVisivel = false;
+
+  @override
+  void dispose() {
+    _senha.dispose();
+    super.dispose();
+  }
+
+  void _confirmarSenha() {
+    if (_senha.text.isEmpty) return;
+    Navigator.of(context).pop(_senha.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final novo = widget.pendente.provedor;
+    return AlertDialog(
+      title: const Text('Você já tem uma conta'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Já existe uma conta PetConnect com o e-mail ${widget.email}. '
+              'Para usar o ${novo.nome} nela, entre primeiro com a senha '
+              'dessa conta. Depois disso, o ${novo.nome} fica ligado à '
+              'mesma conta, com os mesmos pets.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _senha,
+              obscureText: !_senhaVisivel,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _confirmarSenha(),
+              decoration: InputDecoration(
+                labelText: 'Senha da conta',
+                suffixIcon: IconButton(
+                  icon: Icon(_senhaVisivel
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined),
+                  tooltip: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
+                  onPressed: () =>
+                      setState(() => _senhaVisivel = !_senhaVisivel),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListenableBuilder(
+              listenable: _senha,
+              builder: (context, _) => FilledButton(
+                onPressed: _senha.text.isEmpty ? null : _confirmarSenha,
+                child: const Text('Entrar com senha e ligar'),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              // TODO(auth): ligar ao UsuarioRepository.signInWithFacebook()
-            },
-            icon: const Icon(Icons.facebook, color: Color(0xFF1877F2)),
-            label: const Text('Facebook'),
-          ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
         ),
       ],
     );
