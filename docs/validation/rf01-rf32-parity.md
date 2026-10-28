@@ -21,7 +21,7 @@
 | RF02 | Validação e-mail/senha | Validação client-side (Flutter Form) | Idêntica (client-side, não migrou) | `cadastro_screen.dart` | — | — | — | `NOT_APPLICABLE` (não faz parte da migração — validação sempre foi só client-side) |
 | RF03 | Impedir e-mail duplicado | Firebase Auth (erro nativo) | Firebase Auth (inalterado) | `cadastro_screen.dart` | — | — | — | `NOT_APPLICABLE` (Firebase Auth continua sendo a fonte de identidade em qualquer flag) |
 | RF04 | Login e-mail/senha | Firebase Auth | Firebase Auth (inalterado) | `login_screen.dart` | — | `auth_flow_test.dart` (ver observação) | DV02 | `PASS_MANUAL_PENDENTE` |
-| RF04-A | Login com Google | `google_sign_in` + Firebase Auth | Mesmo fluxo; perfil provisionado por `GET /me` | `login_screen.dart`, `entrada_social.dart` | — | `login_social_*_test.dart`, `provedores_sociais_test.dart` | LS01–LS13 | `PASS_MANUAL_PENDENTE` (Firebase configurado em 2026-10-27) |
+| RF04-A | Login com Google | `google_sign_in` + Firebase Auth | Mesmo fluxo; perfil provisionado por `GET /me` | `login_screen.dart`, `entrada_social.dart` | — | `login_social_*_test.dart`, `provedores_sociais_test.dart` | LS01–LS13 | `PASS_MANUAL_PENDENTE` (2026-10-28: conta criada com o Google no aparelho, APK de release; LS02–LS12 pendentes) |
 | RF04-B | Login com Facebook | — | — | — | — | — | — | `FORA_DO_ESCOPO` (decisão do proprietário, 2026-10-27) |
 | RF05 | Recuperação de senha | Firebase Auth | Inalterado | `esqueci_senha_screen.dart` | — | — | — | `NOT_APPLICABLE` |
 | RF06 | Sessão persistente | Firebase Auth (`authStateChanges`) | Inalterado | `app_router.dart` (guard) | — | DV05 (manual) | DV05 | `PASS_MANUAL_PENDENTE` |
@@ -116,7 +116,8 @@
 | `PASS_MANUAL_PENDENTE` | 18 |
 | `BLOCKED` | 3 (RF17, RF18-página, RF31-ponta-a-ponta) |
 | `NOT_APPLICABLE` | 3 (RF02, RF03, RF05) |
-| `NOT_TESTED` | 2 (RF04-A/B, RF19) |
+| `NOT_TESTED` | 1 (RF19) |
+| `FORA_DO_ESCOPO` | 1 (RF04-B) |
 
 \* PASS refere-se à API isoladamente; a experiência de ponta a ponta
 (página pública) depende da FASE 9.
