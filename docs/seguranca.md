@@ -35,6 +35,10 @@
   - O UID do Firebase é a identidade. Contas com o mesmo e-mail **não** são unidas pelo app: no conflito, o tutor entra com a senha e só então o Google é vinculado (ADR 0006).
   - Só autenticação básica, sem escopos extras. A chave secreta do cliente web não é usada pelo app.
   - Nenhuma regra do Firestore foi relaxada. Detalhes em `docs/features/login-social.md`.
+- Cartaz de pet desaparecido (RF43–RF49) é gerado no aparelho: nenhuma regra, coleção ou endpoint novo.
+  - O telefone só entra no cartaz com autorização do tutor para aquele número, que não é salva.
+  - Fotos do rascunho só de `https://res.cloudinary.com`, e as rotas usam o mesmo guard de dono e situação das outras telas do pet.
+  - Sem permissões novas no Android. Detalhes em `docs/features/cartaz-pet-desaparecido.md`.
 - Recomenda-se ativar **Firebase App Check** para reduzir abuso automatizado dos endpoints (login, Cloud Functions da página pública).
 
 ## Autorização e isolamento de dados (Firestore Security Rules)

@@ -105,11 +105,27 @@ usuários é a decisão D4 do ADR 0005.
 | RF41 | Pet no Memorial continua recebendo e mostrando fotos, sem reativar recursos clínicos. | `galeria_telas_test.dart` (Memorial e perfil), `regras.test.js`, CT33 |
 | RF42 | Só o tutor dono lista, lê, publica e exclui as fotos de um pet; outra conta e quem não está logado não. | `regras.test.js` (fotos), `galeria_telas_test.dart` (outro tutor), CT34 |
 
+## Cartaz de pet desaparecido
+
+Detalhes em `docs/features/cartaz-pet-desaparecido.md` e ADR 0007. O cartaz é
+gerado no aparelho: sem mudança de banco, regras ou backend.
+
+| ID | Requisito | Testes |
+|----|-----------|--------|
+| RF43 | No perfil de um pet ativo, o tutor abre "Pet desaparecido" e monta um cartaz "Procura-se" com nome, espécie/raça e cor do cadastro. Pet no Memorial ou de outra conta não abre o cartaz, nem por link direto. | `cartaz_telas_test.dart` (Entrada e acesso), CT35 |
+| RF44 | O título acompanha a espécie: "GATO DESAPARECIDO", "CACHORRO DESAPARECIDO" ou, para as outras espécies, "PET DESAPARECIDO". | `cartaz_dominio_test.dart` (título), `cartaz_layout_test.dart`, CT35 |
+| RF45 | O cartaz usa exatamente 3 fotos (galeria do pet, foto do perfil ou celular), sem repetir, com troca, mudança de posição e enquadramento; a foto de perfil não muda. | `cartaz_telas_test.dart` (Fotos), `cartaz_layout_test.dart` (enquadramento), CT36 |
+| RF46 | Características, local aproximado, data, observações e recompensa são revisáveis e opcionais (exceto a sugestão de características); campos vazios não aparecem no cartaz. | `cartaz_dominio_test.dart` (conteúdo), `cartaz_layout_test.dart`, CT37 |
+| RF47 | O telefone vem do cadastro (do tutor ou o contato do QR do pet), precisa ser um número brasileiro válido e só aparece no cartaz depois de o tutor autorizar aquele número. E-mail e endereço nunca aparecem. | `cartaz_dominio_test.dart` (telefone, exportação), `cartaz_telas_test.dart` (Contato e consentimento), CT38 |
+| RF48 | A prévia mostra o cartaz exatamente como será exportado; o tutor compartilha um PNG (2110 × 2982) ou um PDF A4 pela folha do sistema, ou salva o PNG na galeria, só por ação explícita. | `cartaz_layout_test.dart` (PNG), `cartaz_telas_test.dart` (Exportação), CT39 |
+| RF49 | O rascunho (textos, fotos já no Cloudinary e enquadramento) fica só no aparelho, sem telefone, consentimento nem fotos do celular; gerar ou exportar não muda nada no pet. | `cartaz_dominio_test.dart` (rascunho), `cartaz_telas_test.dart` (Rascunho, Exportação), CT40 |
+
 ## Fora de escopo nesta fase
 
 - Chat entre tutor e quem encontrou o pet.
 - Geolocalização em tempo real do pet.
 - Múltiplos tutores compartilhando o mesmo pet (ex: casais, famílias).
 - Curtidas, comentários, feed e perfis públicos na galeria de fotos.
+- Estado "desaparecido" no pet, aviso "ENCONTRADO" e publicação do cartaz no app (ADR 0007).
 
 Esses itens podem voltar como requisitos futuros, mas não fazem parte da primeira versão.

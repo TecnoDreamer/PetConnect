@@ -81,3 +81,4 @@ graph LR
 | Gerenciar histórico médico | Tutor | RF24–RF26 |
 | Agendar consultas | Tutor | RF27–RF30 |
 | Ver, publicar e excluir fotos do pet (também no Memorial) | Tutor | RF37–RF42 |
+| Gerar e compartilhar cartaz de pet desaparecido | Tutor | RF43–RF49 |

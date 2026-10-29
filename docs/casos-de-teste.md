@@ -166,3 +166,32 @@ Automatizados em `test/features/pet/galeria_*_test.dart` e
 - **Passos**: com uma segunda conta, tentar listar `Pets/<id do pet da primeira>/fotos` ou abrir `/pet/<id>/fotos`.
 - **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. Regras deployadas em 2026-10-27; pela tela, conferido no aparelho (G14 em `docs/validation/galeria-fotos-pet.md`).
 
+
+## Cartaz de pet desaparecido
+
+Automatizados em `test/features/pet/cartaz_*_test.dart`; roteiro de aparelho
+em `docs/validation/cartaz-pet-desaparecido.md`.
+
+### CT35 — Abrir o cartaz (RF43, RF44)
+- **Passos**: perfil de um pet ativo → Pet desaparecido; depois tentar `/pet/<id>/cartaz` de um pet no Memorial e de outra conta.
+- **Resultado esperado**: o editor abre com o pet certo e o título da espécie na prévia; o pet no Memorial mostra o aviso do Memorial, e o de outra conta, "Pet não encontrado".
+
+### CT36 — Fotos (RF45)
+- **Passos**: escolher uma foto da galeria, a do perfil e uma do celular; tentar repetir uma; mover, enquadrar e remover.
+- **Resultado esperado**: a foto repetida fica bloqueada; mover leva o enquadramento junto; a prévia mostra o recorte; a foto de perfil não muda.
+
+### CT37 — Campos opcionais (RF46)
+- **Passos**: prévia sem nenhum opcional; depois com todos no limite de caracteres.
+- **Resultado esperado**: sem rótulos vazios nem "null", sem linha de recompensa; com todos preenchidos, nada é cortado.
+
+### CT38 — Telefone e consentimento (RF47)
+- **Passos**: tutor sem telefone válido; tutor com telefone, sem marcar a autorização; marcar; trocar para o contato do QR do pet.
+- **Resultado esperado**: sem telefone, aviso e exportação bloqueada; sem autorização, o contato fica vazio e os botões desligados; ao autorizar, o número aparece; trocar de número pede a autorização de novo.
+
+### CT39 — Exportar (RF48)
+- **Passos**: Compartilhar imagem, Salvar imagem e Gerar PDF; repetir com uma foto que não carrega.
+- **Resultado esperado**: PNG de 2110 × 2982, PDF A4 e imagem salva na galeria, igual à prévia; o aviso de salvo só aparece depois de salvar; com foto que não carrega, aviso e nada é exportado.
+
+### CT40 — Rascunho e nenhuma mudança no pet (RF49)
+- **Passos**: preencher, sair e voltar; sair com foto do celular; descartar; conferir o pet.
+- **Resultado esperado**: textos e fotos da galeria voltam, a autorização e as fotos do celular não; sair com foto do celular pede confirmação; descartar limpa; o pet, os dados clínicos, a galeria e o QR não mudam.
