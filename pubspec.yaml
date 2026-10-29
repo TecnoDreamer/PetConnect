@@ -39,6 +39,7 @@ dependencies:
   share_plus: ^13.3.1
   pdf: ^3.13.1
   gal: ^2.3.3
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

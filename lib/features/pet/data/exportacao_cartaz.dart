@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
@@ -85,11 +87,24 @@ class DestinoDoCartazNoAparelho implements DestinoDoCartaz {
     required String nomeDoArquivo,
     required String mimeType,
   }) async {
-    final resultado = await SharePlus.instance.share(ShareParams(
-      files: [XFile.fromData(bytes, mimeType: mimeType, name: nomeDoArquivo)],
-      fileNameOverrides: [nomeDoArquivo],
-    ));
-    return resultado.status != ShareResultStatus.dismissed;
+    // Arquivo próprio no cache, apagado logo depois: o share_plus copia para
+    // a pasta dele (limpa a cada compartilhamento) antes de abrir a folha,
+    // e a cópia original não fica esquecida no aparelho.
+    final pasta = Directory(
+        '${(await getTemporaryDirectory()).path}${Platform.pathSeparator}'
+        'cartaz');
+    await pasta.create(recursive: true);
+    final arquivo =
+        File('${pasta.path}${Platform.pathSeparator}$nomeDoArquivo');
+    try {
+      await arquivo.writeAsBytes(bytes, flush: true);
+      final resultado = await SharePlus.instance.share(ShareParams(
+        files: [XFile(arquivo.path, mimeType: mimeType, name: nomeDoArquivo)],
+      ));
+      return resultado.status != ShareResultStatus.dismissed;
+    } finally {
+      if (await arquivo.exists()) await arquivo.delete();
+    }
   }
 
   @override
