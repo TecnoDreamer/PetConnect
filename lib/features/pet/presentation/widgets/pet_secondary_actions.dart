@@ -31,6 +31,17 @@ class PetSecondaryActions extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Column(
         children: [
+          // Cartaz "Procura-se" (docs/features/cartaz-pet-desaparecido.md).
+          SettingsMenuTile(
+            icon: Icons.campaign_outlined,
+            title: 'Pet desaparecido',
+            onTap: () => context.push('/pet/$petId/cartaz'),
+          ),
+          Divider(
+              height: 1,
+              indent: 56,
+              endIndent: 16,
+              color: context.colors.divider),
           if (mostrarFotos) ...[
             SettingsMenuTile(
               icon: Icons.photo_library_outlined,
