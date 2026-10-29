@@ -1,6 +1,6 @@
 # Cartaz de pet desaparecido (RF43–RF49)
 
-> Branch: `feat/cartaz-pet-desaparecido` (2026-10-29). Pedido em
+> Mesclado na PR #89 (2026-10-29). Pedido em
 > `prompt_opus_cartaz_pet_desaparecido_petconnect.md`. Decisão de
 > arquitetura em `docs/decisions/0007-cartaz-gerado-no-aparelho.md`.
 > Roteiro de aparelho em `docs/validation/cartaz-pet-desaparecido.md`.
@@ -20,10 +20,10 @@ para o Firestore ou o Cloudinary, e o cadastro do pet não muda.
 
 | Parte | Situação |
 |---|---|
-| Código e testes automatizados | Prontos (branch acima, PR aberta, sem merge) |
+| Código e testes automatizados | Mesclados (PR #89, 2026-10-29) |
 | Banco, regras e backend | **Sem mudança.** Nenhuma coleção, campo, regra ou endpoint novo |
 | Permissões Android | **Sem mudança.** Conferido no APK de release (`aapt2 dump permissions`) |
-| Teste no aparelho | Pendente com o proprietário: `docs/validation/cartaz-pet-desaparecido.md` |
+| Teste no aparelho | Fluxos principais aprovados pelo proprietário em 2026-10-29, no APK de release. Casos não registrados um a um: `docs/validation/cartaz-pet-desaparecido.md` |
 
 ## Jornada
 
