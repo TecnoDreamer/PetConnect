@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -290,23 +291,30 @@ class _OpcaoDeFoto extends StatelessWidget {
   }
 }
 
-/// Ajuste de posição e zoom de uma foto. Arrastar move a foto; os
-/// controles deslizantes fazem o mesmo sem gesto (leitor de tela, teclado).
-/// O retângulo tem a proporção aproximada do espaço no cartaz; a prévia
-/// mostra o recorte exato.
+/// Ajuste de uma foto do cartaz. O tutor escolhe se ela preenche o espaço
+/// (as sobras são cortadas) ou aparece inteira. Preenchendo, toca (ou
+/// arrasta) no ponto de foco, que fica no centro do espaço, e pode dar
+/// zoom. A prévia tem o formato exato do espaço no cartaz como ele está
+/// agora; os controles deslizantes fazem o mesmo sem gesto (leitor de tela,
+/// teclado).
 class EnquadramentoScreen extends StatefulWidget {
   const EnquadramentoScreen({
     super.key,
     required this.foto,
     required this.inicial,
-    required this.principal,
+    required this.indice,
+    required this.cartaz,
   });
 
   final FotoDoCartaz foto;
   final EnquadramentoFoto inicial;
 
-  /// A foto principal é mais quadrada; as outras duas, mais largas.
-  final bool principal;
+  /// Posição da foto no cartaz (ver [nomesDosEspacos]).
+  final int indice;
+
+  /// O cartaz atual, para medir o espaço da foto: o formato dele muda com
+  /// o texto dos dados.
+  final ConteudoCartaz cartaz;
 
   @override
   State<EnquadramentoScreen> createState() => _EnquadramentoScreenState();
@@ -315,22 +323,24 @@ class EnquadramentoScreen extends StatefulWidget {
 class _EnquadramentoScreenState extends State<EnquadramentoScreen> {
   late EnquadramentoFoto _atual = widget.inicial;
   late final ImageProvider _imagem = imagemDoCartaz(widget.foto);
+  Size? _espaco;
 
-  void _arrastar(DragUpdateDetails detalhes, Size tamanho) {
-    // Arrastar para a direita mostra mais do lado esquerdo da foto.
-    setState(() => _atual = _atual.ajustado(
-          x: _atual.x - detalhes.delta.dx / (tamanho.width / 2),
-          y: _atual.y - detalhes.delta.dy / (tamanho.height / 2),
-        ));
+  void _aoMedir(Size mosaico) {
+    final espaco = CartazProcuraSe.espacosDoMosaico(mosaico)[widget.indice];
+    if (mounted && espaco != _espaco) setState(() => _espaco = espaco);
   }
+
+  void _focar(Offset ponto, Size foto) => setState(() => _atual = _atual
+      .ajustado(focoX: ponto.dx / foto.width, focoY: ponto.dy / foto.height));
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final inteira = _atual.inteira;
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: const Text('Enquadrar foto'),
+        title: Text('Ajustar ${nomesDosEspacos[widget.indice]}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(_atual),
@@ -338,65 +348,303 @@ class _EnquadramentoScreenState extends State<EnquadramentoScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            AspectRatio(
-              aspectRatio: widget.principal ? 1.27 : 1.6,
-              child: LayoutBuilder(
-                builder: (context, restricoes) => GestureDetector(
-                  onPanUpdate: (d) => _arrastar(d, restricoes.biggest),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Semantics(
-                      image: true,
-                      label: 'Foto como vai aparecer no cartaz',
-                      child: FotoEnquadrada(
-                          imagem: _imagem, enquadramento: _atual),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // O cartaz atual, sem fotos e fora da tela, só para medir o
+          // espaço desta foto.
+          Offstage(
+            child: OverflowBox(
+              alignment: Alignment.topLeft,
+              minWidth: CartazProcuraSe.largura,
+              maxWidth: CartazProcuraSe.largura,
+              minHeight: CartazProcuraSe.altura,
+              maxHeight: CartazProcuraSe.altura,
+              child: CartazProcuraSe(
+                conteudo: widget.cartaz.semFotos,
+                aoMedirMosaico: _aoMedir,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                SegmentedButton<bool>(
+                  key: const ValueKey('cartaz-modo-da-foto'),
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      icon: Icon(Icons.crop),
+                      label: Text('Preencher'),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      icon: Icon(Icons.fit_screen_outlined),
+                      label: Text('Foto inteira'),
+                    ),
+                  ],
+                  selected: {inteira},
+                  onSelectionChanged: (escolha) => setState(
+                      () => _atual = _atual.ajustado(inteira: escolha.first)),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  inteira
+                      ? 'A foto aparece inteira, sem cortes. O resto do '
+                          'espaço fica com um fundo desfocado da própria foto.'
+                      : 'A foto preenche o espaço e as sobras são cortadas. '
+                          'Toque na foto (ou arraste) no ponto que deve ficar '
+                          'no centro, como o rosto do pet. A parte clara é o '
+                          'que aparece no cartaz.',
+                  style: TextStyle(color: colors.textMuted),
+                ),
+                const SizedBox(height: 16),
+                if (!inteira) ...[
+                  _EscolhaDoFoco(
+                    imagem: _imagem,
+                    enquadramento: _atual,
+                    espaco: _espaco,
+                    aoFocar: _focar,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                Text('Como fica no cartaz',
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                _PreviaDoEspaco(
+                    imagem: _imagem, enquadramento: _atual, espaco: _espaco),
+                if (!inteira) ...[
+                  const SizedBox(height: 16),
+                  _Controle(
+                    rotulo: 'Zoom',
+                    valor: _atual.zoom,
+                    minimo: 1,
+                    maximo: EnquadramentoFoto.zoomMaximo,
+                    aoMudar: (v) =>
+                        setState(() => _atual = _atual.ajustado(zoom: v)),
+                  ),
+                  _Controle(
+                    rotulo: 'Foco horizontal',
+                    valor: _atual.focoX,
+                    minimo: 0,
+                    maximo: 1,
+                    aoMudar: (v) =>
+                        setState(() => _atual = _atual.ajustado(focoX: v)),
+                  ),
+                  _Controle(
+                    rotulo: 'Foco vertical',
+                    valor: _atual.focoY,
+                    minimo: 0,
+                    maximo: 1,
+                    aoMudar: (v) =>
+                        setState(() => _atual = _atual.ajustado(focoY: v)),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(
+                          () => _atual = EnquadramentoFoto.centralizado),
+                      icon: const Icon(Icons.center_focus_strong_outlined),
+                      label: const Text('Centralizar'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A foto inteira, com o ponto de foco marcado e, fora da parte que
+/// aparece no cartaz, um véu escuro. Tocar ou arrastar move o foco; o
+/// toque é da foto, não da rolagem da tela.
+class _EscolhaDoFoco extends StatelessWidget {
+  const _EscolhaDoFoco({
+    required this.imagem,
+    required this.enquadramento,
+    required this.espaco,
+    required this.aoFocar,
+  });
+
+  final ImageProvider imagem;
+  final EnquadramentoFoto enquadramento;
+  final Size? espaco;
+  final void Function(Offset ponto, Size foto) aoFocar;
+
+  static const alturaMaxima = 360.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return TamanhoDaImagem(
+      imagem: imagem,
+      builder: (context, tamanho, erro) {
+        if (erro) {
+          return Text('Não foi possível carregar a foto.',
+              style: TextStyle(color: colors.error));
+        }
+        if (tamanho == null || tamanho.isEmpty) {
+          return const SizedBox(
+              height: 200, child: Center(child: CircularProgressIndicator()));
+        }
+        final proporcao = tamanho.width / tamanho.height;
+        return LayoutBuilder(builder: (context, restricoes) {
+          var largura = restricoes.maxWidth;
+          var altura = largura / proporcao;
+          if (altura > alturaMaxima) {
+            altura = alturaMaxima;
+            largura = altura * proporcao;
+          }
+          final foto = Size(largura, altura);
+          final espaco = this.espaco;
+          final area = espaco == null
+              ? null
+              : enquadramento.areaVisivel(
+                  proporcaoDaFoto: proporcao,
+                  proporcaoDoEspaco: espaco.width / espaco.height);
+          void tocar(Offset ponto) => aoFocar(ponto, foto);
+          return Center(
+            child: Semantics(
+              image: true,
+              label: 'Foto inteira. Toque no ponto que deve ficar no centro '
+                  'do espaço.',
+              child: RawGestureDetector(
+                gestures: {
+                  EagerGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                          EagerGestureRecognizer>(
+                      EagerGestureRecognizer.new, (_) {}),
+                },
+                child: Listener(
+                  key: const ValueKey('cartaz-escolha-do-foco'),
+                  onPointerDown: (e) => tocar(e.localPosition),
+                  onPointerMove: (e) => tocar(e.localPosition),
+                  child: SizedBox.fromSize(
+                    size: foto,
+                    child: CustomPaint(
+                      foregroundPainter: _PintorDoFoco(
+                        area: area,
+                        focoX: enquadramento.focoX,
+                        focoY: enquadramento.focoY,
+                      ),
+                      child: Image(image: imagem, fit: BoxFit.fill),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text('Arraste a foto ou use os controles abaixo.',
-                style: TextStyle(color: colors.textMuted)),
-            const SizedBox(height: 16),
-            _Controle(
-              rotulo: 'Zoom',
-              valor: _atual.zoom,
-              minimo: 1,
-              maximo: EnquadramentoFoto.zoomMaximo,
-              aoMudar: (v) => setState(() => _atual = _atual.ajustado(zoom: v)),
-            ),
-            _Controle(
-              rotulo: 'Horizontal',
-              valor: _atual.x,
-              minimo: -1,
-              maximo: 1,
-              aoMudar: (v) => setState(() => _atual = _atual.ajustado(x: v)),
-            ),
-            _Controle(
-              rotulo: 'Vertical',
-              valor: _atual.y,
-              minimo: -1,
-              maximo: 1,
-              aoMudar: (v) => setState(() => _atual = _atual.ajustado(y: v)),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () =>
-                    setState(() => _atual = EnquadramentoFoto.centralizado),
-                icon: const Icon(Icons.center_focus_strong_outlined),
-                label: const Text('Centralizar'),
+          );
+        });
+      },
+    );
+  }
+}
+
+class _PintorDoFoco extends CustomPainter {
+  _PintorDoFoco({
+    required this.area,
+    required this.focoX,
+    required this.focoY,
+  });
+
+  final AreaVisivel? area;
+  final double focoX;
+  final double focoY;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final area = this.area;
+    if (area != null) {
+      final visivel = Rect.fromLTWH(
+        area.esquerda * size.width,
+        area.topo * size.height,
+        area.largura * size.width,
+        area.altura * size.height,
+      );
+      canvas.drawPath(
+        Path.combine(PathOperation.difference,
+            Path()..addRect(Offset.zero & size), Path()..addRect(visivel)),
+        Paint()..color = Colors.black.withValues(alpha: 0.55),
+      );
+      canvas.drawRect(
+        visivel.deflate(1),
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+    final foco = Offset(focoX * size.width, focoY * size.height);
+    final contorno = Paint()
+      ..color = Colors.black.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5;
+    final traco = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    for (final pincel in [contorno, traco]) {
+      canvas
+        ..drawCircle(foco, 14, pincel)
+        ..drawLine(foco.translate(-22, 0), foco.translate(-8, 0), pincel)
+        ..drawLine(foco.translate(8, 0), foco.translate(22, 0), pincel)
+        ..drawLine(foco.translate(0, -22), foco.translate(0, -8), pincel)
+        ..drawLine(foco.translate(0, 8), foco.translate(0, 22), pincel);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PintorDoFoco antigo) =>
+      antigo.area != area || antigo.focoX != focoX || antigo.focoY != focoY;
+}
+
+/// A foto no formato exato do espaço dela no cartaz.
+class _PreviaDoEspaco extends StatelessWidget {
+  const _PreviaDoEspaco({
+    required this.imagem,
+    required this.enquadramento,
+    required this.espaco,
+  });
+
+  final ImageProvider imagem;
+  final EnquadramentoFoto enquadramento;
+  final Size? espaco;
+
+  static const alturaMaxima = 240.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final espaco = this.espaco;
+    if (espaco == null || espaco.isEmpty) {
+      return const SizedBox(
+          height: 160, child: Center(child: CircularProgressIndicator()));
+    }
+    final proporcao = espaco.width / espaco.height;
+    return LayoutBuilder(builder: (context, restricoes) {
+      final largura = restricoes.maxWidth < alturaMaxima * proporcao
+          ? restricoes.maxWidth
+          : alturaMaxima * proporcao;
+      return Center(
+        child: SizedBox(
+          width: largura,
+          child: AspectRatio(
+            aspectRatio: proporcao,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Semantics(
+                image: true,
+                label: 'Foto como vai aparecer no cartaz',
+                child: FotoEnquadrada(
+                    imagem: imagem, enquadramento: enquadramento),
               ),
             ),
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -419,7 +667,7 @@ class _Controle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(width: 96, child: Text(rotulo)),
+        SizedBox(width: 120, child: Text(rotulo)),
         Expanded(
           child: Slider(
             value: valor,

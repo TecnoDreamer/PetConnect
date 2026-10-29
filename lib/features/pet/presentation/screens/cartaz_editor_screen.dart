@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +11,7 @@ import '../../domain/pet.dart';
 import '../providers/cartaz_providers.dart';
 import '../providers/pet_providers.dart';
 import '../widgets/cartaz_fotos.dart';
+import '../widgets/cartaz_procura_se.dart';
 import '../widgets/pet_avatar.dart';
 
 /// Editor do cartaz de pet desaparecido
@@ -73,30 +76,38 @@ class _EditorState extends ConsumerState<_Editor> {
 
   late final _caracteristicas = TextEditingController(
       text: _inicial.caracteristicas ?? sugerirCaracteristicas(widget.pet));
-  late final _vistoPorUltimoEm =
-      TextEditingController(text: _inicial.vistoPorUltimoEm);
-  late final _desapareceuEm =
-      TextEditingController(text: _inicial.desapareceuEm);
+  late final _local =
+      TextEditingController(text: _inicial.vistoPorUltimo.local);
   late final _observacoes = TextEditingController(text: _inicial.observacoes);
-  late final _recompensa = TextEditingController(text: _inicial.recompensa);
+  late final _recompensaValor =
+      TextEditingController(text: _textoDoValor(_inicial.recompensa.centavos));
+  late final _recompensaTexto =
+      TextEditingController(text: _inicial.recompensa.texto);
+
+  static String _textoDoValor(int? centavos) =>
+      centavos == null ? '' : formatarValorEmReais(centavos);
 
   CartazController get _controller =>
       ref.read(cartazControllerProvider(widget.pet.id).notifier);
 
+  List<TextEditingController> get _campos => [
+        _caracteristicas,
+        _local,
+        _observacoes,
+        _recompensaValor,
+        _recompensaTexto,
+      ];
+
   @override
   void dispose() {
-    for (final c in [
-      _caracteristicas,
-      _vistoPorUltimoEm,
-      _desapareceuEm,
-      _observacoes,
-      _recompensa,
-    ]) {
+    for (final c in _campos) {
       c.dispose();
     }
     super.dispose();
   }
 
+  /// Ao escolher uma foto, abre o ajuste logo em seguida: é a hora de
+  /// conferir se o rosto do pet não ficou cortado.
   Future<void> _escolherFoto(int indice) async {
     final rascunho = ref.read(cartazControllerProvider(widget.pet.id));
     final emUso = {
@@ -106,13 +117,14 @@ class _EditorState extends ConsumerState<_Editor> {
     };
     final foto =
         await escolherFotoDoCartaz(context, pet: widget.pet, emUso: emUso);
-    if (foto == null) return;
+    if (foto == null || !mounted) return;
     _controller.atualizar((r) => r.comEspaco(indice, EspacoDeFoto(foto: foto)));
+    await _enquadrar(indice);
   }
 
   Future<void> _enquadrar(int indice) async {
-    final espaco =
-        ref.read(cartazControllerProvider(widget.pet.id)).espacos[indice];
+    final rascunho = ref.read(cartazControllerProvider(widget.pet.id));
+    final espaco = rascunho.espacos[indice];
     final foto = espaco.foto;
     if (foto == null) return;
     final novo = await Navigator.of(context).push<EnquadramentoFoto>(
@@ -120,7 +132,9 @@ class _EditorState extends ConsumerState<_Editor> {
         builder: (_) => EnquadramentoScreen(
           foto: foto,
           inicial: espaco.enquadramento,
-          principal: indice == 0,
+          indice: indice,
+          cartaz: ConteudoCartaz.de(
+              pet: widget.pet, rascunho: rascunho, telefone: null),
         ),
       ),
     );
@@ -140,14 +154,15 @@ class _EditorState extends ConsumerState<_Editor> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.crop),
+              title: const Text('Ajustar foto'),
+              subtitle: const Text('Ponto de foco, zoom ou foto inteira'),
+              onTap: () => Navigator.pop(context, 'enquadrar'),
+            ),
+            ListTile(
               leading: const Icon(Icons.swap_horiz),
               title: const Text('Trocar foto'),
               onTap: () => Navigator.pop(context, 'trocar'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.crop),
-              title: const Text('Ajustar enquadramento'),
-              onTap: () => Navigator.pop(context, 'enquadrar'),
             ),
             for (var destino = 0; destino < LimitesCartaz.fotos; destino++)
               if (destino != indice)
@@ -179,6 +194,47 @@ class _EditorState extends ConsumerState<_Editor> {
     }
   }
 
+  void _mudarVisto(VistoPorUltimo Function(VistoPorUltimo atual) mudanca) =>
+      _controller.atualizar(
+          (r) => r.copyWith(vistoPorUltimo: mudanca(r.vistoPorUltimo)));
+
+  void _mudarRecompensa(Recompensa Function(Recompensa atual) mudanca) =>
+      _controller
+          .atualizar((r) => r.copyWith(recompensa: mudanca(r.recompensa)));
+
+  Future<void> _escolherData(DateTime? atual) async {
+    final hoje = DateUtils.dateOnly(DateTime.now());
+    final primeiro =
+        hoje.subtract(const Duration(days: LimitesCartaz.diasDoCalendario));
+    var inicial = atual ?? hoje;
+    if (inicial.isAfter(hoje)) inicial = hoje;
+    if (inicial.isBefore(primeiro)) inicial = primeiro;
+    final escolhida = await showDatePicker(
+      context: context,
+      initialDate: inicial,
+      firstDate: primeiro,
+      lastDate: hoje,
+      helpText: 'Visto por último em',
+      builder: _emPortugues,
+    );
+    if (escolhida != null) _mudarVisto((v) => v.comData(escolhida));
+  }
+
+  Future<void> _escolherHorario(int? atual) async {
+    final agora = TimeOfDay.now();
+    final escolhido = await showTimePicker(
+      context: context,
+      initialTime: atual == null
+          ? agora
+          : TimeOfDay(hour: atual ~/ 60, minute: atual % 60),
+      helpText: 'Horário em que foi visto',
+      builder: _emPortugues,
+    );
+    if (escolhido != null) {
+      _mudarVisto((v) => v.comHorario(escolhido.hour * 60 + escolhido.minute));
+    }
+  }
+
   Future<void> _descartar() async {
     final confirmou = await showDialog<bool>(
       context: context,
@@ -198,15 +254,10 @@ class _EditorState extends ConsumerState<_Editor> {
     );
     if (confirmou != true || !mounted) return;
     await _controller.descartar();
-    _caracteristicas.text = sugerirCaracteristicas(widget.pet);
-    for (final c in [
-      _vistoPorUltimoEm,
-      _desapareceuEm,
-      _observacoes,
-      _recompensa,
-    ]) {
+    for (final c in _campos) {
       c.clear();
     }
+    _caracteristicas.text = sugerirCaracteristicas(widget.pet);
   }
 
   /// Fotos do celular não ficam no rascunho salvo; avisa antes de sair.
@@ -272,61 +323,73 @@ class _EditorState extends ConsumerState<_Editor> {
               const _Secao(
                 titulo: 'Fotos',
                 ajuda: 'O cartaz usa 3 fotos coloridas: uma grande e duas '
-                    'menores. Elas não mudam a foto do perfil.',
+                    'menores. Em cada uma, escolha o ponto de foco ou mostre '
+                    'a foto inteira. Elas não mudam a foto do perfil.',
               ),
               const SizedBox(height: 12),
               _EspacosDeFoto(
                 rascunho: rascunho,
                 aoTocar: _opcoesDoEspaco,
+                aoAjustar: _enquadrar,
               ),
               const SizedBox(height: 24),
               const _Secao(
                 titulo: 'Informações',
-                ajuda: 'Nome, espécie, raça e cor vêm do cadastro do pet. '
-                    'Campos opcionais vazios não aparecem no cartaz.',
+                ajuda: 'O nome vem do cadastro, e o título do cartaz (gato, '
+                    'cachorro ou pet), da espécie. Campos opcionais vazios '
+                    'não aparecem no cartaz.',
               ),
               const SizedBox(height: 12),
               _Campo(
                 controller: _caracteristicas,
                 rotulo: 'Características',
-                dica: 'Ex.: mancha branca na orelha, coleira azul',
+                dica: 'Ex.: pelo preto, mancha branca na orelha, coleira azul',
                 limite: LimitesCartaz.caracteristicas,
                 linhas: 3,
                 aoMudar: (v) => _controller
                     .atualizar((r) => r.copyWith(caracteristicas: v)),
               ),
               _Campo(
-                controller: _vistoPorUltimoEm,
-                rotulo: 'Visto por último em (opcional)',
-                dica: 'Bairro ou ponto de referência aproximado',
-                limite: LimitesCartaz.vistoPorUltimoEm,
-                aoMudar: (v) => _controller
-                    .atualizar((r) => r.copyWith(vistoPorUltimoEm: v)),
-              ),
-              _Campo(
-                controller: _desapareceuEm,
-                rotulo: 'Desapareceu em (opcional)',
-                dica: 'Ex.: 20/10, à noite',
-                limite: LimitesCartaz.desapareceuEm,
-                aoMudar: (v) =>
-                    _controller.atualizar((r) => r.copyWith(desapareceuEm: v)),
-              ),
-              _Campo(
                 controller: _observacoes,
                 rotulo: 'Observações (opcional)',
-                dica: 'Ex.: é medroso, não corra atrás dele',
+                ajuda: 'Aparecem em destaque no cartaz.',
+                dica: 'Ex.: é medroso, não corra atrás dele; atende pelo nome',
                 limite: LimitesCartaz.observacoes,
-                linhas: 3,
+                linhas: 4,
                 aoMudar: (v) =>
                     _controller.atualizar((r) => r.copyWith(observacoes: v)),
               ),
-              _Campo(
-                controller: _recompensa,
-                rotulo: 'Recompensa (opcional)',
-                dica: 'Deixe em branco se não houver',
-                limite: LimitesCartaz.recompensa,
-                aoMudar: (v) =>
-                    _controller.atualizar((r) => r.copyWith(recompensa: v)),
+              const SizedBox(height: 12),
+              const _Secao(
+                titulo: 'Visto por último (opcional)',
+                ajuda: 'Quando e onde o pet foi visto pela última vez.',
+              ),
+              const SizedBox(height: 8),
+              _VistoPorUltimoCampos(
+                visto: rascunho.vistoPorUltimo,
+                local: _local,
+                aoEscolherData: () =>
+                    _escolherData(rascunho.vistoPorUltimo.data),
+                aoTirarData: () => _mudarVisto((v) => v.comData(null)),
+                aoEscolherPeriodo: (p) => _mudarVisto((v) => v.comPeriodo(p)),
+                aoEscolherHorario: () =>
+                    _escolherHorario(rascunho.vistoPorUltimo.horario),
+                aoTirarHorario: () => _mudarVisto((v) => v.comHorario(null)),
+                aoMudarLocal: (t) => _mudarVisto((v) => v.comLocal(t)),
+              ),
+              const SizedBox(height: 24),
+              const _Secao(
+                titulo: 'Recompensa (opcional)',
+                ajuda: 'Deixe em branco se não houver.',
+              ),
+              const SizedBox(height: 12),
+              _RecompensaCampos(
+                recompensa: rascunho.recompensa,
+                valor: _recompensaValor,
+                texto: _recompensaTexto,
+                aoEscolherTipo: (t) => _mudarRecompensa((r) => r.comTipo(t)),
+                aoMudarValor: (c) => _mudarRecompensa((r) => r.comCentavos(c)),
+                aoMudarTexto: (t) => _mudarRecompensa((r) => r.comTexto(t)),
               ),
               const SizedBox(height: 12),
               const _Secao(
@@ -358,6 +421,16 @@ class _EditorState extends ConsumerState<_Editor> {
     );
   }
 }
+
+/// O app não define o idioma do Material (os outros calendários seguem em
+/// inglês); o calendário e o relógio do cartaz são mostrados em português.
+Widget _emPortugues(BuildContext context, Widget? filho) =>
+    Localizations.override(
+      context: context,
+      locale: const Locale('pt', 'BR'),
+      delegates: GlobalMaterialLocalizations.delegates,
+      child: filho,
+    );
 
 class _Explicacao extends StatelessWidget {
   const _Explicacao({required this.nome});
@@ -438,23 +511,30 @@ class _Secao extends StatelessWidget {
 }
 
 class _EspacosDeFoto extends StatelessWidget {
-  const _EspacosDeFoto({required this.rascunho, required this.aoTocar});
+  const _EspacosDeFoto({
+    required this.rascunho,
+    required this.aoTocar,
+    required this.aoAjustar,
+  });
 
   final RascunhoCartaz rascunho;
   final ValueChanged<int> aoTocar;
+  final ValueChanged<int> aoAjustar;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < LimitesCartaz.fotos; i++) ...[
           if (i > 0) const SizedBox(width: 8),
           Expanded(
             child: _EspacoNoEditor(
               key: ValueKey('cartaz-espaco-$i'),
-              rotulo: nomesDosEspacos[i],
-              foto: rascunho.espacos[i].foto,
+              indice: i,
+              espaco: rascunho.espacos[i],
               aoTocar: () => aoTocar(i),
+              aoAjustar: () => aoAjustar(i),
             ),
           ),
         ],
@@ -466,29 +546,32 @@ class _EspacosDeFoto extends StatelessWidget {
 class _EspacoNoEditor extends StatelessWidget {
   const _EspacoNoEditor({
     super.key,
-    required this.rotulo,
-    required this.foto,
+    required this.indice,
+    required this.espaco,
     required this.aoTocar,
+    required this.aoAjustar,
   });
 
-  final String rotulo;
-  final FotoDoCartaz? foto;
+  final int indice;
+  final EspacoDeFoto espaco;
   final VoidCallback aoTocar;
+  final VoidCallback aoAjustar;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final rotulo = nomesDosEspacos[indice];
     final lado = (140 * MediaQuery.devicePixelRatioOf(context)).round();
-    final atual = foto;
-    return Semantics(
-      button: true,
-      label: atual == null
-          ? '$rotulo: vazia. Toque para escolher.'
-          : '$rotulo: escolhida. Toque para trocar, enquadrar ou mover.',
-      excludeSemantics: true,
-      child: Column(
-        children: [
-          AspectRatio(
+    final atual = espaco.foto;
+    return Column(
+      children: [
+        Semantics(
+          button: true,
+          label: atual == null
+              ? '$rotulo: vazia. Toque para escolher.'
+              : '$rotulo: escolhida. Toque para ajustar, trocar ou mover.',
+          excludeSemantics: true,
+          child: AspectRatio(
             aspectRatio: 1,
             child: Material(
               color: colors.surface,
@@ -499,22 +582,34 @@ class _EspacoNoEditor extends StatelessWidget {
                 child: atual == null
                     ? Icon(Icons.add_a_photo_outlined,
                         color: colors.textMuted, size: 32)
-                    : Image(
-                        image: miniaturaDoCartaz(atual, lado),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(
-                            Icons.broken_image_outlined,
-                            color: colors.textMuted),
+                    // Com o mesmo foco do cartaz (num quadrado, então o
+                    // recorte é aproximado).
+                    : FotoEnquadrada(
+                        imagem: miniaturaDoCartaz(atual, lado),
+                        enquadramento: espaco.enquadramento,
                       ),
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(rotulo,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: colors.textMuted, fontSize: 13)),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(rotulo,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textMuted, fontSize: 13)),
+        if (atual != null)
+          TextButton(
+            key: ValueKey('cartaz-ajustar-$indice'),
+            onPressed: aoAjustar,
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: Text('Ajustar',
+                semanticsLabel: 'Ajustar $rotulo',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+      ],
     );
   }
 }
@@ -526,12 +621,14 @@ class _Campo extends StatelessWidget {
     required this.dica,
     required this.limite,
     required this.aoMudar,
+    this.ajuda,
     this.linhas = 1,
   });
 
   final TextEditingController controller;
   final String rotulo;
   final String dica;
+  final String? ajuda;
   final int limite;
   final int linhas;
   final ValueChanged<String> aoMudar;
@@ -546,9 +643,208 @@ class _Campo extends StatelessWidget {
         minLines: linhas == 1 ? 1 : 2,
         maxLines: linhas,
         textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(labelText: rotulo, hintText: dica),
+        decoration: InputDecoration(
+            labelText: rotulo, hintText: dica, helperText: ajuda),
         onChanged: aoMudar,
       ),
+    );
+  }
+}
+
+/// Data (no calendário), período do dia ou horário exato, e o local, num
+/// campo só do cartaz.
+class _VistoPorUltimoCampos extends StatelessWidget {
+  const _VistoPorUltimoCampos({
+    required this.visto,
+    required this.local,
+    required this.aoEscolherData,
+    required this.aoTirarData,
+    required this.aoEscolherPeriodo,
+    required this.aoEscolherHorario,
+    required this.aoTirarHorario,
+    required this.aoMudarLocal,
+  });
+
+  final VistoPorUltimo visto;
+  final TextEditingController local;
+  final VoidCallback aoEscolherData;
+  final VoidCallback aoTirarData;
+  final ValueChanged<PeriodoDoDia?> aoEscolherPeriodo;
+  final VoidCallback aoEscolherHorario;
+  final VoidCallback aoTirarHorario;
+  final ValueChanged<String> aoMudarLocal;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final data = visto.data;
+    final horario = visto.horario;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const ValueKey('cartaz-visto-data'),
+                onPressed: aoEscolherData,
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: Text(data == null
+                    ? 'Escolher a data'
+                    : 'Dia ${formatarDataDoCartaz(data)}'),
+              ),
+            ),
+            if (data != null)
+              IconButton(
+                tooltip: 'Tirar a data',
+                onPressed: aoTirarData,
+                icon: const Icon(Icons.close),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text('Período ou horário',
+            style: TextStyle(color: colors.textMuted, fontSize: 13)),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            for (final periodo in PeriodoDoDia.values)
+              ChoiceChip(
+                label: Text(periodo.rotulo),
+                selected: visto.periodo == periodo,
+                onSelected: (sim) => aoEscolherPeriodo(sim ? periodo : null),
+              ),
+            ChoiceChip(
+              key: const ValueKey('cartaz-visto-horario'),
+              avatar: const Icon(Icons.schedule, size: 18),
+              label: Text(horario == null
+                  ? 'Horário exato'
+                  : 'Às ${formatarHorarioDoCartaz(horario)}'),
+              selected: horario != null,
+              onSelected: (sim) => sim || horario == null
+                  ? aoEscolherHorario()
+                  : aoTirarHorario(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: local,
+          maxLength: LimitesCartaz.localVisto,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            labelText: 'Onde',
+            hintText: 'Bairro ou ponto de referência aproximado',
+          ),
+          onChanged: aoMudarLocal,
+        ),
+        if (visto.texto.isNotEmpty)
+          Text(
+            'No cartaz: ${visto.texto}',
+            key: const ValueKey('cartaz-visto-resumo'),
+            style: TextStyle(color: colors.textMuted),
+          ),
+      ],
+    );
+  }
+}
+
+class _RecompensaCampos extends StatelessWidget {
+  const _RecompensaCampos({
+    required this.recompensa,
+    required this.valor,
+    required this.texto,
+    required this.aoEscolherTipo,
+    required this.aoMudarValor,
+    required this.aoMudarTexto,
+  });
+
+  final Recompensa recompensa;
+  final TextEditingController valor;
+  final TextEditingController texto;
+  final ValueChanged<TipoRecompensa> aoEscolherTipo;
+  final ValueChanged<int?> aoMudarValor;
+  final ValueChanged<String> aoMudarTexto;
+
+  @override
+  Widget build(BuildContext context) {
+    final emDinheiro = recompensa.tipo == TipoRecompensa.dinheiro;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<TipoRecompensa>(
+          segments: const [
+            ButtonSegment(
+              value: TipoRecompensa.dinheiro,
+              icon: Icon(Icons.payments_outlined),
+              label: Text('Em dinheiro'),
+            ),
+            ButtonSegment(
+              value: TipoRecompensa.outra,
+              icon: Icon(Icons.card_giftcard_outlined),
+              label: Text('Outra'),
+            ),
+          ],
+          selected: {recompensa.tipo},
+          onSelectionChanged: (escolha) => aoEscolherTipo(escolha.first),
+        ),
+        const SizedBox(height: 12),
+        if (emDinheiro)
+          TextField(
+            key: const ValueKey('cartaz-recompensa-valor'),
+            controller: valor,
+            keyboardType: TextInputType.number,
+            inputFormatters: [MascaraDeReais()],
+            decoration: const InputDecoration(
+              labelText: 'Valor',
+              prefixText: 'R\$ ',
+              hintText: '0,00',
+            ),
+            onChanged: (t) => aoMudarValor(MascaraDeReais.centavos(t)),
+          )
+        else
+          TextField(
+            key: const ValueKey('cartaz-recompensa-texto'),
+            controller: texto,
+            maxLength: LimitesCartaz.recompensaTexto,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Recompensa',
+              hintText: 'Ex.: um vale-presente',
+            ),
+            onChanged: aoMudarTexto,
+          ),
+      ],
+    );
+  }
+}
+
+/// Máscara de valor em reais: só números, que entram pela direita, com
+/// ponto no milhar e vírgula nos centavos (digitar 2, 0, 0, 0, 0 mostra
+/// `200,00`). O "R$" fica fora do texto, como prefixo do campo.
+class MascaraDeReais extends TextInputFormatter {
+  static int? centavos(String texto) {
+    final digitos = texto.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitos.isEmpty) return null;
+    final valor = int.parse(digitos);
+    return valor == 0 ? null : valor;
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digitos = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final maximo = LimitesCartaz.recompensaEmCentavos.toString().length;
+    if (digitos.length > maximo) digitos = digitos.substring(0, maximo);
+    final valor = centavos(digitos);
+    final formatado = valor == null ? '' : formatarValorEmReais(valor);
+    return TextEditingValue(
+      text: formatado,
+      selection: TextSelection.collapsed(offset: formatado.length),
     );
   }
 }

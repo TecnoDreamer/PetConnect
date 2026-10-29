@@ -27,6 +27,7 @@ import 'package:pet_connect/features/pet/presentation/providers/localizacao_prov
 import 'package:pet_connect/features/pet/presentation/providers/pet_providers.dart';
 import 'package:pet_connect/features/pet/presentation/providers/vacina_providers.dart';
 import 'package:pet_connect/features/pet/presentation/screens/cartaz_editor_screen.dart';
+import 'package:pet_connect/features/pet/presentation/widgets/cartaz_fotos.dart';
 import 'package:pet_connect/features/usuario/domain/usuario.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
 import 'package:pet_connect/routing/pet_routes.dart';
@@ -176,7 +177,7 @@ Future<void> _assentar(WidgetTester tester) async {
   }
 }
 
-/// A exportação decodifica as fotos e captura o PNG de verdade (tempo
+/// A exportação (e o ajuste de foto) decodifica as fotos de verdade (tempo
 /// real), intercalado com quadros.
 Future<void> _esperarExportacao(WidgetTester tester) async {
   for (var i = 0; i < 8; i++) {
@@ -203,6 +204,19 @@ void _preencher(WidgetTester tester, String petId, {String? autorizado}) {
         caracteristicas: r.caracteristicas,
         telefoneAutorizado: autorizado,
       ));
+}
+
+/// Escolhe uma foto da galeria para [espaco] e confirma o ajuste, que abre
+/// logo depois da escolha.
+Future<void> _escolherDaGaleria(WidgetTester tester, int espaco,
+    {String foto = 'Foto 1 de Rex'}) async {
+  await tester.tap(find.byKey(ValueKey('cartaz-espaco-$espaco')));
+  await _assentar(tester);
+  await tester.tap(find.bySemanticsLabel(foto));
+  await _assentar(tester);
+  expect(find.byType(EnquadramentoScreen), findsOneWidget);
+  await tester.tap(find.text('Pronto'));
+  await _assentar(tester);
 }
 
 Future<void> _abrirPrevia(WidgetTester tester) async {
@@ -283,6 +297,10 @@ void main() {
       expect(find.text('Escolher do celular'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Foto 1 de Rex'));
       await _assentar(tester);
+      // O ajuste abre logo depois da escolha.
+      expect(find.text('Ajustar Foto principal'), findsOneWidget);
+      await tester.tap(find.text('Pronto'));
+      await _assentar(tester);
 
       final escolhida = _rascunho(tester, id).espacos[0].foto;
       expect(escolhida, isA<FotoDaGaleria>());
@@ -305,10 +323,7 @@ void main() {
       final galeria = FakeGaleriaRepository()..semear(id, 1);
       await _abrir(tester,
           pets: pets, galeria: galeria, rota: '/pet/$id/cartaz');
-      await tester.tap(find.byKey(const ValueKey('cartaz-espaco-0')));
-      await _assentar(tester);
-      await tester.tap(find.bySemanticsLabel('Foto 1 de Rex'));
-      await _assentar(tester);
+      await _escolherDaGaleria(tester, 0);
 
       await tester.tap(find.byKey(const ValueKey('cartaz-espaco-0')));
       await _assentar(tester);
@@ -341,6 +356,182 @@ void main() {
       await tester.tap(find.text('Tentar de novo'));
       await _assentar(tester);
       expect(find.bySemanticsLabel('Foto 1 de Rex'), findsOneWidget);
+    });
+
+    testWidgets(
+        'ajuste: tocar escolhe o ponto de foco; "Foto inteira" não '
+        'corta', (tester) async {
+      final pets = FakePetRepository();
+      final id = await pets.createPet(_pet());
+      await _abrir(tester, pets: pets, rota: '/pet/$id/cartaz', tamanho: _alta);
+      _preencher(tester, id);
+      await tester.pump();
+
+      Future<void> abrirAjuste() async {
+        await tester.tap(find.byKey(const ValueKey('cartaz-ajustar-1')));
+        await _assentar(tester);
+        await _esperarExportacao(tester);
+        expect(find.text('Ajustar Foto 2'), findsOneWidget);
+      }
+
+      await abrirAjuste();
+      // A prévia tem o formato do espaço no cartaz atual.
+      expect(find.bySemanticsLabel('Foto como vai aparecer no cartaz'),
+          findsOneWidget);
+      final foto = find.byKey(const ValueKey('cartaz-escolha-do-foco'));
+      await tester.tapAt(tester.getTopLeft(foto) + const Offset(2, 2));
+      await tester.pump();
+      await tester.tap(find.text('Pronto'));
+      await _assentar(tester);
+
+      var enquadramento = _rascunho(tester, id).espacos[1].enquadramento;
+      expect(enquadramento.focoX, lessThan(0.05));
+      expect(enquadramento.focoY, lessThan(0.05));
+      expect(enquadramento.inteira, isFalse);
+
+      await abrirAjuste();
+      await tester.tap(find.text('Foto inteira'));
+      await tester.pump();
+      expect(
+          find.byKey(const ValueKey('cartaz-escolha-do-foco')), findsNothing);
+      expect(find.text('Zoom'), findsNothing);
+      await tester.tap(find.text('Pronto'));
+      await _assentar(tester);
+
+      enquadramento = _rascunho(tester, id).espacos[1].enquadramento;
+      expect(enquadramento.inteira, isTrue);
+      expect(_rascunho(tester, id).espacos[0].enquadramento,
+          EnquadramentoFoto.centralizado);
+    });
+
+    testWidgets('voltar do ajuste mantém a foto, sem mudar o enquadramento',
+        (tester) async {
+      final pets = FakePetRepository();
+      final id = await pets.createPet(_pet());
+      final galeria = FakeGaleriaRepository()..semear(id, 1);
+      await _abrir(tester,
+          pets: pets, galeria: galeria, rota: '/pet/$id/cartaz');
+      await tester.tap(find.byKey(const ValueKey('cartaz-espaco-2')));
+      await _assentar(tester);
+      await tester.tap(find.bySemanticsLabel('Foto 1 de Rex'));
+      await _assentar(tester);
+
+      await tester.pageBack();
+      await _assentar(tester);
+      expect(find.byType(CartazEditorScreen), findsOneWidget);
+      final espaco = _rascunho(tester, id).espacos[2];
+      expect(espaco.foto, isA<FotoDaGaleria>());
+      expect(espaco.enquadramento, EnquadramentoFoto.centralizado);
+    });
+  });
+
+  group('Visto por último e recompensa', () {
+    testWidgets('data no calendário em português, período e local num campo',
+        (tester) async {
+      final pets = FakePetRepository();
+      final id = await pets.createPet(_pet());
+      await _abrir(tester, pets: pets, rota: '/pet/$id/cartaz', tamanho: _alta);
+      // "Desapareceu em" não existe mais: um campo só.
+      expect(find.textContaining('Desapareceu em'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('cartaz-visto-data')));
+      await _assentar(tester);
+      expect(find.text('Cancelar'), findsOneWidget,
+          reason: 'calendário em português');
+      await tester.tap(find.text('OK'));
+      await _assentar(tester);
+
+      final hoje = DateUtils.dateOnly(DateTime.now());
+      expect(_rascunho(tester, id).vistoPorUltimo.data, hoje);
+
+      await tester.tap(find.text('Tarde'));
+      await tester.pump();
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Onde'), 'Perto da praça');
+      await tester.pump();
+      expect(
+          find.text('No cartaz: ${formatarDataDoCartaz(hoje)}, à tarde — '
+              'Perto da praça'),
+          findsOneWidget);
+
+      // Horário exato no lugar do período.
+      await tester.tap(find.byKey(const ValueKey('cartaz-visto-horario')));
+      await _assentar(tester);
+      expect(find.text('Cancelar'), findsOneWidget);
+      await tester.tap(find.text('OK'));
+      await _assentar(tester);
+      final visto = _rascunho(tester, id).vistoPorUltimo;
+      expect(visto.periodo, isNull);
+      expect(visto.horario, isNotNull);
+      expect(visto.local, 'Perto da praça');
+
+      await tester.tap(find.byTooltip('Tirar a data'));
+      await tester.pump();
+      expect(_rascunho(tester, id).vistoPorUltimo.data, isNull);
+    });
+
+    testWidgets('recompensa em dinheiro com máscara de reais, ou outra',
+        (tester) async {
+      final pets = FakePetRepository();
+      final id = await pets.createPet(_pet());
+      await _abrir(tester, pets: pets, rota: '/pet/$id/cartaz', tamanho: _alta);
+
+      final valor = find.byKey(const ValueKey('cartaz-recompensa-valor'));
+      await tester.enterText(valor, '150050');
+      await tester.pump();
+      expect(find.text('1.500,50'), findsOneWidget);
+      expect(find.text('R\$ '), findsOneWidget);
+      expect(_rascunho(tester, id).recompensa.noCartaz, 'R\$ 1.500,50');
+
+      await tester.enterText(valor, '');
+      await tester.pump();
+      expect(_rascunho(tester, id).recompensa.noCartaz, isEmpty);
+
+      await tester.tap(find.text('Outra'));
+      await tester.pump();
+      await tester.enterText(
+          find.byKey(const ValueKey('cartaz-recompensa-texto')),
+          'Um vale-presente');
+      await tester.pump();
+      expect(_rascunho(tester, id).recompensa.noCartaz, 'Um vale-presente');
+    });
+
+    test('máscara de reais: números entram pela direita', () {
+      final mascara = MascaraDeReais();
+      var atual = TextEditingValue.empty;
+      for (final (digito, esperado) in [
+        ('2', '0,02'),
+        ('0', '0,20'),
+        ('0', '2,00'),
+        ('0', '20,00'),
+        ('0', '200,00'),
+        ('5', '2.000,05'),
+      ]) {
+        atual = mascara.formatEditUpdate(
+            atual, TextEditingValue(text: '${atual.text}$digito'));
+        expect(atual.text, esperado);
+        expect(atual.selection.baseOffset, esperado.length);
+      }
+      // Apagar o último número.
+      atual = mascara.formatEditUpdate(
+          atual,
+          TextEditingValue(
+              text: atual.text.substring(0, atual.text.length - 1)));
+      expect(atual.text, '200,00');
+      // Letras e zeros à esquerda não entram; o máximo é R$ 999.999,99.
+      expect(
+          mascara
+              .formatEditUpdate(
+                  TextEditingValue.empty, const TextEditingValue(text: 'a0012'))
+              .text,
+          '0,12');
+      expect(
+          mascara
+              .formatEditUpdate(TextEditingValue.empty,
+                  const TextEditingValue(text: '12345678901'))
+              .text,
+          '123.456,78');
+      expect(MascaraDeReais.centavos('0,00'), isNull);
     });
   });
 
@@ -444,6 +635,30 @@ void main() {
           reason: 'compartilhar não anuncia sucesso que não pode confirmar');
     });
 
+    testWidgets('cor do cartaz: preto, vermelho ou azul, escolhida na prévia',
+        (tester) async {
+      final pets = FakePetRepository();
+      final id = await pets.createPet(_pet());
+      await _abrir(tester, pets: pets, rota: '/pet/$id/cartaz');
+      _preencher(tester, id, autorizado: '11900000000');
+      await tester.pump();
+      await _abrirPrevia(tester);
+
+      Color cabecalho() => (tester
+              .widget<DecoratedBox>(
+                  find.byKey(const ValueKey('cartaz-cabecalho')))
+              .decoration as BoxDecoration)
+          .color!;
+      expect(cabecalho(), const Color(0xFF111111));
+      expect(find.text('Preto'), findsOneWidget);
+      expect(find.text('Vermelho'), findsOneWidget);
+
+      await tester.tap(find.text('Azul'));
+      await tester.pump();
+      expect(_rascunho(tester, id).cor, CorDoCartaz.azul);
+      expect(cabecalho(), const Color(0xFF1565C0));
+    });
+
     testWidgets('gerar PDF: arquivo PDF pela folha do sistema', (tester) async {
       final c = await pronto(tester);
 
@@ -533,12 +748,9 @@ void main() {
           scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Pet desaparecido'));
       await _assentar(tester);
-      await tester.tap(find.byKey(const ValueKey('cartaz-espaco-0')));
-      await _assentar(tester);
-      await tester.tap(find.bySemanticsLabel('Foto 1 de Rex'));
-      await _assentar(tester);
+      await _escolherDaGaleria(tester, 0);
       await tester.enterText(
-          find.widgetWithText(TextField, 'Recompensa (opcional)'), 'R\$ 100');
+          find.byKey(const ValueKey('cartaz-recompensa-valor')), '10000');
       _controller(tester, id)
           .atualizar((r) => r.autorizarTelefone('11900000000'));
       await tester.pump(CartazController.esperaAntesDeSalvar);
@@ -549,8 +761,8 @@ void main() {
       await _assentar(tester);
 
       final rascunho = _rascunho(tester, id);
-      expect(rascunho.recompensa, 'R\$ 100');
-      expect(find.text('R\$ 100'), findsOneWidget);
+      expect(rascunho.recompensa, const Recompensa(centavos: 10000));
+      expect(find.text('100,00'), findsOneWidget);
       expect(rascunho.espacos[0].foto, isA<FotoDaGaleria>());
       expect(rascunho.telefoneAutorizado, isNull);
     });
@@ -591,7 +803,8 @@ void main() {
             'cartaz_rascunho_v1_uid-1_$id':
                 '{"versao":1,"espacos":[],"recompensa":"R\$ 50"}',
           });
-      expect(find.text('R\$ 50'), findsOneWidget);
+      // Rascunho da versão 1: a recompensa em texto vira valor.
+      expect(find.text('50,00'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Mais opções'));
       await _assentar(tester);
@@ -600,7 +813,7 @@ void main() {
       await tester.tap(find.text('Descartar'));
       await _assentar(tester);
 
-      expect(find.text('R\$ 50'), findsNothing);
+      expect(find.text('50,00'), findsNothing);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('cartaz_rascunho_v1_uid-1_$id'), isNull);
     });

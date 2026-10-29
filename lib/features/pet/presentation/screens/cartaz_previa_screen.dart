@@ -242,6 +242,15 @@ class _PreviaState extends ConsumerState<_Previa> {
                       style: TextStyle(color: colors.textMuted, fontSize: 13),
                     ),
                   const SizedBox(height: 8),
+                  _EscolhaDaCor(
+                    cor: rascunho.cor,
+                    aoEscolher: _exportando != null
+                        ? null
+                        : (cor) => ref
+                            .read(cartazControllerProvider(pet.id).notifier)
+                            .atualizar((r) => r.copyWith(cor: cor)),
+                  ),
+                  const SizedBox(height: 8),
                   botao(_Acao.compartilharImagem, Icons.share_outlined,
                       'Compartilhar imagem',
                       principal: true),
@@ -265,6 +274,46 @@ class _PreviaState extends ConsumerState<_Previa> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Cor do cabeçalho "PROCURA-SE" e do rodapé "CONTATO".
+class _EscolhaDaCor extends StatelessWidget {
+  const _EscolhaDaCor({required this.cor, required this.aoEscolher});
+
+  final CorDoCartaz cor;
+
+  /// Nulo enquanto o cartaz é exportado.
+  final ValueChanged<CorDoCartaz>? aoEscolher;
+
+  @override
+  Widget build(BuildContext context) {
+    final aoEscolher = this.aoEscolher;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Cor do cartaz',
+            style: TextStyle(color: context.colors.textMuted, fontSize: 13)),
+        const SizedBox(height: 4),
+        SegmentedButton<CorDoCartaz>(
+          key: const ValueKey('cartaz-cor'),
+          showSelectedIcon: false,
+          segments: [
+            for (final opcao in CorDoCartaz.values)
+              ButtonSegment(
+                value: opcao,
+                icon: Icon(Icons.circle, color: Color(opcao.argb)),
+                label: Text(opcao.nome,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+          selected: {cor},
+          onSelectionChanged: aoEscolher == null
+              ? null
+              : (escolha) => aoEscolher(escolha.first),
+        ),
+      ],
     );
   }
 }

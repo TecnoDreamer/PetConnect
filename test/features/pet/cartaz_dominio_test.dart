@@ -172,41 +172,44 @@ void main() {
     test('dados do cadastro e campos preenchidos, na ordem do cartaz', () {
       final conteudo = ConteudoCartaz.de(
         pet: _pet(),
-        rascunho: const RascunhoCartaz(
-          vistoPorUltimoEm: ' Praça da Sé ',
-          desapareceuEm: '20/10, à noite',
-          observacoes: 'Mancha na orelha',
-          recompensa: 'R\$ 200',
+        rascunho: RascunhoCartaz(
+          vistoPorUltimo: VistoPorUltimo(
+              data: DateTime(2026, 10, 20),
+              periodo: PeriodoDoDia.noite,
+              local: ' Praça da Sé '),
+          observacoes: ' Mancha na orelha ',
+          recompensa: const Recompensa(centavos: 20000),
+          cor: CorDoCartaz.azul,
         ),
         telefone: '11900000000',
       );
       expect(conteudo.titulo, TituloCartaz.cachorro);
       expect(conteudo.nome, 'REX');
       expect(conteudo.telefone, '(11) 90000-0000');
+      expect(conteudo.cor, CorDoCartaz.azul);
+      // Espécie/raça, cor e "Desapareceu em" saíram do cartaz; as
+      // observações têm caixa própria.
       expect(conteudo.campos, const [
         CampoDoCartaz('Nome', 'Rex'),
-        CampoDoCartaz('Espécie/Raça', 'Cachorro / SRD'),
-        CampoDoCartaz('Cor', 'Caramelo'),
         CampoDoCartaz('Características', 'Macho, porte médio'),
-        CampoDoCartaz('Visto por último em', 'Praça da Sé'),
-        CampoDoCartaz('Desapareceu em', '20/10, à noite'),
-        CampoDoCartaz('Observações', 'Mancha na orelha'),
-        CampoDoCartaz('Recompensa', 'R\$ 200'),
+        CampoDoCartaz('Visto por último', '20/10/2026, à noite — Praça da Sé'),
+        CampoDoCartaz('Recompensa', 'R\$ 200,00'),
       ]);
+      expect(conteudo.observacoes, 'Mancha na orelha');
     });
 
     test('campos vazios somem: sem rótulo vazio, sem "null", sem recompensa',
         () {
       final conteudo = ConteudoCartaz.de(
         pet: _pet(raca: '', cor: '', genero: '', porte: ''),
-        rascunho: const RascunhoCartaz(recompensa: '   '),
+        rascunho: const RascunhoCartaz(
+            recompensa: Recompensa(tipo: TipoRecompensa.outra, texto: '   ')),
         telefone: null,
       );
-      expect(conteudo.campos, const [
-        CampoDoCartaz('Nome', 'Rex'),
-        CampoDoCartaz('Espécie/Raça', 'Cachorro'),
-      ]);
+      expect(conteudo.campos, const [CampoDoCartaz('Nome', 'Rex')]);
+      expect(conteudo.observacoes, isEmpty);
       expect(conteudo.telefone, isNull);
+      expect(conteudo.cor, CorDoCartaz.preto);
       expect(conteudo.campos.join(), isNot(contains('null')));
     });
 
@@ -221,6 +224,128 @@ void main() {
       expect(com('').campos.map((c) => c.rotulo),
           isNot(contains('Características')));
     });
+
+    test('semFotos: mesmo cartaz, espaços vazios', () {
+      final conteudo = ConteudoCartaz.de(
+          pet: _pet(), rascunho: _comFotos(3), telefone: '11900000000');
+      final medida = conteudo.semFotos;
+      expect(medida.espacos.every((e) => e.foto == null), isTrue);
+      expect(medida.campos, conteudo.campos);
+      expect(medida.telefone, conteudo.telefone);
+    });
+  });
+
+  group('visto por último', () {
+    test('data, período ou horário e local num texto só', () {
+      final dia = DateTime(2026, 10, 29, 18, 45);
+      expect(VistoPorUltimo.vazio.texto, '');
+      expect(VistoPorUltimo(data: dia).texto, '29/10/2026');
+      expect(
+          VistoPorUltimo(
+                  data: dia,
+                  periodo: PeriodoDoDia.tarde,
+                  local: 'Em '
+                      'casa, no quintal')
+              .texto,
+          '29/10/2026, à tarde — Em casa, no quintal');
+      expect(VistoPorUltimo(data: dia, horario: 15 * 60 + 5).texto,
+          '29/10/2026, às 15h05');
+      expect(const VistoPorUltimo(horario: 9 * 60).texto, 'Às 9h');
+      expect(
+          const VistoPorUltimo(
+                  periodo: PeriodoDoDia.madrugada, local: 'rua das Flores')
+              .texto,
+          'De madrugada — rua das Flores');
+      expect(const VistoPorUltimo(local: '  perto da praça ').texto,
+          'Perto da praça');
+    });
+
+    test('período e horário exato não ficam juntos; a data perde a hora', () {
+      final visto = const VistoPorUltimo()
+          .comData(DateTime(2026, 10, 29, 18, 45))
+          .comPeriodo(PeriodoDoDia.manha)
+          .comHorario(600);
+      expect(visto.data, DateTime(2026, 10, 29));
+      expect(visto.periodo, isNull);
+      expect(visto.horario, 600);
+      expect(visto.comPeriodo(PeriodoDoDia.noite).horario, isNull);
+    });
+  });
+
+  group('recompensa', () {
+    test('valor em reais com ponto no milhar e vírgula nos centavos', () {
+      expect(formatarReais(5), 'R\$ 0,05');
+      expect(formatarReais(20000), 'R\$ 200,00');
+      expect(formatarReais(150050), 'R\$ 1.500,50');
+      expect(
+          formatarReais(LimitesCartaz.recompensaEmCentavos), 'R\$ 999.999,99');
+      expect(const Recompensa().noCartaz, '');
+      expect(const Recompensa().comCentavos(0).noCartaz, '');
+    });
+
+    test('em dinheiro ou outra: só a escolhida vai no cartaz', () {
+      const ambas = Recompensa(centavos: 10000, texto: 'Um vale-presente');
+      expect(ambas.noCartaz, 'R\$ 100,00');
+      expect(ambas.comTipo(TipoRecompensa.outra).noCartaz, 'Um vale-presente');
+    });
+
+    test('texto antigo vira valor quando dá para ler', () {
+      expect(centavosDoTexto('200 R\$'), 20000);
+      expect(centavosDoTexto('R\$ 1.500,00'), 150000);
+      expect(centavosDoTexto('100,5'), 10050);
+      expect(centavosDoTexto('Um vale-presente'), isNull);
+      expect(centavosDoTexto('0'), isNull);
+      expect(
+          Recompensa.doTextoAntigo('100'), const Recompensa(centavos: 10000));
+      expect(Recompensa.doTextoAntigo('Um abraço'),
+          const Recompensa(tipo: TipoRecompensa.outra, texto: 'Um abraço'));
+      expect(Recompensa.doTextoAntigo(' '), Recompensa.nenhuma);
+    });
+  });
+
+  group('enquadramento', () {
+    test('foco, zoom e modo ficam dentro dos limites', () {
+      final e = EnquadramentoFoto.centralizado
+          .ajustado(focoX: 5, focoY: -3, zoom: 9, inteira: true);
+      expect([e.focoX, e.focoY, e.zoom], [1, 0, EnquadramentoFoto.zoomMaximo]);
+      expect(e.inteira, isTrue);
+    });
+
+    test('a área visível tem o formato do espaço e fica centrada no foco', () {
+      // Foto 3:2 num espaço quadrado: aparece 2/3 da largura, toda a altura.
+      const centro = EnquadramentoFoto();
+      final a = centro.areaVisivel(proporcaoDaFoto: 1.5, proporcaoDoEspaco: 1);
+      expect(a.largura, closeTo(2 / 3, 1e-9));
+      expect(a.altura, 1);
+      expect(a.esquerda, closeTo(1 / 6, 1e-9));
+      expect(a.topo, 0);
+
+      // Foco na esquerda: a área encosta na borda, sem sair da foto.
+      final esquerda = const EnquadramentoFoto(focoX: 0.1)
+          .areaVisivel(proporcaoDaFoto: 1.5, proporcaoDoEspaco: 1);
+      expect(esquerda.esquerda, 0);
+
+      // Com zoom 2, metade da área, centrada no foco (0,4; 0,4).
+      final zoom = const EnquadramentoFoto(focoX: 0.4, focoY: 0.4, zoom: 2)
+          .areaVisivel(proporcaoDaFoto: 1.5, proporcaoDoEspaco: 1);
+      expect(zoom.largura, closeTo(1 / 3, 1e-9));
+      expect(zoom.altura, 0.5);
+      expect(zoom.esquerda, closeTo(0.4 - 1 / 6, 1e-9));
+      expect(zoom.topo, closeTo(0.15, 1e-9));
+
+      // Espaço mais largo que a foto: corta em cima e embaixo.
+      final largo = const EnquadramentoFoto(focoY: 0.2)
+          .areaVisivel(proporcaoDaFoto: 1, proporcaoDoEspaco: 2);
+      expect(largo.largura, 1);
+      expect(largo.altura, 0.5);
+      expect(largo.topo, 0);
+    });
+
+    test('rascunho antigo (âncora de -1 a 1) vira o foco equivalente', () {
+      final e = EnquadramentoFoto.fromJson({'x': -1, 'y': 0.5, 'zoom': 2});
+      expect([e.focoX, e.focoY, e.zoom], [0, 0.75, 2]);
+      expect(e.inteira, isFalse);
+    });
   });
 
   group('rascunho', () {
@@ -234,21 +359,27 @@ void main() {
       expect(rascunho.espacos[2].enquadramento, zoom);
     });
 
-    test('enquadramento fica dentro dos limites', () {
-      final e = EnquadramentoFoto.centralizado.ajustado(x: 5, y: -3, zoom: 9);
-      expect([e.x, e.y, e.zoom], [1, -1, EnquadramentoFoto.zoomMaximo]);
-    });
-
     test('salvo sem telefone, consentimento nem foto do celular', () {
+      final visto = VistoPorUltimo(
+          data: DateTime(2026, 10, 29),
+          horario: 15 * 60 + 30,
+          local: 'Praça da Sé');
       final rascunho = RascunhoCartaz(
         espacos: [
           const EspacoDeFoto(
-              foto: _galeria, enquadramento: EnquadramentoFoto(x: 0.5)),
+              foto: _galeria,
+              enquadramento:
+                  EnquadramentoFoto(focoX: 0.2, focoY: 0.3, zoom: 1.5)),
           EspacoDeFoto(foto: _aparelho),
-          const EspacoDeFoto(foto: FotoDoPerfil(_url)),
+          const EspacoDeFoto(
+              foto: FotoDoPerfil(_url),
+              enquadramento: EnquadramentoFoto(inteira: true)),
         ],
         caracteristicas: 'Coleira azul',
-        recompensa: 'R\$ 100',
+        vistoPorUltimo: visto,
+        observacoes: 'Medroso',
+        recompensa: const Recompensa(centavos: 10000),
+        cor: CorDoCartaz.vermelho,
         contato: OrigemDoContato.pet,
         telefoneAutorizado: '11900000000',
       );
@@ -257,29 +388,61 @@ void main() {
 
       final lido = RascunhoCartaz.fromJson(jsonDecode(texto));
       expect(lido.espacos[0].foto, _galeria);
-      expect(lido.espacos[0].enquadramento.x, 0.5);
+      expect(lido.espacos[0].enquadramento,
+          const EnquadramentoFoto(focoX: 0.2, focoY: 0.3, zoom: 1.5));
       expect(lido.espacos[1].foto, isNull);
       expect(lido.espacos[2].foto, const FotoDoPerfil(_url));
+      expect(lido.espacos[2].enquadramento.inteira, isTrue);
       expect(lido.caracteristicas, 'Coleira azul');
-      expect(lido.recompensa, 'R\$ 100');
+      expect(lido.vistoPorUltimo, visto);
+      expect(lido.observacoes, 'Medroso');
+      expect(lido.recompensa, const Recompensa(centavos: 10000));
+      expect(lido.cor, CorDoCartaz.vermelho);
       expect(lido.contato, OrigemDoContato.pet);
       expect(lido.telefoneAutorizado, isNull);
+    });
+
+    test('rascunho da versão 1 é convertido', () {
+      final lido = RascunhoCartaz.fromJson({
+        'versao': 1,
+        'espacos': [],
+        'vistoPorUltimoEm': 'Em casa',
+        'desapareceuEm': '29/10 à tarde.',
+        'recompensa': '200 R\$',
+      });
+      expect(lido.vistoPorUltimo, const VistoPorUltimo(local: 'Em casa'));
+      expect(lido.recompensa, const Recompensa(centavos: 20000));
+      expect(lido.cor, CorDoCartaz.preto);
     });
 
     test('rascunho corrompido ou com URL de fora do Cloudinary vira vazio', () {
       expect(RascunhoCartaz.fromJson('lixo').fotosEscolhidas, 0);
       expect(RascunhoCartaz.fromJson({'versao': 99}).fotosEscolhidas, 0);
       final lido = RascunhoCartaz.fromJson({
-        'versao': 1,
+        'versao': 2,
         'espacos': [
           {'tipo': 'perfil', 'url': 'https://exemplo.com/a.jpg'},
           {'tipo': 'galeria', 'url': 'http://res.cloudinary.com/x.jpg'},
           {'tipo': 'galeria', 'url': _url},
         ],
         'observacoes': 'x' * 500,
+        'vistoPorUltimo': {
+          'data': 'ontem',
+          'periodo': 'hora do almoço',
+          'horario': -5,
+          'local': 'y' * 500,
+        },
+        'recompensa': {'tipo': 'pix', 'centavos': -1, 'texto': 3},
+        'cor': 'verde',
       });
       expect(lido.fotosEscolhidas, 0);
       expect(lido.observacoes, hasLength(LimitesCartaz.observacoes));
+      expect(lido.vistoPorUltimo.data, isNull);
+      expect(lido.vistoPorUltimo.periodo, isNull);
+      expect(lido.vistoPorUltimo.horario, isNull);
+      expect(lido.vistoPorUltimo.local, hasLength(LimitesCartaz.localVisto));
+      expect(lido.recompensa, Recompensa.nenhuma);
+      expect(lido.cor, CorDoCartaz.preto);
     });
 
     test('store: uma chave por tutor e pet; ilegível conta como nenhum',
@@ -288,10 +451,10 @@ void main() {
         RascunhoCartazStore.chave('uid-1', 'pet-2'): '{nao e json',
       });
       final store = RascunhoCartazStore(await SharedPreferences.getInstance());
-      await store.salvar(
-          'uid-1', 'pet-1', const RascunhoCartaz(recompensa: 'R\$ 50'));
+      await store.salvar('uid-1', 'pet-1',
+          const RascunhoCartaz(recompensa: Recompensa(centavos: 5000)));
 
-      expect(store.ler('uid-1', 'pet-1')?.recompensa, 'R\$ 50');
+      expect(store.ler('uid-1', 'pet-1')?.recompensa.noCartaz, 'R\$ 50,00');
       expect(store.ler('uid-2', 'pet-1'), isNull);
       expect(store.ler('uid-1', 'pet-2'), isNull);
       await store.apagar('uid-1', 'pet-1');

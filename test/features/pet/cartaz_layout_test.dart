@@ -81,10 +81,10 @@ RascunhoCartaz _rascunho({
     EnquadramentoFoto.centralizado,
   ],
   String? caracteristicas,
-  String vistoPorUltimoEm = '',
-  String desapareceuEm = '',
+  VistoPorUltimo vistoPorUltimo = VistoPorUltimo.vazio,
   String observacoes = '',
-  String recompensa = '',
+  Recompensa recompensa = Recompensa.nenhuma,
+  CorDoCartaz cor = CorDoCartaz.preto,
   int fotos = 3,
 }) =>
     RascunhoCartaz(
@@ -95,15 +95,16 @@ RascunhoCartaz _rascunho({
               : EspacoDeFoto.vazio,
       ],
       caracteristicas: caracteristicas,
-      vistoPorUltimoEm: vistoPorUltimoEm,
-      desapareceuEm: desapareceuEm,
+      vistoPorUltimo: vistoPorUltimo,
       observacoes: observacoes,
       recompensa: recompensa,
+      cor: cor,
     );
 
 final _limite = GlobalKey();
 
-Future<void> _mostrar(WidgetTester tester, ConteudoCartaz conteudo) async {
+Future<void> _mostrar(WidgetTester tester, ConteudoCartaz conteudo,
+    {ValueChanged<Size>? aoMedirMosaico}) async {
   tester.view.physicalSize =
       const Size(CartazProcuraSe.largura, CartazProcuraSe.altura);
   tester.view.devicePixelRatio = 1.0;
@@ -114,7 +115,8 @@ Future<void> _mostrar(WidgetTester tester, ConteudoCartaz conteudo) async {
       alignment: Alignment.topLeft,
       child: RepaintBoundary(
         key: _limite,
-        child: CartazProcuraSe(conteudo: conteudo),
+        child:
+            CartazProcuraSe(conteudo: conteudo, aoMedirMosaico: aoMedirMosaico),
       ),
     ),
   ));
@@ -154,10 +156,12 @@ void main() {
 
   testWidgets('gato com todos os dados: composição do modelo', (tester) async {
     final rascunho = _rascunho(
-      vistoPorUltimoEm: 'Praça da Matriz, Centro',
-      desapareceuEm: '20/10, à noite',
+      vistoPorUltimo: VistoPorUltimo(
+          data: DateTime(2026, 10, 20),
+          periodo: PeriodoDoDia.noite,
+          local: 'Praça da Matriz, Centro'),
       observacoes: 'Muito medrosa. Mancha escura na orelha esquerda.',
-      recompensa: 'R\$ 300',
+      recompensa: const Recompensa(centavos: 30000),
     );
     await _mostrar(
         tester,
@@ -172,16 +176,20 @@ void main() {
     expect(find.text('(11) 90000-0000'), findsOneWidget);
     for (final rotulo in [
       'Nome:',
-      'Espécie/Raça:',
-      'Cor:',
       'Características:',
-      'Visto por último em:',
-      'Desapareceu em:',
-      'Observações:',
+      'Visto por último:',
       'Recompensa:',
+      'OBSERVAÇÕES',
     ]) {
       expect(find.text(rotulo), findsOneWidget, reason: rotulo);
     }
+    // Fora do cartaz, a pedido do proprietário.
+    for (final rotulo in ['Espécie/Raça:', 'Cor:', 'Desapareceu em:']) {
+      expect(find.text(rotulo), findsNothing, reason: rotulo);
+    }
+    expect(find.text('20/10/2026, à noite — Praça da Matriz, Centro'),
+        findsOneWidget);
+    expect(find.text('R\$ 300,00'), findsOneWidget);
 
     // Uma foto grande à esquerda e duas menores empilhadas à direita.
     final principal = _rect(tester, 'cartaz-foto-0');
@@ -203,6 +211,21 @@ void main() {
     expect(_rect(tester, 'cartaz-dados').bottom,
         lessThan(_rect(tester, 'cartaz-telefone').top));
 
+    // Observações em destaque: largura toda, abaixo das linhas de dados e
+    // com letra maior que a delas.
+    final observacoes = _rect(tester, 'cartaz-observacoes');
+    expect(observacoes.top,
+        greaterThan(tester.getRect(find.text('Recompensa:')).bottom));
+    final dados = tester.getRect(find
+        .descendant(
+            of: find.byKey(const ValueKey('cartaz-dados')),
+            matching: find.byType(SizedBox))
+        .first);
+    expect(observacoes.width, closeTo(dados.width, 1));
+    final valor = tester.widget<Text>(
+        find.text('Muito medrosa. Mancha escura na orelha esquerda.'));
+    expect(valor.style!.fontSize, greaterThan(30));
+
     await expectLater(find.byType(CartazProcuraSe),
         matchesGoldenFile('goldens/cartaz_gato_completo.png'));
   });
@@ -219,13 +242,10 @@ void main() {
 
     expect(find.text('CACHORRO DESAPARECIDO'), findsOneWidget);
     expect(find.text('Nome:'), findsOneWidget);
-    expect(find.text('Espécie/Raça:'), findsOneWidget);
     for (final rotulo in [
-      'Cor:',
       'Características:',
-      'Visto por último em:',
-      'Desapareceu em:',
-      'Observações:',
+      'Visto por último:',
+      'OBSERVAÇÕES',
       'Recompensa:',
     ]) {
       expect(find.text(rotulo), findsNothing, reason: rotulo);
@@ -264,13 +284,16 @@ void main() {
     await _mostrar(
         tester,
         ConteudoCartaz.de(
-          pet: _pet(cor: limite(40)),
+          pet: _pet(),
           rascunho: _rascunho(
             caracteristicas: limite(LimitesCartaz.caracteristicas),
-            vistoPorUltimoEm: limite(LimitesCartaz.vistoPorUltimoEm),
-            desapareceuEm: limite(LimitesCartaz.desapareceuEm),
+            vistoPorUltimo: VistoPorUltimo(
+                data: DateTime(2026, 10, 29),
+                horario: 23 * 60 + 59,
+                local: limite(LimitesCartaz.localVisto)),
             observacoes: limite(LimitesCartaz.observacoes),
-            recompensa: limite(LimitesCartaz.recompensa),
+            recompensa:
+                const Recompensa(centavos: LimitesCartaz.recompensaEmCentavos),
           ),
           telefone: '1134567890',
         ));
@@ -289,28 +312,90 @@ void main() {
         matchesGoldenFile('goldens/cartaz_textos_longos.png'));
   });
 
-  testWidgets('enquadramento: zoom e posição mudam o recorte', (tester) async {
+  testWidgets('enquadramento: foco, zoom e foto inteira', (tester) async {
     await _mostrar(
         tester,
         ConteudoCartaz.de(
           pet: _pet(),
           rascunho: _rascunho(enquadramentos: const [
-            EnquadramentoFoto(x: -1, y: -1, zoom: 2),
-            EnquadramentoFoto(y: 1),
-            EnquadramentoFoto(x: 1, zoom: 1.5),
+            EnquadramentoFoto(focoX: 0, focoY: 0, zoom: 2),
+            EnquadramentoFoto(focoY: 1),
+            EnquadramentoFoto(inteira: true),
           ]),
           telefone: _telefone,
         ));
 
-    final escalas = tester
-        .widgetList<Transform>(find.descendant(
-            of: find.byType(FotoEnquadrada), matching: find.byType(Transform)))
-        .map((t) => t.transform.getMaxScaleOnAxis())
-        .toList();
-    expect(escalas, [2.0, 1.0, 1.5]);
+    Rect foto(int i) => tester.getRect(find
+        .descendant(
+            of: find.byKey(ValueKey('cartaz-foto-$i')),
+            matching: find.byType(Image))
+        .first);
+    final principal = _rect(tester, 'cartaz-foto-0');
+    // Paisagem 3:2 com zoom 2 e foco no canto: a foto encosta no canto do
+    // espaço e fica com o dobro da altura dele.
+    expect(foto(0).topLeft, principal.topLeft);
+    expect(foto(0).height, closeTo(principal.height * 2, 0.5));
+    expect(foto(0).width, closeTo(foto(0).height * 1.5, 0.5));
+    // Retrato num espaço largo, foco embaixo: a base da foto na base dele.
+    expect(foto(1).bottom, closeTo(_rect(tester, 'cartaz-foto-1').bottom, 0.5));
+    // Foto inteira: sem corte, sobre o fundo desfocado.
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('cartaz-foto-2')),
+            matching: find.byType(ImageFiltered)),
+        findsOneWidget);
+    final inteira = tester.widget<Image>(find
+        .descendant(
+            of: find.byKey(const ValueKey('cartaz-foto-2')),
+            matching: find.byType(Image))
+        .last);
+    expect(inteira.fit, BoxFit.contain);
 
     await expectLater(find.byType(CartazProcuraSe),
         matchesGoldenFile('goldens/cartaz_enquadramento.png'));
+  });
+
+  testWidgets('cor escolhida no cabeçalho e no rodapé', (tester) async {
+    await _mostrar(
+        tester,
+        ConteudoCartaz.de(
+          pet: _pet(),
+          rascunho: _rascunho(
+              cor: CorDoCartaz.vermelho, observacoes: 'Atende pelo nome'),
+          telefone: _telefone,
+        ));
+
+    BoxDecoration decoracao(String chave) {
+      final caixa = tester.widget(find.byKey(ValueKey(chave)));
+      return (caixa is Container
+          ? caixa.decoration
+          : (caixa as DecoratedBox).decoration)! as BoxDecoration;
+    }
+
+    const vermelho = Color(0xFFC62828);
+    expect(decoracao('cartaz-cabecalho').color, vermelho);
+    expect(decoracao('cartaz-rodape').color, vermelho);
+
+    await expectLater(find.byType(CartazProcuraSe),
+        matchesGoldenFile('goldens/cartaz_vermelho.png'));
+  });
+
+  testWidgets('medida do mosaico bate com os espaços de foto', (tester) async {
+    Size? mosaico;
+    await _mostrar(
+        tester,
+        ConteudoCartaz.de(
+            pet: _pet(), rascunho: _rascunho(), telefone: _telefone),
+        aoMedirMosaico: (m) => mosaico = m);
+    await tester.pump();
+
+    expect(mosaico, isNotNull);
+    final espacos = CartazProcuraSe.espacosDoMosaico(mosaico!);
+    for (var i = 0; i < 3; i++) {
+      final real = _rect(tester, 'cartaz-foto-$i').size;
+      expect(espacos[i].width, closeTo(real.width, 0.01), reason: '$i');
+      expect(espacos[i].height, closeTo(real.height, 0.01), reason: '$i');
+    }
   });
 
   testWidgets('rascunho incompleto mostra os espaços vazios na prévia',

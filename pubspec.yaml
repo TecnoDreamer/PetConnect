@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Calendário e relógio em português no cartaz de pet desaparecido.
+  flutter_localizations:
+    sdk: flutter
 
   # Estado e navegação
   flutter_riverpod:

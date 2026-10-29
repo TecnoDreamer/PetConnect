@@ -137,18 +137,26 @@ void main() {
 
   RascunhoCartaz rascunho({
     String? caracteristicas,
-    String vistoPorUltimoEm = '',
-    String desapareceuEm = '',
+    VistoPorUltimo vistoPorUltimo = VistoPorUltimo.vazio,
     String observacoes = '',
-    String recompensa = '',
+    Recompensa recompensa = Recompensa.nenhuma,
+    CorDoCartaz cor = CorDoCartaz.preto,
+    List<EnquadramentoFoto> enquadramentos = const [
+      EnquadramentoFoto.centralizado,
+      EnquadramentoFoto.centralizado,
+      EnquadramentoFoto.centralizado,
+    ],
   }) =>
       RascunhoCartaz(
-        espacos: [for (final f in fotos) EspacoDeFoto(foto: f)],
+        espacos: [
+          for (var i = 0; i < 3; i++)
+            EspacoDeFoto(foto: fotos[i], enquadramento: enquadramentos[i]),
+        ],
         caracteristicas: caracteristicas,
-        vistoPorUltimoEm: vistoPorUltimoEm,
-        desapareceuEm: desapareceuEm,
+        vistoPorUltimo: vistoPorUltimo,
         observacoes: observacoes,
         recompensa: recompensa,
+        cor: cor,
       );
 
   testWidgets('gato com todos os dados', skip: !disponivel, (tester) async {
@@ -159,16 +167,49 @@ void main() {
         pet: _pet(),
         rascunho: rascunho(
           caracteristicas: 'Fêmea, porte pequeno, olhos azuis',
-          vistoPorUltimoEm: 'Praça da Matriz, Centro',
-          desapareceuEm: '20/10, à noite',
-          observacoes: 'Muito medrosa. Mancha escura na orelha esquerda.',
-          recompensa: 'R\$ 300',
+          vistoPorUltimo: VistoPorUltimo(
+              data: DateTime(2026, 10, 20),
+              periodo: PeriodoDoDia.noite,
+              local: 'Praça da Matriz, Centro'),
+          observacoes: 'Muito medrosa: não corra atrás dela. Atende pelo '
+              'nome e tem uma mancha escura na orelha esquerda.',
+          recompensa: const Recompensa(centavos: 30000),
+          enquadramentos: const [
+            EnquadramentoFoto(focoX: 0.5, focoY: 0.4),
+            EnquadramentoFoto(focoY: 0.3),
+            EnquadramentoFoto(inteira: true),
+          ],
         ),
         telefone: _telefone,
       ),
       pdf: true,
     );
   });
+
+  for (final cor in [CorDoCartaz.vermelho, CorDoCartaz.azul]) {
+    testWidgets('cartaz ${cor.nome.toLowerCase()}', skip: !disponivel,
+        (tester) async {
+      await gerar(
+        tester,
+        'cartaz_${cor.name}',
+        ConteudoCartaz.de(
+          pet: _pet(nome: 'Thor', especie: 'Cachorro'),
+          rascunho: rascunho(
+            caracteristicas: 'Macho, porte grande, coleira vermelha',
+            vistoPorUltimo: VistoPorUltimo(
+                data: DateTime(2026, 10, 28),
+                horario: 18 * 60 + 30,
+                local: 'Rua das Flores, perto da padaria'),
+            observacoes: 'É dócil, mas assustado com barulho.',
+            recompensa: const Recompensa(
+                tipo: TipoRecompensa.outra, texto: 'A combinar'),
+            cor: cor,
+          ),
+          telefone: _telefone,
+        ),
+      );
+    });
+  }
 
   testWidgets('cachorro sem campos opcionais', skip: !disponivel,
       (tester) async {
@@ -193,10 +234,13 @@ void main() {
         pet: _pet(nome: 'Príncipe Frederico Augusto', especie: 'Coelho'),
         rascunho: rascunho(
           caracteristicas: limite(LimitesCartaz.caracteristicas),
-          vistoPorUltimoEm: limite(LimitesCartaz.vistoPorUltimoEm),
-          desapareceuEm: limite(LimitesCartaz.desapareceuEm),
+          vistoPorUltimo: VistoPorUltimo(
+              data: DateTime(2026, 10, 29),
+              horario: 23 * 60 + 59,
+              local: limite(LimitesCartaz.localVisto)),
           observacoes: limite(LimitesCartaz.observacoes),
-          recompensa: limite(LimitesCartaz.recompensa),
+          recompensa:
+              const Recompensa(centavos: LimitesCartaz.recompensaEmCentavos),
         ),
         telefone: '1134560000',
       ),

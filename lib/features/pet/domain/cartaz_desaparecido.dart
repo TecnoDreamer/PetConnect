@@ -58,48 +58,107 @@ String semAcentos(String texto) {
   return saida.toString();
 }
 
-/// Posição e zoom de uma foto dentro do espaço dela no cartaz. A foto
-/// original não é alterada: o recorte é só de exibição.
-class EnquadramentoFoto {
-  const EnquadramentoFoto({this.x = 0, this.y = 0, this.zoom = 1});
+/// Parte da foto que aparece no espaço, em frações da foto (0 a 1).
+typedef AreaVisivel = ({
+  double esquerda,
+  double topo,
+  double largura,
+  double altura,
+});
 
-  /// Ponto de ancoragem, de -1 (esquerda/topo) a 1 (direita/base), na escala
-  /// de `Alignment`.
-  final double x;
-  final double y;
+/// Como uma foto ocupa o espaço dela no cartaz. A foto original não é
+/// alterada: o recorte é só de exibição.
+///
+/// Por padrão a foto preenche o espaço e as sobras são cortadas, mantendo o
+/// ponto de foco ([focoX], [focoY]) no centro sempre que a foto permite.
+/// Assim o recorte acompanha o espaço, que muda de formato conforme o texto
+/// do cartaz. Com [inteira], a foto aparece toda, sem cortes.
+class EnquadramentoFoto {
+  const EnquadramentoFoto({
+    this.focoX = 0.5,
+    this.focoY = 0.5,
+    this.zoom = 1,
+    this.inteira = false,
+  });
+
+  /// Ponto de foco, em frações da foto: 0 é a borda esquerda (ou o topo) e
+  /// 1, a direita (ou a base).
+  final double focoX;
+  final double focoY;
 
   /// De 1 (a foto só cobre o espaço) a [zoomMaximo].
   final double zoom;
 
+  /// Foto inteira, sem cortes; o resto do espaço fica com um fundo
+  /// desfocado da própria foto. Foco e zoom não se aplicam.
+  final bool inteira;
+
   static const zoomMaximo = 3.0;
   static const centralizado = EnquadramentoFoto();
 
-  EnquadramentoFoto ajustado({double? x, double? y, double? zoom}) =>
+  EnquadramentoFoto ajustado({
+    double? focoX,
+    double? focoY,
+    double? zoom,
+    bool? inteira,
+  }) =>
       EnquadramentoFoto(
-        x: (x ?? this.x).clamp(-1.0, 1.0),
-        y: (y ?? this.y).clamp(-1.0, 1.0),
+        focoX: (focoX ?? this.focoX).clamp(0.0, 1.0),
+        focoY: (focoY ?? this.focoY).clamp(0.0, 1.0),
         zoom: (zoom ?? this.zoom).clamp(1.0, zoomMaximo),
+        inteira: inteira ?? this.inteira,
       );
 
-  Map<String, Object> toJson() => {'x': x, 'y': y, 'zoom': zoom};
+  /// O que aparece de uma foto com a proporção (largura ÷ altura)
+  /// [proporcaoDaFoto] num espaço de proporção [proporcaoDoEspaco], quando
+  /// a foto preenche o espaço: o maior recorte com o formato do espaço,
+  /// reduzido pelo zoom e centrado no foco, sem passar da borda da foto.
+  AreaVisivel areaVisivel({
+    required double proporcaoDaFoto,
+    required double proporcaoDoEspaco,
+  }) {
+    final largura =
+        (proporcaoDoEspaco / proporcaoDaFoto).clamp(0.0, 1.0) / zoom;
+    final altura = (proporcaoDaFoto / proporcaoDoEspaco).clamp(0.0, 1.0) / zoom;
+    return (
+      esquerda: (focoX - largura / 2).clamp(0.0, 1 - largura),
+      topo: (focoY - altura / 2).clamp(0.0, 1 - altura),
+      largura: largura,
+      altura: altura,
+    );
+  }
+
+  Map<String, Object> toJson() =>
+      {'focoX': focoX, 'focoY': focoY, 'zoom': zoom, 'inteira': inteira};
 
   static EnquadramentoFoto fromJson(Object? json) {
     if (json is! Map) return centralizado;
-    double ler(String chave, double padrao) =>
-        (json[chave] as num?)?.toDouble() ?? padrao;
+    double? ler(String chave) => (json[chave] as num?)?.toDouble();
+    // Rascunho da versão 1: âncora de -1 a 1 (`x`, `y`), convertida para o
+    // ponto de foco equivalente mais próximo.
+    double? antigo(String chave) {
+      final valor = ler(chave);
+      return valor == null ? null : (valor + 1) / 2;
+    }
+
     return centralizado.ajustado(
-        x: ler('x', 0), y: ler('y', 0), zoom: ler('zoom', 1));
+      focoX: ler('focoX') ?? antigo('x') ?? 0.5,
+      focoY: ler('focoY') ?? antigo('y') ?? 0.5,
+      zoom: ler('zoom') ?? 1,
+      inteira: json['inteira'] == true,
+    );
   }
 
   @override
   bool operator ==(Object other) =>
       other is EnquadramentoFoto &&
-      other.x == x &&
-      other.y == y &&
-      other.zoom == zoom;
+      other.focoX == focoX &&
+      other.focoY == focoY &&
+      other.zoom == zoom &&
+      other.inteira == inteira;
 
   @override
-  int get hashCode => Object.hash(x, y, zoom);
+  int get hashCode => Object.hash(focoX, focoY, zoom, inteira);
 }
 
 /// De onde veio uma foto do cartaz. Fotos da galeria e do perfil já estão
@@ -179,12 +238,258 @@ enum OrigemDoContato {
 /// nada (conferido nos testes com o texto mais longo permitido).
 abstract final class LimitesCartaz {
   static const caracteristicas = 80;
-  static const vistoPorUltimoEm = 50;
-  static const desapareceuEm = 30;
-  static const recompensa = 30;
-  static const observacoes = 100;
+  static const localVisto = 60;
+  static const observacoes = 150;
+  static const recompensaTexto = 30;
+
+  /// R$ 999.999,99.
+  static const recompensaEmCentavos = 99999999;
+
+  /// Até quantos dias para trás o calendário de "Visto por último" vai.
+  static const diasDoCalendario = 365;
 
   static const fotos = 3;
+}
+
+/// Cor do cabeçalho "PROCURA-SE" e do rodapé "CONTATO". Todas deixam o
+/// texto branco legível (contraste acima de 5:1).
+enum CorDoCartaz {
+  preto('Preto', 0xFF111111),
+  vermelho('Vermelho', 0xFFC62828),
+  azul('Azul', 0xFF1565C0);
+
+  const CorDoCartaz(this.nome, this.argb);
+
+  final String nome;
+  final int argb;
+}
+
+/// Período do dia em que o pet foi visto, quando o tutor não sabe o
+/// horário exato.
+enum PeriodoDoDia {
+  madrugada('Madrugada', 'de madrugada'),
+  manha('Manhã', 'de manhã'),
+  tarde('Tarde', 'à tarde'),
+  noite('Noite', 'à noite');
+
+  const PeriodoDoDia(this.rotulo, this.noCartaz);
+
+  final String rotulo;
+  final String noCartaz;
+}
+
+/// Quando e onde o pet foi visto pela última vez: um campo só, para data e
+/// local nunca se contradizerem. Tudo é opcional; o período e o horário
+/// exato são alternativos.
+class VistoPorUltimo {
+  const VistoPorUltimo({
+    this.data,
+    this.periodo,
+    this.horario,
+    this.local = '',
+  });
+
+  /// Só o dia (sem hora).
+  final DateTime? data;
+  final PeriodoDoDia? periodo;
+
+  /// Minutos desde a meia-noite.
+  final int? horario;
+  final String local;
+
+  static const vazio = VistoPorUltimo();
+
+  VistoPorUltimo comData(DateTime? data) => VistoPorUltimo(
+        data: data == null ? null : DateTime(data.year, data.month, data.day),
+        periodo: periodo,
+        horario: horario,
+        local: local,
+      );
+
+  /// Escolher um período tira o horário exato.
+  VistoPorUltimo comPeriodo(PeriodoDoDia? periodo) =>
+      VistoPorUltimo(data: data, periodo: periodo, local: local);
+
+  /// Escolher um horário exato tira o período.
+  VistoPorUltimo comHorario(int? horario) => VistoPorUltimo(
+      data: data, horario: horario?.clamp(0, 24 * 60 - 1), local: local);
+
+  VistoPorUltimo comLocal(String local) => VistoPorUltimo(
+      data: data, periodo: periodo, horario: horario, local: local);
+
+  /// Como aparece no cartaz: "29/10/2026, à tarde — Perto da praça".
+  /// Vazio se nada foi preenchido.
+  String get texto {
+    final quando = [
+      if (data != null) formatarDataDoCartaz(data!),
+      if (periodo != null) periodo!.noCartaz,
+      if (horario != null) 'às ${formatarHorarioDoCartaz(horario!)}',
+    ].join(', ');
+    final junto = [quando, local.trim()].where((p) => p.isNotEmpty).join(' — ');
+    return junto.isEmpty ? '' : junto[0].toUpperCase() + junto.substring(1);
+  }
+
+  Map<String, Object?> toJson() => {
+        'data': data == null
+            ? null
+            : '${data!.year.toString().padLeft(4, '0')}-'
+                '${_dois(data!.month)}-${_dois(data!.day)}',
+        'periodo': periodo?.name,
+        'horario': horario,
+        'local': local,
+      };
+
+  static VistoPorUltimo fromJson(Object? json) {
+    if (json is! Map) return vazio;
+    final data = json['data'] is String
+        ? DateTime.tryParse(json['data'] as String)
+        : null;
+    final horario = json['horario'];
+    final local = json['local'];
+    final periodo =
+        PeriodoDoDia.values.where((p) => p.name == json['periodo']).firstOrNull;
+    return VistoPorUltimo(
+      data: data == null ? null : DateTime(data.year, data.month, data.day),
+      periodo: periodo,
+      horario: periodo == null && horario is int && horario >= 0
+          ? horario.clamp(0, 24 * 60 - 1)
+          : null,
+      local: local is String ? _cortar(local, LimitesCartaz.localVisto) : '',
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is VistoPorUltimo &&
+      other.data == data &&
+      other.periodo == periodo &&
+      other.horario == horario &&
+      other.local == local;
+
+  @override
+  int get hashCode => Object.hash(data, periodo, horario, local);
+}
+
+String _dois(int n) => n.toString().padLeft(2, '0');
+
+String _cortar(String texto, int limite) =>
+    texto.length > limite ? texto.substring(0, limite) : texto;
+
+/// `29/10/2026`.
+String formatarDataDoCartaz(DateTime data) =>
+    '${_dois(data.day)}/${_dois(data.month)}/${data.year}';
+
+/// `15h30`, ou `15h` na hora cheia.
+String formatarHorarioDoCartaz(int minutos) {
+  final hora = minutos ~/ 60;
+  final minuto = minutos % 60;
+  return minuto == 0 ? '${hora}h' : '${hora}h${_dois(minuto)}';
+}
+
+/// `1.234,56`: valor em reais com ponto no milhar e vírgula nos centavos.
+String formatarValorEmReais(int centavos) {
+  final reais = (centavos ~/ 100)
+      .toString()
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => '.');
+  return '$reais,${_dois(centavos % 100)}';
+}
+
+/// `R$ 1.234,56`.
+String formatarReais(int centavos) => 'R\$ ${formatarValorEmReais(centavos)}';
+
+/// Lê um valor escrito à mão ("200", "R$ 1.500,00", "200 R$") em centavos.
+/// Nulo se o texto não for só um valor em reais.
+int? centavosDoTexto(String texto) {
+  final limpo = texto.replaceAll(RegExp(r'R\$|\s'), '');
+  final valor =
+      RegExp(r'^(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$').firstMatch(limpo);
+  if (valor == null) return null;
+  final reais = int.parse(valor.group(1)!.replaceAll('.', ''));
+  final centavos = int.parse((valor.group(2) ?? '0').padRight(2, '0'));
+  final total = reais * 100 + centavos;
+  return total > 0 && total <= LimitesCartaz.recompensaEmCentavos
+      ? total
+      : null;
+}
+
+enum TipoRecompensa { dinheiro, outra }
+
+/// Recompensa oferecida: um valor em reais ou um texto livre ("um
+/// vale-presente"). Os dois ficam guardados; [tipo] escolhe qual vai no
+/// cartaz.
+class Recompensa {
+  const Recompensa({
+    this.tipo = TipoRecompensa.dinheiro,
+    this.centavos,
+    this.texto = '',
+  });
+
+  final TipoRecompensa tipo;
+  final int? centavos;
+  final String texto;
+
+  static const nenhuma = Recompensa();
+
+  Recompensa comTipo(TipoRecompensa tipo) =>
+      Recompensa(tipo: tipo, centavos: centavos, texto: texto);
+
+  /// Nulo ou zero: sem valor.
+  Recompensa comCentavos(int? centavos) => Recompensa(
+        tipo: tipo,
+        centavos: centavos == null || centavos <= 0
+            ? null
+            : centavos.clamp(1, LimitesCartaz.recompensaEmCentavos),
+        texto: texto,
+      );
+
+  Recompensa comTexto(String texto) =>
+      Recompensa(tipo: tipo, centavos: centavos, texto: texto);
+
+  /// Vazio: o cartaz não tem a linha "Recompensa".
+  String get noCartaz => switch (tipo) {
+        TipoRecompensa.dinheiro =>
+          centavos == null ? '' : formatarReais(centavos!),
+        TipoRecompensa.outra => texto.trim(),
+      };
+
+  Map<String, Object?> toJson() =>
+      {'tipo': tipo.name, 'centavos': centavos, 'texto': texto};
+
+  static Recompensa fromJson(Object? json) {
+    if (json is! Map) return nenhuma;
+    final centavos = json['centavos'];
+    final texto = json['texto'];
+    return Recompensa(
+      tipo: TipoRecompensa.values
+              .where((t) => t.name == json['tipo'])
+              .firstOrNull ??
+          TipoRecompensa.dinheiro,
+      texto:
+          texto is String ? _cortar(texto, LimitesCartaz.recompensaTexto) : '',
+    ).comCentavos(centavos is int ? centavos : null);
+  }
+
+  /// Recompensa da versão 1 do rascunho, que era um texto livre: vira um
+  /// valor em reais quando dá para ler, senão continua como texto.
+  static Recompensa doTextoAntigo(String texto) {
+    if (texto.trim().isEmpty) return nenhuma;
+    final centavos = centavosDoTexto(texto);
+    return centavos != null
+        ? Recompensa(centavos: centavos)
+        : Recompensa(
+            tipo: TipoRecompensa.outra,
+            texto: _cortar(texto.trim(), LimitesCartaz.recompensaTexto));
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is Recompensa &&
+      other.tipo == tipo &&
+      other.centavos == centavos &&
+      other.texto == texto;
+
+  @override
+  int get hashCode => Object.hash(tipo, centavos, texto);
 }
 
 /// O que o tutor escolheu no editor. O telefone não fica aqui: é lido do
@@ -199,10 +504,10 @@ class RascunhoCartaz {
       EspacoDeFoto.vazio
     ],
     this.caracteristicas,
-    this.vistoPorUltimoEm = '',
-    this.desapareceuEm = '',
-    this.recompensa = '',
+    this.vistoPorUltimo = VistoPorUltimo.vazio,
     this.observacoes = '',
+    this.recompensa = Recompensa.nenhuma,
+    this.cor = CorDoCartaz.preto,
     this.contato,
     this.telefoneAutorizado,
   });
@@ -213,10 +518,10 @@ class RascunhoCartaz {
   /// Nulo enquanto o tutor não mexeu no campo: o editor então sugere um
   /// texto a partir do cadastro (ver [sugerirCaracteristicas]).
   final String? caracteristicas;
-  final String vistoPorUltimoEm;
-  final String desapareceuEm;
-  final String recompensa;
+  final VistoPorUltimo vistoPorUltimo;
   final String observacoes;
+  final Recompensa recompensa;
+  final CorDoCartaz cor;
 
   /// Nulo: ainda não escolhido (o editor usa o primeiro disponível).
   final OrigemDoContato? contato;
@@ -233,19 +538,19 @@ class RascunhoCartaz {
   RascunhoCartaz copyWith({
     List<EspacoDeFoto>? espacos,
     String? caracteristicas,
-    String? vistoPorUltimoEm,
-    String? desapareceuEm,
-    String? recompensa,
+    VistoPorUltimo? vistoPorUltimo,
     String? observacoes,
+    Recompensa? recompensa,
+    CorDoCartaz? cor,
     OrigemDoContato? contato,
   }) =>
       RascunhoCartaz(
         espacos: espacos ?? this.espacos,
         caracteristicas: caracteristicas ?? this.caracteristicas,
-        vistoPorUltimoEm: vistoPorUltimoEm ?? this.vistoPorUltimoEm,
-        desapareceuEm: desapareceuEm ?? this.desapareceuEm,
-        recompensa: recompensa ?? this.recompensa,
+        vistoPorUltimo: vistoPorUltimo ?? this.vistoPorUltimo,
         observacoes: observacoes ?? this.observacoes,
+        recompensa: recompensa ?? this.recompensa,
+        cor: cor ?? this.cor,
         contato: contato ?? this.contato,
         telefoneAutorizado: telefoneAutorizado,
       );
@@ -254,10 +559,10 @@ class RascunhoCartaz {
   RascunhoCartaz autorizarTelefone(String? digitos) => RascunhoCartaz(
         espacos: espacos,
         caracteristicas: caracteristicas,
-        vistoPorUltimoEm: vistoPorUltimoEm,
-        desapareceuEm: desapareceuEm,
-        recompensa: recompensa,
+        vistoPorUltimo: vistoPorUltimo,
         observacoes: observacoes,
+        recompensa: recompensa,
+        cor: cor,
         contato: contato,
         telefoneAutorizado: digitos,
       );
@@ -277,11 +582,11 @@ class RascunhoCartaz {
     return copyWith(espacos: novos);
   }
 
-  /// O que vai para o rascunho salvo no aparelho: textos, fotos que já
-  /// estão no Cloudinary do pet e o enquadramento. Sem telefone, sem
-  /// consentimento e sem fotos do celular.
+  /// O que vai para o rascunho salvo no aparelho: textos, data, fotos que
+  /// já estão no Cloudinary do pet, o enquadramento e a cor. Sem telefone,
+  /// sem consentimento e sem fotos do celular.
   Map<String, Object?> toJson() => {
-        'versao': 1,
+        'versao': 2,
         'espacos': [
           for (final espaco in espacos)
             switch (espaco.foto) {
@@ -300,22 +605,28 @@ class RascunhoCartaz {
             },
         ],
         'caracteristicas': caracteristicas,
-        'vistoPorUltimoEm': vistoPorUltimoEm,
-        'desapareceuEm': desapareceuEm,
-        'recompensa': recompensa,
+        'vistoPorUltimo': vistoPorUltimo.toJson(),
         'observacoes': observacoes,
+        'recompensa': recompensa.toJson(),
+        'cor': cor.name,
         'contato': contato?.name,
       };
 
   /// Lê um rascunho salvo. Campos desconhecidos, tipos errados ou URLs que
   /// não são do Cloudinary viram vazio, em vez de erro: um rascunho
   /// corrompido nunca impede o tutor de abrir o editor.
+  ///
+  /// A versão 1 (antes de "Visto por último" virar um campo só) é
+  /// convertida: o local vem de `vistoPorUltimoEm`, a recompensa em texto
+  /// vira valor em reais quando dá, e `desapareceuEm`, um texto livre sem
+  /// data, fica de fora.
   static RascunhoCartaz fromJson(Object? json) {
-    if (json is! Map || json['versao'] != 1) return const RascunhoCartaz();
+    if (json is! Map) return const RascunhoCartaz();
+    final versao = json['versao'];
+    if (versao != 1 && versao != 2) return const RascunhoCartaz();
     String texto(String chave, int limite) {
       final valor = json[chave];
-      if (valor is! String) return '';
-      return valor.length > limite ? valor.substring(0, limite) : valor;
+      return valor is String ? _cortar(valor, limite) : '';
     }
 
     final lidos = json['espacos'];
@@ -331,11 +642,16 @@ class RascunhoCartaz {
       caracteristicas: caracteristicas is String
           ? texto('caracteristicas', LimitesCartaz.caracteristicas)
           : null,
-      vistoPorUltimoEm:
-          texto('vistoPorUltimoEm', LimitesCartaz.vistoPorUltimoEm),
-      desapareceuEm: texto('desapareceuEm', LimitesCartaz.desapareceuEm),
-      recompensa: texto('recompensa', LimitesCartaz.recompensa),
+      vistoPorUltimo: versao == 1
+          ? VistoPorUltimo(
+              local: texto('vistoPorUltimoEm', LimitesCartaz.localVisto))
+          : VistoPorUltimo.fromJson(json['vistoPorUltimo']),
       observacoes: texto('observacoes', LimitesCartaz.observacoes),
+      recompensa: versao == 1
+          ? Recompensa.doTextoAntigo(texto('recompensa', 100))
+          : Recompensa.fromJson(json['recompensa']),
+      cor: CorDoCartaz.values.where((c) => c.name == json['cor']).firstOrNull ??
+          CorDoCartaz.preto,
       contato: OrigemDoContato.values
           .where((o) => o.name == json['contato'])
           .firstOrNull,
@@ -367,9 +683,10 @@ bool urlDoCloudinary(String url) {
       uri.host == 'res.cloudinary.com';
 }
 
-/// Sugestão de "Características" a partir do cadastro: sexo e porte, os
-/// únicos dados físicos do pet além de espécie, raça e cor (que já têm
-/// linha própria). Nunca vem de análise de imagem; o tutor revisa.
+/// Sugestão de "Características" a partir do cadastro: sexo e porte. A
+/// espécie já está no título do cartaz; raça e cor ficam de fora, a pedido
+/// do proprietário, e o tutor pode escrevê-las aqui. Nunca vem de análise
+/// de imagem; o tutor revisa.
 String sugerirCaracteristicas(Pet pet) {
   final partes = <String>[
     if (pet.genero.trim().isNotEmpty) pet.genero.trim(),
@@ -480,8 +797,10 @@ class ConteudoCartaz {
     required this.titulo,
     required this.nome,
     required this.campos,
+    this.observacoes = '',
     required this.espacos,
     required this.telefone,
+    this.cor = CorDoCartaz.preto,
   });
 
   /// Monta o conteúdo. [telefone] é o número escolhido, só com dígitos, ou
@@ -493,43 +812,58 @@ class ConteudoCartaz {
     required String? telefone,
   }) {
     String limpo(String texto) => texto.trim();
-    final especieRaca = [pet.especie, pet.raca]
-        .map(limpo)
-        .where((s) => s.isNotEmpty)
-        .join(' / ');
     final caracteristicas =
         limpo(rascunho.caracteristicas ?? sugerirCaracteristicas(pet));
+    final visto = rascunho.vistoPorUltimo.texto;
+    final recompensa = rascunho.recompensa.noCartaz;
     final campos = <CampoDoCartaz>[
       if (limpo(pet.nome).isNotEmpty) CampoDoCartaz('Nome', limpo(pet.nome)),
-      if (especieRaca.isNotEmpty) CampoDoCartaz('Espécie/Raça', especieRaca),
-      if (limpo(pet.cor).isNotEmpty) CampoDoCartaz('Cor', limpo(pet.cor)),
       if (caracteristicas.isNotEmpty)
         CampoDoCartaz('Características', caracteristicas),
-      if (limpo(rascunho.vistoPorUltimoEm).isNotEmpty)
-        CampoDoCartaz('Visto por último em', limpo(rascunho.vistoPorUltimoEm)),
-      if (limpo(rascunho.desapareceuEm).isNotEmpty)
-        CampoDoCartaz('Desapareceu em', limpo(rascunho.desapareceuEm)),
-      if (limpo(rascunho.observacoes).isNotEmpty)
-        CampoDoCartaz('Observações', limpo(rascunho.observacoes)),
-      if (limpo(rascunho.recompensa).isNotEmpty)
-        CampoDoCartaz('Recompensa', limpo(rascunho.recompensa)),
+      if (visto.isNotEmpty) CampoDoCartaz('Visto por último', visto),
+      if (recompensa.isNotEmpty) CampoDoCartaz('Recompensa', recompensa),
     ];
     return ConteudoCartaz(
       titulo: TituloCartaz.daEspecie(pet.especie),
       nome: limpo(pet.nome).toUpperCase(),
       campos: campos,
+      observacoes: limpo(rascunho.observacoes),
       espacos: rascunho.espacos,
       telefone: telefone == null ? null : formatarTelefoneDoCartaz(telefone),
+      cor: rascunho.cor,
     );
   }
 
   final TituloCartaz titulo;
   final String nome;
+
+  /// As linhas de dados, na ordem do cartaz.
   final List<CampoDoCartaz> campos;
+
+  /// Em destaque, numa caixa própria abaixo dos dados. Vazio: sem caixa.
+  final String observacoes;
   final List<EspacoDeFoto> espacos;
 
   /// Já formatado; nulo sem telefone válido.
   final String? telefone;
+  final CorDoCartaz cor;
+
+  /// O mesmo cartaz com os espaços de foto vazios: serve para medir o
+  /// formato de cada espaço sem carregar as fotos (o tamanho deles depende
+  /// só do texto).
+  ConteudoCartaz get semFotos => ConteudoCartaz(
+        titulo: titulo,
+        nome: nome,
+        campos: campos,
+        observacoes: observacoes,
+        espacos: const [
+          EspacoDeFoto.vazio,
+          EspacoDeFoto.vazio,
+          EspacoDeFoto.vazio
+        ],
+        telefone: telefone,
+        cor: cor,
+      );
 }
 
 /// O que impede a exportação. Lista vazia: pode exportar. [telefone] é o
