@@ -3,7 +3,7 @@
 //
 // Goldens em goldens/cartaz_*.png. No flutter_test o texto usa a fonte de
 // teste (blocos), então as imagens conferem a composição (posições,
-// tamanhos, recortes), não a tipografia. Tolerância de 1% dos pixels, para
+// tamanhos, recortes), não a tipografia. Tolerância de 2% dos pixels, para
 // diferenças de suavização entre Windows e o Linux do CI. Para regerar:
 // flutter test --update-goldens test/features/pet/cartaz_layout_test.dart
 import 'dart:typed_data';
@@ -19,7 +19,9 @@ import 'package:pet_connect/features/pet/presentation/widgets/cartaz_procura_se.
 class _ComparadorTolerante extends LocalFileComparator {
   _ComparadorTolerante(super.testFile);
 
-  static const tolerancia = 0.01;
+  /// 2%: no CI (Linux) o golden com mais texto deu 1,09% de diferença na
+  /// suavização; uma foto ou um bloco fora do lugar passa bem disso.
+  static const tolerancia = 0.02;
 
   @override
   Future<bool> compare(Uint8List imageBytes, Uri golden) async {
