@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pet_connect/core/config/idioma.dart';
 import 'package:pet_connect/core/theme/app_theme.dart';
 import 'package:pet_connect/core/theme/app_theme_mode.dart';
 import 'package:pet_connect/core/theme/theme_providers.dart';
@@ -161,8 +162,13 @@ Future<_Cenario> _abrir(
         return Stream.value(const <Localizacao>[]);
       }),
     ],
-    child:
-        MaterialApp.router(theme: AppTheme.build(tema), routerConfig: router),
+    child: MaterialApp.router(
+      theme: AppTheme.build(tema),
+      locale: IdiomaDoApp.locale,
+      supportedLocales: IdiomaDoApp.suportados,
+      localizationsDelegates: IdiomaDoApp.delegates,
+      routerConfig: router,
+    ),
   ));
   await _assentar(tester);
   return _Cenario(pets, destino, router, leituras);
@@ -254,7 +260,7 @@ void main() {
       expect(find.text('Cachorro · SRD'), findsOneWidget);
 
       // Voltar retorna ao perfil, sem fechar o app.
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Voltar'));
       await _assentar(tester);
       expect(c.router.routerDelegate.currentConfiguration.uri.path, '/pet/$id');
     });
@@ -416,7 +422,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Foto 1 de Rex'));
       await _assentar(tester);
 
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Voltar'));
       await _assentar(tester);
       expect(find.byType(CartazEditorScreen), findsOneWidget);
       final espaco = _rascunho(tester, id).espacos[2];
@@ -574,7 +580,7 @@ void main() {
       expect(find.text('(11) 90000-0000'), findsNothing);
       expect(_botao(tester, 'Compartilhar imagem').onPressed, isNull);
 
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Voltar'));
       await _assentar(tester);
       await tester.scrollUntilVisible(
           find.byKey(const ValueKey('cartaz-consentimento')), 200,
@@ -755,7 +761,7 @@ void main() {
           .atualizar((r) => r.autorizarTelefone('11900000000'));
       await tester.pump(CartazController.esperaAntesDeSalvar);
 
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Voltar'));
       await _assentar(tester);
       c.router.push('/pet/$id/cartaz');
       await _assentar(tester);

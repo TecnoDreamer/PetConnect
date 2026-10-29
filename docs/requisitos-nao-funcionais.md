@@ -25,6 +25,7 @@ Convenção: `RNFxx`.
 | RNF07 | O fluxo de cadastro de pet (RF10) deve ser completável em no máximo 5 telas/passos. |
 | RNF08 | Mensagens de erro (login inválido, campo obrigatório, etc.) devem ser específicas e em português, nunca códigos técnicos crus. |
 | RNF09 | O app deve seguir as diretrizes de acessibilidade do Flutter (tamanho de toque mínimo, contraste, suporte a leitor de tela) nas telas principais. |
+| RNF24 | O app usa português do Brasil em tudo, inclusive nos textos do Flutter (diálogos, dicas, menu de texto) e nos calendários e relógios: meses em português, semana a partir do domingo, data `dd/mm/aaaa` e hora em 24 h. Vale qualquer que seja o idioma do celular. Ver `docs/features/idioma-portugues.md`. |
 
 ## Compatibilidade
 

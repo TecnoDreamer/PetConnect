@@ -326,8 +326,6 @@ Esses casos ficam no roteiro de aparelho.
 - **Ajuste da foto:** o formato do espaço é medido com o texto do momento;
   se o tutor escrever mais depois, o espaço fica um pouco mais baixo, com o
   foco ainda no centro. A prévia mostra o resultado final.
-- **Calendário em português só no cartaz:** o app não define o idioma do
-  Material, então os outros calendários do app continuam em inglês.
 - **Android 9 ou anterior:** "Salvar imagem" não funciona sem uma
   permissão de armazenamento, que não foi adicionada. O tutor usa
   "Compartilhar imagem".
