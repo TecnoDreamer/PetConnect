@@ -81,3 +81,8 @@ sequenceDiagram
 
 Publicar, listar e excluir, com o tratamento de falha parcial: ver
 `docs/features/galeria-fotos-pet.md` ("Arquitetura").
+
+## Cartaz de pet desaparecido (RF43–RF49)
+
+Prévia, captura em PNG, PDF e compartilhamento: ver
+`docs/features/cartaz-pet-desaparecido.md` ("Arquitetura").

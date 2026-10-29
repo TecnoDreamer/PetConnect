@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Calendário e relógio em português no cartaz de pet desaparecido.
+  flutter_localizations:
+    sdk: flutter
 
   # Estado e navegação
   flutter_riverpod:
@@ -36,6 +39,10 @@ dependencies:
   shared_preferences:
 
   cupertino_icons: ^1.0.6
+  share_plus: ^13.3.1
+  pdf: ^3.13.1
+  gal: ^2.3.3
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
