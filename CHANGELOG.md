@@ -42,6 +42,12 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
   autorizado. Confere a prévia e compartilha em PNG ou PDF A4, ou salva na
   galeria. O cartaz é gerado no celular: nada é publicado, o pet não muda e
   não há permissões novas. Ver `docs/features/cartaz-pet-desaparecido.md`.
+  - Depois do primeiro teste no aparelho: cada foto ganhou ponto de foco ou
+    "Foto inteira"; o cartaz perdeu as linhas Espécie/Raça, Cor e
+    Desapareceu em; as observações ficaram em destaque; a recompensa ganhou
+    máscara de reais; "Visto por último" virou um campo só, com calendário
+    em português; e o tutor escolhe a cor do cartaz (preto, vermelho ou
+    azul).
 - "Entrar com Google" na tela de Login. Na primeira vez a conta é criada
   com o nome e o e-mail do Google; depois, entra na mesma conta. Se o
   e-mail já tem conta por senha e o Firebase pedir confirmação, o app pede

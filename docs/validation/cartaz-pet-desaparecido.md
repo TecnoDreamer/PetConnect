@@ -26,9 +26,9 @@ Testado por:
 | CP02 | Voltar do editor volta ao perfil; voltar do perfil continua funcionando (o app não fecha) | |
 | CP03 | Foto principal → escolher da galeria do pet; Foto 2 → foto do perfil; Foto 3 → "Escolher do celular" (o seletor do sistema abre sem pedir acesso a todas as fotos) | |
 | CP04 | Uma foto já usada aparece marcada e não pode ser escolhida de novo | |
-| CP05 | Tocar numa foto escolhida → Ajustar enquadramento: arrastar, zoom e controles; Pronto; a prévia mostra o recorte | |
+| CP05 | Escolher uma foto abre "Ajustar"; tocar no rosto do pet na foto inteira move a parte clara; zoom; Pronto; a miniatura e a prévia mostram o rosto no centro, sem cortar | |
 | CP06 | Mover uma foto para outra posição e remover uma foto | |
-| CP07 | Características vem sugerida (sexo, porte) e pode ser editada; campos opcionais vazios não aparecem na prévia | |
+| CP07 | Características vem sugerida (sexo, porte) e pode ser editada; campos opcionais vazios não aparecem na prévia; o cartaz não tem Espécie/Raça, Cor nem Desapareceu em | |
 | CP08 | Prévia sem marcar a autorização: o contato fica vazio e os botões ficam desligados, com "Confirme que o telefone…" | |
 | CP09 | Marcar a autorização: o telefone aparece formatado e os botões ligam | |
 | CP10 | Compartilhar imagem → a folha do sistema abre; enviar para você mesmo no WhatsApp; a imagem chega nítida e legível | |
@@ -41,6 +41,12 @@ Testado por:
 | CP17 | Pet no Memorial: não há "Pet desaparecido" | |
 | CP18 | Depois de tudo: o perfil do pet, vacinas, galeria e QR continuam iguais | |
 | CP19 | "Descartar rascunho" (menu ⋮ do editor) limpa as fotos e os textos | |
+| CP20 | "Ajustar" → "Foto inteira": a foto aparece toda, com fundo desfocado nas sobras, na prévia e no PNG | |
+| CP21 | Visto por último: "Escolher a data" abre o calendário em português, sem dias futuros; escolher "Tarde" e depois "Horário exato" (um tira o outro); escrever o local; o cartaz mostra uma linha só, por exemplo "29/10/2026, à tarde — Em casa" | |
+| CP22 | Recompensa em dinheiro: digitar 20000 mostra `R$ 200,00` no campo e no cartaz; apagar tudo tira a linha; "Outra" aceita texto | |
+| CP23 | Observações com 2 ou 3 linhas: caixa em destaque abaixo dos dados, legível no PNG | |
+| CP24 | Na prévia, trocar a cor para vermelho e azul: cabeçalho, faixa e rodapé mudam; o PNG e o PDF saem na cor escolhida | |
+| CP25 | Um rascunho feito antes desta versão (ex.: recompensa "200 R$") abre com R$ 200,00 e o local mantido | |
 
 Marcar `OK`, `PARCIAL: <o que faltou conferir>`, `FALHOU: <o que aconteceu>`
 ou `BLOQUEADO: <motivo>`. Em branco: ainda não testado.

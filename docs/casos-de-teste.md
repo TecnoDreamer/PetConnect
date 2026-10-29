@@ -177,12 +177,12 @@ em `docs/validation/cartaz-pet-desaparecido.md`.
 - **Resultado esperado**: o editor abre com o pet certo e o título da espécie na prévia; o pet no Memorial mostra o aviso do Memorial, e o de outra conta, "Pet não encontrado".
 
 ### CT36 — Fotos (RF45)
-- **Passos**: escolher uma foto da galeria, a do perfil e uma do celular; tentar repetir uma; mover, enquadrar e remover.
-- **Resultado esperado**: a foto repetida fica bloqueada; mover leva o enquadramento junto; a prévia mostra o recorte; a foto de perfil não muda.
+- **Passos**: escolher uma foto da galeria, a do perfil e uma do celular; no ajuste que abre, tocar no rosto do pet e, noutra foto, escolher "Foto inteira"; tentar repetir uma; mover e remover.
+- **Resultado esperado**: a foto repetida fica bloqueada; o rosto fica no centro do espaço; a foto inteira aparece sem cortes, com fundo desfocado; mover leva o ajuste junto; a foto de perfil não muda.
 
 ### CT37 — Campos opcionais (RF46)
-- **Passos**: prévia sem nenhum opcional; depois com todos no limite de caracteres.
-- **Resultado esperado**: sem rótulos vazios nem "null", sem linha de recompensa; com todos preenchidos, nada é cortado.
+- **Passos**: prévia sem nenhum opcional; depois com data, período e local em "Visto por último", recompensa de R$ 200,00, observações e todos os textos no limite; trocar a cor para vermelho e azul.
+- **Resultado esperado**: sem rótulos vazios nem "null", sem linha de recompensa; "Visto por último" numa linha só; recompensa como `R$ 200,00`; observações em destaque; nada é cortado; cabeçalho e rodapé na cor escolhida.
 
 ### CT38 — Telefone e consentimento (RF47)
 - **Passos**: tutor sem telefone válido; tutor com telefone, sem marcar a autorização; marcar; trocar para o contato do QR do pet.
