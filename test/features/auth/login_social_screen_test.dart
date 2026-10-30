@@ -199,13 +199,13 @@ void main() {
       testWidgets('$nome: "$mensagem"', (tester) async {
         final repo = _FakeRepo()..erroSocial = erro;
         await _abrir(tester, repo);
-        final tituloAntes = tester.getTopLeft(find.text('Login'));
+        final tituloAntes = tester.getTopLeft(find.text('Entrar'));
 
         await tester.tap(_google);
         await tester.pumpAndSettle();
 
         expect(find.text(mensagem), findsOneWidget);
-        expect(tester.getTopLeft(find.text('Login')), tituloAntes,
+        expect(tester.getTopLeft(find.text('Entrar')), tituloAntes,
             reason: 'a mensagem usa o espaço reservado no card');
         expect(tester.takeException(), isNull);
       });

@@ -23,6 +23,7 @@ seja o idioma do celular.
 | Calendário | Meses em inglês; semana a partir do domingo, com S M T W T F S | Meses em português ("outubro de 2026"); semana a partir do domingo, com D S T Q Q S S |
 | Data digitada no calendário (ícone de lápis) | mm/dd/yyyy | dd/mm/aaaa |
 | Relógio | 12 h, com AM/PM | 24 h |
+| Título da tela de entrada (texto do app) | Login | Entrar |
 
 Calendários do app afetados: vacina, consulta (data e horário), histórico
 médico, localização, cadastro do pet, registro de falecimento, Editar
@@ -45,8 +46,6 @@ perfil e "Visto por último" no cartaz.
 
 - **Folha de compartilhamento e seletor de fotos do Android:** são telas do
   sistema e seguem o idioma do celular.
-- **Título "Login" da tela de entrada:** é texto do próprio app e ficou
-  como está. É uma decisão de texto, não de idioma.
 - **Outros idiomas:** o app não oferece tradução; um celular em inglês vê
   o app em português.
 

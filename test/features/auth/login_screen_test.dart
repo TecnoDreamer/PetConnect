@@ -149,7 +149,7 @@ void main() {
         for (final texto in const [
           'PetConnect',
           'Conectando corações perdidos aos seus lares',
-          'Login',
+          'Entrar',
           'Esqueceu a senha?',
           'Entrar com Google',
         ]) {
@@ -290,10 +290,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final baseCabecalho = tester.getBottomLeft(find.byType(AuthHeader)).dy;
-      final topoCard = tester.getTopLeft(find.text('Login')).dy;
+      final topoCard = tester.getTopLeft(find.text('Entrar')).dy;
 
       expect(topoCard, lessThan(baseCabecalho),
-          reason: 'o título "Login" do card deveria aparecer acima da base do '
+          reason: 'o título "Entrar" do card deveria aparecer acima da base do '
               'cabeçalho — prova de que o card está sobreposto na frente, '
               'não abaixo/atrás dele');
       expect(tester.takeException(), isNull);
@@ -331,7 +331,7 @@ void main() {
       await _abrirTela(tester, _FakeUsuarioRepository());
       await tester.pumpAndSettle();
 
-      final posicaoOriginal = tester.getTopLeft(find.text('Login'));
+      final posicaoOriginal = tester.getTopLeft(find.text('Entrar'));
 
       await tester.tap(find.widgetWithText(TextField, 'E-mail:'));
       await tester.pumpAndSettle();
@@ -339,7 +339,7 @@ void main() {
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
 
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
       expect(posicaoDepois, posicaoOriginal,
           reason: 'o card deveria voltar exatamente à posição original '
               'depois de fechar o teclado');
@@ -353,7 +353,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AuthHeader), findsOneWidget);
-      expect(find.text('Login'), findsOneWidget);
+      expect(find.text('Entrar'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'E-mail:'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'Senha:'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'ENTRAR'), findsOneWidget);
@@ -363,7 +363,7 @@ void main() {
 
       final ordemY = [
         tester.getTopLeft(find.byType(AuthHeader)).dy,
-        tester.getTopLeft(find.text('Login')).dy,
+        tester.getTopLeft(find.text('Entrar')).dy,
         tester.getTopLeft(find.widgetWithText(ElevatedButton, 'ENTRAR')).dy,
         tester.getTopLeft(find.text('Entrar com Google')).dy,
         tester.getTopLeft(find.text('Cadastre-se')).dy,
@@ -379,12 +379,12 @@ void main() {
       await _abrirTela(tester, _FakeUsuarioRepository());
       await tester.pumpAndSettle();
 
-      final posicaoAntes = tester.getTopLeft(find.text('Login'));
+      final posicaoAntes = tester.getTopLeft(find.text('Entrar'));
 
       await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pumpAndSettle();
 
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
       expect(posicaoDepois, posicaoAntes,
           reason: 'alternar a visibilidade da senha não deveria mover o '
               'card — o campo só troca o ícone, não o tamanho');
@@ -397,7 +397,7 @@ void main() {
       await _abrirTela(tester, repo);
       await tester.pumpAndSettle();
 
-      final posicaoAntes = tester.getTopLeft(find.text('Login'));
+      final posicaoAntes = tester.getTopLeft(find.text('Entrar'));
 
       await tester.enterText(
           find.widgetWithText(TextField, 'E-mail:'), 'ana@teste.com');
@@ -407,7 +407,7 @@ void main() {
       await tester.pump(); // um frame: signIn ainda preso no gate
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
       expect(posicaoDepois, posicaoAntes,
           reason: 'o loading não deveria reposicionar a tela');
 
@@ -424,7 +424,7 @@ void main() {
       await _abrirTela(tester, repo);
       await tester.pumpAndSettle();
 
-      final posicaoAntes = tester.getTopLeft(find.text('Login'));
+      final posicaoAntes = tester.getTopLeft(find.text('Entrar'));
 
       await tester.enterText(
           find.widgetWithText(TextField, 'E-mail:'), 'ana@teste.com');
@@ -435,8 +435,8 @@ void main() {
 
       expect(find.text('E-mail ou senha inválidos.'), findsOneWidget);
 
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
-      // O título "Login" fica ACIMA da mensagem de erro — não deveria se
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
+      // O título "Entrar" fica ACIMA da mensagem de erro — não deveria se
       // mexer nada com o erro aparecendo abaixo dele.
       expect(posicaoDepois, posicaoAntes,
           reason: 'o título do card não deveria se mover com o erro');
@@ -450,9 +450,9 @@ void main() {
 const _barraStatus = 24.0;
 const _barraNavegacao = 48.0;
 
-/// O card branco: o Container mais próximo do título "Login".
+/// O card branco: o Container mais próximo do título "Entrar".
 final _card = find
-    .ancestor(of: find.text('Login'), matching: find.byType(Container))
+    .ancestor(of: find.text('Entrar'), matching: find.byType(Container))
     .first;
 
 final _botaoGoogle = find.widgetWithText(OutlinedButton, 'Entrar com Google');
