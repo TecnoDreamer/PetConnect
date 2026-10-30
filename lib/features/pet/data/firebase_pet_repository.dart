@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/alteracao_situacao.dart';
 import '../domain/pet.dart';
 import '../domain/pet_repository.dart';
+import 'exclusao_de_pet.dart';
 
 class FirebasePetRepository implements PetRepository {
   FirebasePetRepository({required FirebaseFirestore firestore})
@@ -45,16 +46,21 @@ class FirebasePetRepository implements PetRepository {
     await _pets.doc(pet.id).update(pet.toMap());
   }
 
-  /// Apaga também os registros da galeria (antes do pet: as regras só
-  /// autorizam enquanto o pet existe). Os arquivos no Cloudinary não são
-  /// apagados daqui — ver docs/features/galeria-fotos-pet.md, "Retenção".
+  /// Apaga antes as subcoleções de [subcolecoesApagadasComOPet] (registros
+  /// clínicos e galeria); depois `eventosSituacao` e o pet num lote só, porque
+  /// a regra só aceita apagar esses eventos na escrita que apaga o pet.
   @override
   Future<void> deletePet(String petId) async {
-    final fotos = await _pets.doc(petId).collection('fotos').get();
-    for (final foto in fotos.docs) {
-      await foto.reference.delete();
+    final pet = _pets.doc(petId);
+    await apagarSubcolecoesDoPet(pet);
+
+    final batch = _firestore.batch();
+    final eventos = await pet.collection('eventosSituacao').get();
+    for (final evento in eventos.docs) {
+      batch.delete(evento.reference);
     }
-    await _pets.doc(petId).delete();
+    batch.delete(pet);
+    await batch.commit();
   }
 
   @override
