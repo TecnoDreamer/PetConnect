@@ -19,6 +19,9 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- APK para testadores `0.1.1` (versionCode `2`), com login com Google,
+  cartaz de pet desaparecido e app em português; instala por cima da
+  `0.1.0`. Ver `docs/release/apk-testes-externos.md`.
 - App em português do Brasil também nos textos do Flutter: "Cancelar" e
   "Voltar" em vez de "Cancel" e "Back", menu "Copiar/Colar" e calendários e
   relógios no modelo brasileiro (meses em português, semana a partir do

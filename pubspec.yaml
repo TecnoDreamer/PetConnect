@@ -1,7 +1,7 @@
 name: pet_connect
 description: "App para localização de pets desaparecidos, com carteira de vacina, histórico médico e QR code de identificação."
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.1+2
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
