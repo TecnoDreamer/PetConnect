@@ -138,6 +138,7 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Ícone, nome e splash do Android](docs/branding/icone-e-splash-android.md)
 - [Modelo de dados (Firestore)](docs/modelo-dados-firestore.md)
 - [Galeria de fotos por pet](docs/features/galeria-fotos-pet.md)
+- [App em português do Brasil](docs/features/idioma-portugues.md)
 - [Cartaz de pet desaparecido](docs/features/cartaz-pet-desaparecido.md) (como testar: [roteiro de aparelho](docs/validation/cartaz-pet-desaparecido.md))
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 

@@ -19,6 +19,11 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- App em português do Brasil também nos textos do Flutter: "Cancelar" e
+  "Voltar" em vez de "Cancel" e "Back", menu "Copiar/Colar" e calendários e
+  relógios no modelo brasileiro (meses em português, semana a partir do
+  domingo, data `dd/mm/aaaa`, hora em 24 h), qualquer que seja o idioma do
+  celular. Ver `docs/features/idioma-portugues.md`.
 - Build Android: o release passa a ser assinado com a chave de upload do
   proprietário (`android/key.properties`, fora do Git); sem ela, o build de
   release falha em vez de usar a chave de debug. Versão `0.1.0+1`. Ver

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/config/idioma.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_mode.dart';
 import 'core/theme/theme_providers.dart';
@@ -33,6 +34,9 @@ class PetConnectApp extends ConsumerWidget {
         // chamada de API, login ou navegação é refeita (o router e as
         // instâncias de repository não dependem do tema).
         theme: AppTheme.build(modo),
+        locale: IdiomaDoApp.locale,
+        supportedLocales: IdiomaDoApp.suportados,
+        localizationsDelegates: IdiomaDoApp.delegates,
         routerConfig: router,
       ),
     );

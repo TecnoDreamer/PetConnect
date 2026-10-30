@@ -255,7 +255,7 @@ class _LoginCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Login',
+            'Entrar',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 28,

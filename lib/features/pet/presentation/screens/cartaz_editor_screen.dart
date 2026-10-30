@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -215,7 +214,6 @@ class _EditorState extends ConsumerState<_Editor> {
       firstDate: primeiro,
       lastDate: hoje,
       helpText: 'Visto por último em',
-      builder: _emPortugues,
     );
     if (escolhida != null) _mudarVisto((v) => v.comData(escolhida));
   }
@@ -228,7 +226,6 @@ class _EditorState extends ConsumerState<_Editor> {
           ? agora
           : TimeOfDay(hour: atual ~/ 60, minute: atual % 60),
       helpText: 'Horário em que foi visto',
-      builder: _emPortugues,
     );
     if (escolhido != null) {
       _mudarVisto((v) => v.comHorario(escolhido.hour * 60 + escolhido.minute));
@@ -421,16 +418,6 @@ class _EditorState extends ConsumerState<_Editor> {
     );
   }
 }
-
-/// O app não define o idioma do Material (os outros calendários seguem em
-/// inglês); o calendário e o relógio do cartaz são mostrados em português.
-Widget _emPortugues(BuildContext context, Widget? filho) =>
-    Localizations.override(
-      context: context,
-      locale: const Locale('pt', 'BR'),
-      delegates: GlobalMaterialLocalizations.delegates,
-      child: filho,
-    );
 
 class _Explicacao extends StatelessWidget {
   const _Explicacao({required this.nome});
