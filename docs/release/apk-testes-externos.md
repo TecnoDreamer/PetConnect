@@ -4,6 +4,24 @@
 > `prompt_opus_memorial_apk_login_social_petconnect.md`. O APK **não** é
 > publicado nem enviado automaticamente: o proprietário distribui.
 
+## Versão 0.1.1 (2026-10-30)
+
+Segundo APK para testadores, da base `feature/backend-spring-mongodb-migration`
+depois das PRs #87 a #91. Instala por cima da `0.1.0`, porque usa a mesma
+chave de upload e o versionCode é maior (`2`).
+
+**Novidades para quem testou a 0.1.0:**
+- **Entrar com Google** (PR #87). O Facebook saiu do escopo e não tem
+  botão.
+- **Cartaz de pet desaparecido** (PR #89): PNG ou PDF gerado no celular,
+  com ponto de foco nas fotos, cor e telefone só com autorização.
+- **App em português do Brasil** (PR #91): calendários e textos do sistema
+  em português, e o título da tela de entrada passa a "Entrar".
+
+**Ainda não entra** (PRs abertas): a exclusão de conta e de pet que apaga
+tudo em cascata (#81, #82), porque depende da publicação das regras do
+Firestore.
+
 ## Decisões do proprietário (2026-10-27)
 
 | Tema | Decisão |
@@ -22,9 +40,9 @@ Google".
 
 | Item | Valor |
 |---|---|
-| Código | base `feature/backend-spring-mongodb-migration` com a correção do Memorial (PR #85) + esta branch |
+| Código | `0.1.0`: base com a correção do Memorial (PR #85). `0.1.1`: base depois da PR #91 (ver "Versão 0.1.1") |
 | Variante | `release`, APK universal (todas as ABIs), assinado com a chave de upload |
-| Versão | `0.1.0` (versionCode `1`), de `pubspec.yaml` |
+| Versão | `0.1.1` (versionCode `2`), de `pubspec.yaml`. A anterior foi `0.1.0` (`1`) |
 | `applicationId` | `com.petconnect.pet_connect` (sem mudança) |
 | Android | 7.0 (API 24) ou mais novo (`flutter.minSdkVersion`) |
 | Backend | Firebase Auth + Firestore (padrão). Nenhuma flag `USE_API_*`: Spring/MongoDB desligado |
@@ -140,6 +158,20 @@ O APK fica fora do Git. Não versionar o `.apk` sem decisão explícita; para
 guardar, usar uma Release privada do GitHub, se aprovado.
 
 ## Registro do build
+
+### 0.1.1
+
+```text
+@@REGISTRO_011@@
+```
+
+Permissões no manifesto final (`aapt2 dump permissions`): `INTERNET`,
+`ACCESS_NETWORK_STATE`, `USE_BIOMETRIC`, `USE_FINGERPRINT`,
+`READ_GSERVICES` e a permissão interna do receiver do próprio app. **Sem
+`AD_ID` nem `ACCESS_ADSERVICES_*`**, que vinham do SDK do Facebook
+(removido).
+
+### 0.1.0
 
 ```text
 Commit: 3aa2a90 (branch build/apk-testes-externos)
