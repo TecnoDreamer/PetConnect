@@ -12,10 +12,10 @@
 ## Identificação
 
 ```text
-Aparelho / Android:
-Build (commit):
-Data:
-Testado por:
+Aparelho / Android: motorola edge 60 fusion (0089368537) / Android 16
+Build (commit): a1a8421 (primeira versão) e 960f511 (com os ajustes), release, GALERIA_FOTOS=true
+Data: 2026-10-29
+Testado por: proprietário
 ```
 
 ## Casos
@@ -50,3 +50,18 @@ Testado por:
 
 Marcar `OK`, `PARCIAL: <o que faltou conferir>`, `FALHOU: <o que aconteceu>`
 ou `BLOQUEADO: <motivo>`. Em branco: ainda não testado.
+
+## Resultado (2026-10-29)
+
+O proprietário testou os fluxos principais nos dois APKs e aprovou o
+merge da PR #89:
+
+- **Primeira versão (`a1a8421`):** montou cartazes de dois pets, um gato e
+  um cachorro, com fotos reais e o telefone autorizado, e gerou as imagens.
+  Desse teste vieram os ajustes da segunda versão.
+- **Segunda versão (`960f511`):** testou os ajustes (foto, campos,
+  recompensa, "Visto por último" e cor) e disse que funcionou.
+
+Os casos não foram registrados um a um, então a tabela fica em branco. O
+roteiro completo (CP01–CP25) continua disponível para uma conferência
+caso a caso.

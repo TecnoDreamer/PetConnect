@@ -54,7 +54,7 @@ Além disso, centraliza para o tutor:
 | Localização — tutor registra/visualiza avistamentos | ✅ Concluído | RF32 |
 | Memorial do Pet (registrar falecimento, memorial privado, correção) — modo Firestore | 🔍 Em revisão | RF33–RF36 |
 | Galeria de fotos por pet (privada, também no Memorial) — modo Firestore, flag `GALERIA_FOTOS` | 🔍 Em revisão | RF37–RF42 |
-| Cartaz de pet desaparecido (PNG e PDF, gerado no aparelho) | 🔍 Em revisão — falta validar no aparelho | RF43–RF49 |
+| Cartaz de pet desaparecido (PNG e PDF, gerado no aparelho) | ✅ Concluído — fluxos principais validados no aparelho; roteiro caso a caso em aberto | RF43–RF49 |
 | Localização — relato direto por quem encontrou o pet (via QR code) | ⬜ Bloqueado por RF17–RF19 | RF31 |
 
 Veja a lista completa de requisitos em [`docs/requisitos-funcionais.md`](docs/requisitos-funcionais.md).
