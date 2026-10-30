@@ -11,6 +11,7 @@ import '../../../../core/widgets/settings_menu_tile.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../../domain/pet.dart';
 import '../providers/anexo_providers.dart';
+import '../providers/cartaz_providers.dart';
 import '../providers/pet_providers.dart';
 import '../widgets/cover_position_editor.dart';
 import '../widgets/pet_cover_image.dart';
@@ -194,6 +195,11 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
 
     try {
       await ref.read(petRepositoryProvider).deletePet(pet.id);
+      // O rascunho do cartaz de desaparecido fica neste aparelho; sai junto.
+      // O pet já foi excluído: uma falha aqui não vira erro para o tutor.
+      try {
+        await ref.read(rascunhoCartazStoreProvider).apagar(pet.userId, pet.id);
+      } catch (_) {}
       ref.invalidate(petsProvider);
       if (mounted) context.go('/home');
     } catch (_) {

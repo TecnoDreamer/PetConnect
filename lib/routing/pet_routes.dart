@@ -5,6 +5,8 @@ import '../features/pet/domain/consulta.dart';
 import '../features/pet/domain/historico_medico.dart';
 import '../features/pet/domain/pet.dart';
 import '../features/pet/domain/vacina.dart';
+import '../features/pet/presentation/screens/cartaz_editor_screen.dart';
+import '../features/pet/presentation/screens/cartaz_previa_screen.dart';
 import '../features/pet/presentation/screens/consulta_form_screen.dart';
 import '../features/pet/presentation/screens/consulta_list_screen.dart';
 import '../features/pet/presentation/screens/galeria_screen.dart';
@@ -146,6 +148,21 @@ List<GoRoute> buildPetRoutes() => [
           petId: state.pathParameters['id']!,
           exige: null,
           child: GaleriaScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      // Cartaz de pet desaparecido: só pet ativo, só do dono.
+      GoRoute(
+        path: '/pet/:id/cartaz',
+        builder: (context, state) => _soPetAtivo(
+          state,
+          CartazEditorScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/pet/:id/cartaz/previa',
+        builder: (context, state) => _soPetAtivo(
+          state,
+          CartazPreviaScreen(petId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(

@@ -133,7 +133,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
-    expect(find.text('Login'), findsOneWidget,
+    expect(find.text('Entrar'), findsOneWidget,
         reason: 'deveria abrir na tela de login');
 
     await tester.tap(find.text('Cadastre-se'));
@@ -161,7 +161,7 @@ void main() {
 
     await logout(tester);
 
-    expect(find.text('Login'), findsOneWidget,
+    expect(find.text('Entrar'), findsOneWidget,
         reason: 'logout deveria voltar para a tela de login');
 
     final loginFields = find.byType(TextField);
@@ -182,7 +182,7 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'ENTRAR'));
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
-    expect(find.text('Login'), findsOneWidget,
+    expect(find.text('Entrar'), findsOneWidget,
         reason: 'senha errada não deveria navegar para a Home');
     expect(find.text('E-mail ou senha inválidos.'), findsOneWidget,
         reason:

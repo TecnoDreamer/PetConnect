@@ -30,6 +30,7 @@ Além disso, centraliza para o tutor:
 - 📅 **Agendamento de consultas** — com lembretes.
 - 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento.
 - 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada por padrão; regras já publicadas, falta liberar).
+- 📢 **Cartaz de pet desaparecido** — cartaz "Procura-se" com 3 fotos e o telefone autorizado, gerado no celular, em PNG ou PDF, para compartilhar ou imprimir.
 
 ## Status do projeto
 
@@ -53,6 +54,7 @@ Além disso, centraliza para o tutor:
 | Localização — tutor registra/visualiza avistamentos | ✅ Concluído | RF32 |
 | Memorial do Pet (registrar falecimento, memorial privado, correção) — modo Firestore | 🔍 Em revisão | RF33–RF36 |
 | Galeria de fotos por pet (privada, também no Memorial) — modo Firestore, flag `GALERIA_FOTOS` | 🔍 Em revisão | RF37–RF42 |
+| Cartaz de pet desaparecido (PNG e PDF, gerado no aparelho) | ✅ Concluído — fluxos principais validados no aparelho; roteiro caso a caso em aberto | RF43–RF49 |
 | Localização — relato direto por quem encontrou o pet (via QR code) | ⬜ Bloqueado por RF17–RF19 | RF31 |
 
 Veja a lista completa de requisitos em [`docs/requisitos-funcionais.md`](docs/requisitos-funcionais.md).
@@ -136,6 +138,8 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Ícone, nome e splash do Android](docs/branding/icone-e-splash-android.md)
 - [Modelo de dados (Firestore)](docs/modelo-dados-firestore.md)
 - [Galeria de fotos por pet](docs/features/galeria-fotos-pet.md)
+- [App em português do Brasil](docs/features/idioma-portugues.md)
+- [Cartaz de pet desaparecido](docs/features/cartaz-pet-desaparecido.md) (como testar: [roteiro de aparelho](docs/validation/cartaz-pet-desaparecido.md))
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 
 ## Contribuindo
