@@ -7,6 +7,20 @@ import '../domain/usuario_repository.dart';
 import 'entrada_social.dart';
 import 'provedores_sociais.dart';
 
+/// Subcoleções de cada pet apagadas por [FirebaseUsuarioRepository.deleteAccount]
+/// antes do próprio pet (LGPD, RF09/RNF13): as quatro clínicas e a galeria.
+///
+/// `eventosSituacao` (auditoria do Memorial) não está aqui porque segue outro
+/// caminho: `firestore.rules` só aceita apagar esses eventos no mesmo lote que
+/// apaga o perfil do dono (ver docs/security/firestore-isolamento-por-dono.md).
+const subcolecoesApagadasNaExclusaoDeConta = [
+  'vacinas',
+  'consultas',
+  'historicoMedico',
+  'localizacoes',
+  'fotos',
+];
+
 class FirebaseUsuarioRepository implements UsuarioRepository {
   FirebaseUsuarioRepository({
     required FirebaseAuth auth,
@@ -147,13 +161,27 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
         .where('userId', isEqualTo: uid)
         .get();
     for (final pet in pets.docs) {
-      await _deleteSubcollection(pet.reference.collection('vacinas'));
-      await _deleteSubcollection(pet.reference.collection('historicoMedico'));
-      await _deleteSubcollection(pet.reference.collection('fotos'));
-      await pet.reference.delete();
+      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
+        await _deleteSubcollection(pet.reference.collection(sub));
+      }
     }
 
-    await _usuarios.doc(uid).delete();
+    // Eventos do Memorial, pets e perfil numa escrita só: a regra só aceita
+    // apagar `eventosSituacao` junto com o perfil, e lê o pet para conferir
+    // o dono (por isso o pet sai no mesmo lote, não antes). Limites de um
+    // lote: 500 operações e 20 leituras de regra (cerca de 18 pets com
+    // eventos).
+    final batch = _firestore.batch();
+    for (final pet in pets.docs) {
+      final eventos = await pet.reference.collection('eventosSituacao').get();
+      for (final evento in eventos.docs) {
+        batch.delete(evento.reference);
+      }
+      batch.delete(pet.reference);
+    }
+    batch.delete(_usuarios.doc(uid));
+    await batch.commit();
+
     await user.delete();
   }
 

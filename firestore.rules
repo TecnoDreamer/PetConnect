@@ -16,7 +16,8 @@ rules_version = '2';
 //   - Pet falecido: sem criar ou alterar registros clínicos; leitura e
 //     exclusão continuam (exclusão de conta precisa apagar).
 //   - `eventosSituacao`: só criação pelo dono, junto com a mudança real de
-//     situação do pet; nunca alterado nem apagado.
+//     situação do pet; nunca alterado. Apagado só na exclusão de conta, na
+//     mesma escrita que apaga o perfil do dono.
 //   - `fotos` (galeria): só o dono, inclusive de pet falecido; criação
 //     validada campo a campo, sem edição.
 //
@@ -31,6 +32,13 @@ service cloud.firestore {
 
     function logado() {
       return request.auth != null;
+    }
+
+    // Exclusão de conta: o perfil do próprio usuário existe antes desta
+    // escrita e não existe depois, ou seja, é apagado nela (lote do app).
+    function apagandoOProprioPerfil() {
+      return exists(/databases/$(database)/documents/Usuarios/$(request.auth.uid))
+          && !existsAfter(/databases/$(database)/documents/Usuarios/$(request.auth.uid));
     }
 
     // Dono de um documento de pet. `userId` é o campo de todos os pets
@@ -127,7 +135,9 @@ service cloud.firestore {
       // Auditoria das mudanças de situação (Memorial). O evento só é aceito
       // na mesma escrita que muda `situacao` do pet, descrevendo exatamente
       // essa mudança, com o próprio usuário como autor e o horário do
-      // servidor. Limite conhecido: o dono ainda pode mudar `situacao` sem
+      // servidor. Nunca é alterado. Só é apagado na exclusão de conta
+      // (LGPD, RF09): pelo dono do pet, no mesmo lote que apaga o perfil
+      // dele. Limite conhecido: o dono ainda pode mudar `situacao` sem
       // evento (update direto); auditoria à prova do próprio dono exigiria
       // servidor.
       match /eventosSituacao/{id} {
@@ -141,7 +151,8 @@ service cloud.firestore {
             && request.resource.data.situacaoAnterior == situacaoAntes()
             && request.resource.data.situacaoNova == situacaoDepois()
             && situacaoAntes() != situacaoDepois();
-        allow update, delete: if false;
+        allow delete: if donoDoPet() && apagandoOProprioPerfil();
+        allow update: if false;
       }
     }
 

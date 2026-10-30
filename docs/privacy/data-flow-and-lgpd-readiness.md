@@ -75,7 +75,30 @@ futuro, precisará de:
 - Um novo mapeamento nesta mesma tabela, com a clínica/ERP como um
   "quem acessa" adicional.
 
+## Exclusão de conta no modo Firestore (flags `USE_API_*` desligadas)
+
+O mapa acima descreve a API/MongoDB. No modo Firestore, a exclusão de conta é
+feita pelo app (`FirebaseUsuarioRepository.deleteAccount`), na ordem:
+
+1. Para cada pet do tutor (`Pets where userId == uid`): apaga `vacinas`,
+   `consultas`, `historicoMedico`, `localizacoes` e `fotos` (registros da
+   galeria; os arquivos no Cloudinary ficam, ver risco 3).
+2. Num lote atômico: apaga os eventos de situação do Memorial
+   (`eventosSituacao`) de cada pet, os pets e o perfil `Usuarios/{uid}`.
+3. Apaga o usuário do Firebase Auth.
+
+| Dado | Apagado? |
+|---|---|
+| Perfil, pets, vacinas, histórico médico, registros da galeria (`fotos`) | ✅ Sim (arquivos da galeria no Cloudinary: não, ver risco 3) |
+| Consultas, localizações/avistamentos do pet | ✅ Sim (antes desta correção ficavam órfãos) |
+| Eventos de situação do Memorial (`eventosSituacao`: `atorId` = UID, mudança de situação, motivo, horário) | ✅ Sim. Decisão do proprietário (2026-10-27): a auditoria é imutável, exceto na exclusão de conta, quando o dono pode apagá-la no mesmo lote do perfil. Detalhes em `docs/security/firestore-isolamento-por-dono.md` ("Decisão: `eventosSituacao` é apagado na exclusão de conta") |
+| Documentos já órfãos de contas excluídas antes desta correção | ❌ Não tratados — limpeza exige Admin SDK e decisão à parte |
+
+Depende do deploy de `firestore.rules`: com as regras antigas no ar, a
+exclusão de conta para no passo 2.
+
 ## Decisões pendentes (jurídicas/de produto, não técnicas)
+
 
 - Base legal para cada categoria de dado (provavelmente "execução de
   contrato"/"legítimo interesse" para a maioria, mas isso precisa de
