@@ -162,7 +162,19 @@ guardar, usar uma Release privada do GitHub, se aprovado.
 ### 0.1.1
 
 ```text
-@@REGISTRO_011@@
+Commit: feaaa65 (branch chore/apk-0.1.1)
+Data: 2026-10-30 10:29 (-03)
+Arquivo: build/app/outputs/flutter-apk/app-release.apk
+Cópia entregue: Downloads/PetConnect-0.1.1-teste.apk (mesmo SHA-256)
+Tamanho: 68.776.679 bytes (65,6 MB)
+SHA-256 do APK: 03f441e327ad40d1829c589d9d7b6a32afd020a950f76ae18892715c8269eab8
+Certificado (SHA-256, público): 8123e0f9b1c1015c1dc4988f53b6f6d10aafd8c3ed12a43d6e9894003bf9dbef
+Assinatura: chave de upload (a mesma da 0.1.0)
+Pacote: com.petconnect.pet_connect, versionCode 2, versionName 0.1.1
+SDK: minSdk 24 (Android 7.0), targetSdk 36
+ABIs: arm64-v8a, armeabi-v7a, x86_64 (universal)
+Variante / flags: release, universal, GALERIA_FOTOS=true
+Instalação testada em: pendente (proprietário)
 ```
 
 Permissões no manifesto final (`aapt2 dump permissions`): `INTERNET`,
