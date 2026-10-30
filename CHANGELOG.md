@@ -69,9 +69,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
   deployadas em 2026-10-27 e 1ª rodada no aparelho feita. Ver
   `docs/features/galeria-fotos-pet.md`.
 - QR code regenerável: em "QR Code do Pet", o tutor pode gerar um novo QR
-  (com confirmação); o anterior para de funcionar na hora. Depende da API
-  com os endpoints novos publicada e fica desligado até lá
-  (`USE_API_QR`). Ver `docs/features/qr-regeneravel.md`.
+  (com confirmação); o anterior para de funcionar na hora. A API com os
+  endpoints novos foi publicada em 2026-10-27; no app segue desligado
+  (`USE_API_QR`) até o teste no aparelho. Ver
+  `docs/features/qr-regeneravel.md`.
 - Memorial do Pet: o tutor pode registrar o falecimento de um pet (com
   confirmação), que vira um memorial privado com fotos, informações
   básicas e homenagem; recursos clínicos ficam ocultos e bloqueados, sem
