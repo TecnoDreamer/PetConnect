@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pet_connect/core/widgets/auth_header.dart';
 import 'package:pet_connect/features/auth/presentation/screens/login_screen.dart';
+import 'package:pet_connect/features/usuario/domain/login_social.dart';
 import 'package:pet_connect/features/usuario/domain/usuario.dart';
 import 'package:pet_connect/features/usuario/domain/usuario_repository.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
@@ -50,6 +51,18 @@ class _FakeUsuarioRepository implements UsuarioRepository {
 
   @override
   Future<void> sendPasswordReset({required String email}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> entrarComProvedor(ProvedorSocial provedor) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> entrarComSenhaEVincular({
+    required String email,
+    required String senha,
+    required ContaExisteComOutroMetodo pendente,
+  }) =>
       throw UnimplementedError();
 
   @override
@@ -122,7 +135,7 @@ void main() {
     ]) {
       testWidgets(
           '${tamanho.width.toInt()}x${tamanho.height.toInt()}: sem rolagem, '
-          'tudo visível e sem faixa vazia embaixo', (tester) async {
+          'tudo visível', (tester) async {
         await _abrirEmAparelho(tester, tamanho);
 
         expect(tester.takeException(), isNull);
@@ -133,16 +146,12 @@ void main() {
         final cadastreSe = tester.getRect(find.text('Cadastre-se'));
         expect(cadastreSe.bottom, lessThanOrEqualTo(limiteUtil),
             reason: '"Cadastre-se" atrás da barra de navegação');
-        expect(limiteUtil - cadastreSe.bottom, lessThanOrEqualTo(20),
-            reason: 'o rodapé deveria ficar ancorado embaixo, sem sobrar '
-                'uma faixa vazia');
         for (final texto in const [
           'PetConnect',
           'Conectando corações perdidos aos seus lares',
-          'Login',
+          'Entrar',
           'Esqueceu a senha?',
-          'Google',
-          'Facebook',
+          'Entrar com Google',
         ]) {
           final r = tester.getRect(find.text(texto));
           expect(r.top, greaterThanOrEqualTo(_barraStatus), reason: texto);
@@ -200,6 +209,80 @@ void main() {
     });
   });
 
+  // --- Correção de 2026-10-27 ----------------------------------------------
+  // (docs/features/login-espacamento-acoes-sociais.md): o rodapé ficava
+  // ancorado na base da tela, isolado do card por metade da sobra de altura.
+
+  group('LoginScreen — ações sociais junto do card', () {
+    for (final tamanho in const [
+      Size(320, 640),
+      Size(360, 800),
+      Size(390, 844),
+      Size(412, 915),
+    ]) {
+      testWidgets(
+          '${tamanho.width.toInt()}x${tamanho.height.toInt()}: Google logo '
+          'abaixo do card, na largura dele, e Cadastre-se junto',
+          (tester) async {
+        await _abrirEmAparelho(tester, tamanho);
+        expect(tester.takeException(), isNull);
+
+        final card = tester.getRect(_card);
+        final google = tester.getRect(_botaoGoogle);
+        final cadastreSe = tester.getRect(find.text('Cadastre-se'));
+
+        final espacoAposCard = google.top - card.bottom;
+        expect(espacoAposCard, inInclusiveRange(24, 32),
+            reason: 'espaço entre o card e o botão do Google');
+        expect(google.left, closeTo(card.left, 0.5),
+            reason: 'alinhado ao card');
+        expect(google.right, closeTo(card.right, 0.5),
+            reason: 'na largura do card');
+
+        final espacoAteCadastro = cadastreSe.top - google.bottom;
+        expect(espacoAteCadastro, inInclusiveRange(16, 24),
+            reason: 'Cadastre-se acompanha os botões');
+        final prompt = tester.getRect(find.byType(Wrap));
+        final centroDaTela = tamanho.width / 2;
+        final convite = tester.getRect(find.text('Não tem uma conta? '));
+        expect((convite.left + cadastreSe.right) / 2, closeTo(centroDaTela, 1),
+            reason: 'convite centralizado');
+        expect(prompt.left, greaterThanOrEqualTo(0));
+      });
+    }
+
+    testWidgets(
+        'fonte do sistema ampliada (1,3x): sem overflow e com Google e '
+        'Cadastre-se alcançáveis', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _abrirEmAparelho(tester, const Size(360, 800));
+      expect(tester.takeException(), isNull);
+
+      for (final alvo in [_botaoGoogle, find.text('Cadastre-se')]) {
+        await tester.ensureVisible(alvo);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(alvo).bottom, lessThanOrEqualTo(800));
+      }
+    });
+
+    testWidgets('Cadastre-se continua abrindo o cadastro', (tester) async {
+      await _abrirEmAparelho(tester, const Size(412, 915));
+      await tester.tap(find.text('Cadastre-se'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tela Cadastro'), findsOneWidget);
+    });
+
+    testWidgets('Google continua tocável, sem erro nem navegação',
+        (tester) async {
+      await _abrirEmAparelho(tester, const Size(412, 915));
+      await tester.tap(_botaoGoogle);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+  });
+
   group('LoginScreen — sobreposição', () {
     testWidgets('o card branco cobre visualmente a base do cabeçalho marrom',
         (tester) async {
@@ -207,10 +290,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final baseCabecalho = tester.getBottomLeft(find.byType(AuthHeader)).dy;
-      final topoCard = tester.getTopLeft(find.text('Login')).dy;
+      final topoCard = tester.getTopLeft(find.text('Entrar')).dy;
 
       expect(topoCard, lessThan(baseCabecalho),
-          reason: 'o título "Login" do card deveria aparecer acima da base do '
+          reason: 'o título "Entrar" do card deveria aparecer acima da base do '
               'cabeçalho — prova de que o card está sobreposto na frente, '
               'não abaixo/atrás dele');
       expect(tester.takeException(), isNull);
@@ -248,7 +331,7 @@ void main() {
       await _abrirTela(tester, _FakeUsuarioRepository());
       await tester.pumpAndSettle();
 
-      final posicaoOriginal = tester.getTopLeft(find.text('Login'));
+      final posicaoOriginal = tester.getTopLeft(find.text('Entrar'));
 
       await tester.tap(find.widgetWithText(TextField, 'E-mail:'));
       await tester.pumpAndSettle();
@@ -256,7 +339,7 @@ void main() {
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
 
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
       expect(posicaoDepois, posicaoOriginal,
           reason: 'o card deveria voltar exatamente à posição original '
               'depois de fechar o teclado');
@@ -270,20 +353,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AuthHeader), findsOneWidget);
-      expect(find.text('Login'), findsOneWidget);
+      expect(find.text('Entrar'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'E-mail:'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'Senha:'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'ENTRAR'), findsOneWidget);
       expect(find.text('Esqueceu a senha?'), findsOneWidget);
-      expect(find.text('Google'), findsOneWidget);
-      expect(find.text('Facebook'), findsOneWidget);
+      expect(find.text('Entrar com Google'), findsOneWidget);
       expect(find.text('Cadastre-se'), findsOneWidget);
 
       final ordemY = [
         tester.getTopLeft(find.byType(AuthHeader)).dy,
-        tester.getTopLeft(find.text('Login')).dy,
+        tester.getTopLeft(find.text('Entrar')).dy,
         tester.getTopLeft(find.widgetWithText(ElevatedButton, 'ENTRAR')).dy,
-        tester.getTopLeft(find.text('Google')).dy,
+        tester.getTopLeft(find.text('Entrar com Google')).dy,
         tester.getTopLeft(find.text('Cadastre-se')).dy,
       ];
       for (var i = 1; i < ordemY.length; i++) {
@@ -297,12 +379,12 @@ void main() {
       await _abrirTela(tester, _FakeUsuarioRepository());
       await tester.pumpAndSettle();
 
-      final posicaoAntes = tester.getTopLeft(find.text('Login'));
+      final posicaoAntes = tester.getTopLeft(find.text('Entrar'));
 
       await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pumpAndSettle();
 
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
       expect(posicaoDepois, posicaoAntes,
           reason: 'alternar a visibilidade da senha não deveria mover o '
               'card — o campo só troca o ícone, não o tamanho');
@@ -315,7 +397,7 @@ void main() {
       await _abrirTela(tester, repo);
       await tester.pumpAndSettle();
 
-      final posicaoAntes = tester.getTopLeft(find.text('Login'));
+      final posicaoAntes = tester.getTopLeft(find.text('Entrar'));
 
       await tester.enterText(
           find.widgetWithText(TextField, 'E-mail:'), 'ana@teste.com');
@@ -325,7 +407,7 @@ void main() {
       await tester.pump(); // um frame: signIn ainda preso no gate
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
       expect(posicaoDepois, posicaoAntes,
           reason: 'o loading não deveria reposicionar a tela');
 
@@ -342,7 +424,7 @@ void main() {
       await _abrirTela(tester, repo);
       await tester.pumpAndSettle();
 
-      final posicaoAntes = tester.getTopLeft(find.text('Login'));
+      final posicaoAntes = tester.getTopLeft(find.text('Entrar'));
 
       await tester.enterText(
           find.widgetWithText(TextField, 'E-mail:'), 'ana@teste.com');
@@ -353,8 +435,8 @@ void main() {
 
       expect(find.text('E-mail ou senha inválidos.'), findsOneWidget);
 
-      final posicaoDepois = tester.getTopLeft(find.text('Login'));
-      // O título "Login" fica ACIMA da mensagem de erro — não deveria se
+      final posicaoDepois = tester.getTopLeft(find.text('Entrar'));
+      // O título "Entrar" fica ACIMA da mensagem de erro — não deveria se
       // mexer nada com o erro aparecendo abaixo dele.
       expect(posicaoDepois, posicaoAntes,
           reason: 'o título do card não deveria se mover com o erro');
@@ -368,10 +450,12 @@ void main() {
 const _barraStatus = 24.0;
 const _barraNavegacao = 48.0;
 
-/// O card branco: o Container mais próximo do título "Login".
+/// O card branco: o Container mais próximo do título "Entrar".
 final _card = find
-    .ancestor(of: find.text('Login'), matching: find.byType(Container))
+    .ancestor(of: find.text('Entrar'), matching: find.byType(Container))
     .first;
+
+final _botaoGoogle = find.widgetWithText(OutlinedButton, 'Entrar com Google');
 
 Future<void> _abrirEmAparelho(WidgetTester tester, Size tamanho) async {
   tester.view.physicalSize = tamanho;

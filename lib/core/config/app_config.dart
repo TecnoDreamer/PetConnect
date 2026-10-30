@@ -49,4 +49,17 @@ class AppConfig {
   /// [apiBaseUrl] apontando para a API publicada. Com [useApiForPets] a
   /// regeneração já vem ligada e esta flag não é necessária.
   static const bool useApiForQr = bool.fromEnvironment('USE_API_QR');
+
+  /// Galeria de fotos por pet (docs/features/galeria-fotos-pet.md).
+  /// Desligada por padrão até o deploy das regras de isolamento por dono:
+  /// com as regras antigas, qualquer conta logada leria as fotos de outra
+  /// (docs/security/firestore-isolamento-por-dono.md). Só no modo Firestore;
+  /// com [useApiForPets] fica oculta, como o Memorial.
+  static const bool galeriaFotos = bool.fromEnvironment('GALERIA_FOTOS');
+
+  /// ID do cliente OAuth **web** do projeto, para o login com Google
+  /// (docs/features/login-social.md). Opcional: sem ele, o Google Sign-In
+  /// lê o valor do `google-services.json`. Não é segredo.
+  static const String googleServerClientId =
+      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 }

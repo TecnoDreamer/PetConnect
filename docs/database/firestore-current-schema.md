@@ -123,6 +123,26 @@ Legenda de origem: **base** = já existia antes deste ciclo de desenvolvimento �
 
 ---
 
+### Subcoleção `Pets/{petId}/fotos` — *nova, só com fotos de teste em produção*
+
+- **Doc ID:** gerado no client (`.doc()`), antes do envio do arquivo, que vai com esse id como nome.
+- **Repo:** `FirebaseGaleriaRepository` (galeria de fotos, `docs/features/galeria-fotos-pet.md`). Desligada por padrão (`GALERIA_FOTOS`).
+- **Regras:** só o dono do pet; criação validada campo a campo; sem `update`. Ver `firestore.rules` (deployado em 2026-10-27).
+- **Índices:** nenhum composto (só `orderBy('criadoEm', desc)`).
+
+| Campo | Tipo | Obrigatório | Referência | Origem | Observações |
+|---|---|---|---|---|---|
+| *(doc id)* | string (client) | sim | — | app | |
+| `petId` | string | sim | `Pets/{id}` | app | igual ao pai, conferido pelas regras |
+| `userId` | string | sim | Auth UID | app | conferido pelas regras |
+| `url` | string | sim | Cloudinary | app | `secure_url` original (`.../image/upload/...`) |
+| `publicId` | string | sim | Cloudinary | app | `public_id`, para gerenciar o arquivo |
+| `largura`, `altura` | int | não | — | Cloudinary | |
+| `legenda` | string | não | — | app | até 300 caracteres |
+| `criadoEm` | timestamp | sim | — | servidor | `serverTimestamp()` |
+
+---
+
 ## Coleção raiz `Localizacoes` — **95 docs reais, com GPS**
 
 O app Feature-First atual não usa esta coleção (usa a subcoleção, que está vazia).

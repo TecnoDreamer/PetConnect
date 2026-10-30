@@ -85,8 +85,8 @@ classDiagram
         <<interface>>
         +signIn(email, senha) Future~Usuario~
         +signUp(nome, email, senha) Future~Usuario~
-        +signInWithGoogle() Future~Usuario~
-        +signInWithFacebook() Future~Usuario~
+        +entrarComProvedor(ProvedorSocial) Future~void~
+        +entrarComSenhaEVincular(email, senha, pendente) Future~void~
         +sendPasswordReset(email) Future~void~
         +signOut() Future~void~
         +currentUser() Stream~Usuario?~
@@ -150,3 +150,16 @@ classDiagram
 - `Localizacao` entra como classe provisória — estrutura real pendente de confirmação.
 - Datas são `String` (formato `dd/MM/yyyy`), seguindo a convenção já usada no banco existente, não `DateTime`/`Timestamp` nativos.
 - Repositórios são interfaces (`abstract class` em Dart) na camada `domain`, implementadas na camada `data` com Firestore.
+
+## Galeria de fotos do pet
+
+`FotoPet`, `GaleriaRepository`, `EnvioDeFotos` e `GaleriaController`: ver o
+diagrama em `docs/features/galeria-fotos-pet.md` ("Arquitetura").
+
+## Cartaz de pet desaparecido
+
+`RascunhoCartaz`, `EspacoDeFoto`, `FotoDoCartaz` (galeria, perfil ou
+celular), `EnquadramentoFoto`, `ConteudoCartaz`, `CartazController`,
+`RascunhoCartazStore` e `DestinoDoCartaz`: ver
+`docs/features/cartaz-pet-desaparecido.md` ("Arquitetura"). Nenhuma classe
+nova é persistida no Firestore.

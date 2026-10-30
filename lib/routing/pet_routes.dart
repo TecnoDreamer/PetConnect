@@ -5,8 +5,11 @@ import '../features/pet/domain/consulta.dart';
 import '../features/pet/domain/historico_medico.dart';
 import '../features/pet/domain/pet.dart';
 import '../features/pet/domain/vacina.dart';
+import '../features/pet/presentation/screens/cartaz_editor_screen.dart';
+import '../features/pet/presentation/screens/cartaz_previa_screen.dart';
 import '../features/pet/presentation/screens/consulta_form_screen.dart';
 import '../features/pet/presentation/screens/consulta_list_screen.dart';
+import '../features/pet/presentation/screens/galeria_screen.dart';
 import '../features/pet/presentation/screens/historico_form_screen.dart';
 import '../features/pet/presentation/screens/historico_list_screen.dart';
 import '../features/pet/presentation/screens/localizacao_form_screen.dart';
@@ -138,6 +141,30 @@ List<GoRoute> buildPetRoutes() => [
           LocalizacaoFormScreen(petId: state.pathParameters['id']!),
         ),
       ),
+      // Galeria de fotos: pet ativo ou no Memorial, só do dono.
+      GoRoute(
+        path: '/pet/:id/fotos',
+        builder: (context, state) => PetSituacaoGuard(
+          petId: state.pathParameters['id']!,
+          exige: null,
+          child: GaleriaScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      // Cartaz de pet desaparecido: só pet ativo, só do dono.
+      GoRoute(
+        path: '/pet/:id/cartaz',
+        builder: (context, state) => _soPetAtivo(
+          state,
+          CartazEditorScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/pet/:id/cartaz/previa',
+        builder: (context, state) => _soPetAtivo(
+          state,
+          CartazPreviaScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
       GoRoute(
         path: '/pet/:id/falecimento',
         builder: (context, state) => _soPetAtivo(
@@ -145,23 +172,31 @@ List<GoRoute> buildPetRoutes() => [
           RegistrarFalecimentoScreen(petId: state.pathParameters['id']!),
         ),
       ),
+      // Aninhadas (mesmos caminhos): um `go` para o memorial de um pet
+      // monta a pilha lista → memorial, então o Voltar passa pela lista em
+      // vez de esvaziar a pilha e fechar o app. A lista, na base, volta
+      // para a Home (VoltarParaHome).
       GoRoute(
         path: '/memorial',
         builder: (context, state) => const MemorialListScreen(),
-      ),
-      GoRoute(
-        path: '/memorial/:id',
-        builder: (context, state) => _soPetFalecido(
-          state,
-          MemorialScreen(petId: state.pathParameters['id']!),
-        ),
-      ),
-      GoRoute(
-        path: '/memorial/:id/configuracoes',
-        builder: (context, state) => _soPetFalecido(
-          state,
-          MemorialSettingsScreen(petId: state.pathParameters['id']!),
-        ),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => _soPetFalecido(
+              state,
+              MemorialScreen(petId: state.pathParameters['id']!),
+            ),
+            routes: [
+              GoRoute(
+                path: 'configuracoes',
+                builder: (context, state) => _soPetFalecido(
+                  state,
+                  MemorialSettingsScreen(petId: state.pathParameters['id']!),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ];
 

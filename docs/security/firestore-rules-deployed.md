@@ -4,11 +4,35 @@
 > `firestore.rules`** na raiz do repo (referenciado por `firebase.json`) —
 > este arquivo passa a ser só o histórico/análise, não a fonte da verdade.
 >
-> **Atenção (2026-10-26):** `firestore.rules` no repositório passou a conter
-> as regras de isolamento por dono, **ainda não deployadas**
-> ([`firestore-isolamento-por-dono.md`](firestore-isolamento-por-dono.md)).
-> Até o deploy, o que vale em produção é o último estado registrado abaixo
-> (FASE 11, passo 2).
+> **Atualização (2026-10-27):** as regras de isolamento por dono
+> ([`firestore-isolamento-por-dono.md`](firestore-isolamento-por-dono.md))
+> e da galeria de fotos foram publicadas. Ver a seção de 2026-10-27 abaixo,
+> com o que foi e o que não foi conferido.
+
+## ✅ 2026-10-27 — Isolamento por dono (#76) e galeria de fotos (#80)
+
+- **Como:** o proprietário publicou pelo Console do Firebase
+  (Firestore → Regras), não pelo CLI. As regras publicadas devem ser as de
+  `firestore.rules` no merge da PR #80 (`8440091`).
+- **Conferido:**
+  - o trecho que o proprietário colou na conversa (de `match /fotos/{fotoId}`
+    até o fim do arquivo: galeria, `eventosSituacao` e `Localizacoes`) é
+    idêntico ao do repositório;
+  - esse trecho usa `donoDoPet()`, `situacaoAntes()` e `logado()`, que só
+    existem na versão nova, então o restante publicado é a versão nova, ao
+    menos nessas funções;
+  - no aparelho, uma segunda conta não viu pets nem fotos da primeira
+    (G14 em `docs/validation/galeria-fotos-pet.md`).
+- **Não conferido:**
+  - o texto completo publicado contra o arquivo. O Firebase CLI desta
+    máquina estava sem login, então não deu para ler o ruleset em produção
+    pela API;
+  - a ausência de `match /{document=**}`. Falta confirmar no Console
+    (Ctrl+F). O texto `/{document=**}` só deve aparecer no comentário do
+    topo, que explica que ele saiu;
+  - testes por REST com tokens reais, como na FASE 11.
+- **Rollback:** histórico de versões no Console (Firestore → Regras), ou
+  `firebase deploy --only firestore:rules` a partir de um commit anterior.
 
 ## ✅ 2026-09-11 — FASE 11, passo 1: leitura/escrita anônima fechada
 

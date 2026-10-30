@@ -25,6 +25,7 @@ Convenção: `RNFxx`.
 | RNF07 | O fluxo de cadastro de pet (RF10) deve ser completável em no máximo 5 telas/passos. |
 | RNF08 | Mensagens de erro (login inválido, campo obrigatório, etc.) devem ser específicas e em português, nunca códigos técnicos crus. |
 | RNF09 | O app deve seguir as diretrizes de acessibilidade do Flutter (tamanho de toque mínimo, contraste, suporte a leitor de tela) nas telas principais. |
+| RNF24 | O app usa português do Brasil em tudo, inclusive nos textos do Flutter (diálogos, dicas, menu de texto) e nos calendários e relógios: meses em português, semana a partir do domingo, data `dd/mm/aaaa` e hora em 24 h. Vale qualquer que seja o idioma do celular. Ver `docs/features/idioma-portugues.md`. |
 
 ## Compatibilidade
 
@@ -54,3 +55,15 @@ Convenção: `RNFxx`.
 | ID | Requisito |
 |----|-----------|
 | RNF18 | Erros não tratados no app devem ser registrados (ex: Firebase Crashlytics) para diagnóstico. |
+
+## Galeria de fotos do pet
+
+Ver `docs/features/galeria-fotos-pet.md`.
+
+| ID | Requisito |
+|----|-----------|
+| RNF19 | A grade carrega miniaturas reduzidas (nunca o original), decodificadas no tamanho exibido, em páginas de 30; a versão maior só ao abrir a foto. |
+| RNF20 | Envio com progresso por foto, cancelável, sem duplicar por toque duplo; sucesso parcial informado, com nova tentativa só das que falharam; nunca fica registro apontando para arquivo que não existe. |
+| RNF21 | Nenhum segredo do Cloudinary no app; fotos privadas por padrão (só o dono, pelas regras do Firestore), inclusive de pet falecido. |
+| RNF22 | A interface só exibe versões transformadas das fotos (sem metadados); o nome original do arquivo não sai do aparelho. |
+| RNF23 | Grade, visualizador e envio funcionam nos três temas, com fonte ampliada e em telas a partir de 320 dp, com rótulos para leitor de tela. |

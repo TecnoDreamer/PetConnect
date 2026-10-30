@@ -21,6 +21,17 @@ Convenção: `CTxx`, referenciando o(s) `RFxx`/`RNFxx` cobertos. Formato: pré-c
 ### CT04 — Login com credenciais válidas (RF04)
 - **Resultado esperado**: usuário autenticado, redirecionado à Home.
 
+### CT04-A — Login com Google (RF04-A)
+- **Passos**: Login → Entrar com Google → escolher a conta; depois sair e entrar de novo com Google.
+- **Resultado esperado**: entra na Home; na primeira vez o perfil é criado com nome e e-mail do Google; na segunda, mesma conta e mesmos pets. Cancelar no seletor volta ao Login sem mensagem. Automatizado com fakes (`login_social_repository_test.dart`); real em `docs/validation/login-social.md` (LS01–LS03).
+
+### CT04-B — Login com Facebook (RF04-B)
+- **Fora do escopo** (decisão do proprietário, 2026-10-27).
+
+### CT04-C — Mesmo e-mail por senha e Google (RF04-A)
+- **Passos**: com conta por e-mail e senha, entrar com Google usando o mesmo e-mail.
+- **Resultado esperado**: mesma conta (mesmo UID, mesmos pets). Se o Firebase devolver o conflito, aparece o diálogo "Você já tem uma conta"; com a senha certa o Google é vinculado; senha errada não vincula nada. O app nunca une contas só pelo e-mail. Automatizado (`login_social_screen_test.dart`, `login_social_repository_test.dart`); real: LS05–LS07.
+
 ### CT05 — Login com senha incorreta (RF04)
 - **Resultado esperado**: erro genérico "e-mail ou senha inválidos" (não revela se o e-mail existe).
 
@@ -107,7 +118,7 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 
 ### CT24 — Registrar falecimento (RF33)
 - **Passos**: Configurações do Pet → Registrar falecimento → (opcional) data e homenagem → confirmar.
-- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada.
+- **Resultado esperado**: abre o memorial; um único evento de auditoria; cancelar no diálogo não altera nada. Voltar (seta, botão ou gesto do Android) leva à lista do Memorial, com o pet, e de novo Voltar leva à Home; o app nunca fecha.
 
 ### CT25 — Pet falecido sai da lista principal (RF34)
 - **Passos**: após o CT24, voltar à Home.
@@ -119,8 +130,68 @@ Automatizados em `test/features/pet/memorial_flow_test.dart` e
 
 ### CT27 — Corrigir marcação incorreta (RF36)
 - **Passos**: Memorial → Configurações do memorial → Corrigir informação de falecimento → confirmar.
-- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home.
+- **Resultado esperado**: perfil ativo com vacinas, consultas e histórico intactos; pet de volta à Home. Voltar no perfil restaurado leva à Home, sem fechar o app.
 
 ### CT28 — Outra conta não altera a situação (RF36, RF12)
 - **Passos**: com uma segunda conta, tentar atualizar `situacao` do pet de outro tutor.
 - **Resultado esperado**: negado pela regra de `update` de `Pets`. ⚠️ Não automatizado (ver `docs/features/memorial-pet.md`, "Testes").
+
+## Galeria de fotos do pet
+
+Automatizados em `test/features/pet/galeria_*_test.dart` e
+`tool/firestore-rules/regras.test.js`; roteiro de aparelho em
+`docs/validation/galeria-fotos-pet.md`. Rodar com `GALERIA_FOTOS=true`.
+
+### CT29 — Ver a galeria (RF37)
+- **Passos**: perfil do pet → Fotos; rolar até o fim com mais de 30 fotos.
+- **Resultado esperado**: 3 colunas, mais recentes primeiro, novas páginas ao rolar sem repetir; pet sem fotos mostra "Adicionar primeira foto".
+
+### CT30 — Publicar fotos (RF38)
+- **Passos**: Adicionar fotos → escolher 3 → legenda numa → Publicar; repetir com a rede caindo no meio.
+- **Resultado esperado**: progresso por foto; as publicadas entram no topo; com falha, "Tentar de novo" envia só as pendentes. GIF/PDF e arquivos acima de 10 MB ficam de fora com aviso.
+
+### CT31 — Visualizador (RF39)
+- **Passos**: tocar numa miniatura; pinçar; deslizar; voltar.
+- **Resultado esperado**: abre na foto tocada, zoom funciona, desliza entre as fotos, mostra legenda e data, voltar fecha.
+
+### CT32 — Excluir foto (RF40)
+- **Passos**: visualizador → Excluir → Cancelar; depois Excluir → Excluir; depois sem rede.
+- **Resultado esperado**: cancelar mantém; confirmar remove; sem rede, aviso e a foto continua.
+
+### CT33 — Fotos no Memorial (RF41)
+- **Passos**: abrir o memorial de um pet falecido → Adicionar fotos → Ver todas.
+- **Resultado esperado**: fotos publicadas e listadas; vacinas, consultas, histórico e localização continuam ocultos.
+
+### CT34 — Outra conta não acessa (RF42)
+- **Passos**: com uma segunda conta, tentar listar `Pets/<id do pet da primeira>/fotos` ou abrir `/pet/<id>/fotos`.
+- **Resultado esperado**: negado pelas regras (automatizado no emulador, CI) e "Pet não encontrado" na tela. Regras deployadas em 2026-10-27; pela tela, conferido no aparelho (G14 em `docs/validation/galeria-fotos-pet.md`).
+
+
+## Cartaz de pet desaparecido
+
+Automatizados em `test/features/pet/cartaz_*_test.dart`; roteiro de aparelho
+em `docs/validation/cartaz-pet-desaparecido.md`.
+
+### CT35 — Abrir o cartaz (RF43, RF44)
+- **Passos**: perfil de um pet ativo → Pet desaparecido; depois tentar `/pet/<id>/cartaz` de um pet no Memorial e de outra conta.
+- **Resultado esperado**: o editor abre com o pet certo e o título da espécie na prévia; o pet no Memorial mostra o aviso do Memorial, e o de outra conta, "Pet não encontrado".
+
+### CT36 — Fotos (RF45)
+- **Passos**: escolher uma foto da galeria, a do perfil e uma do celular; no ajuste que abre, tocar no rosto do pet e, noutra foto, escolher "Foto inteira"; tentar repetir uma; mover e remover.
+- **Resultado esperado**: a foto repetida fica bloqueada; o rosto fica no centro do espaço; a foto inteira aparece sem cortes, com fundo desfocado; mover leva o ajuste junto; a foto de perfil não muda.
+
+### CT37 — Campos opcionais (RF46)
+- **Passos**: prévia sem nenhum opcional; depois com data, período e local em "Visto por último", recompensa de R$ 200,00, observações e todos os textos no limite; trocar a cor para vermelho e azul.
+- **Resultado esperado**: sem rótulos vazios nem "null", sem linha de recompensa; "Visto por último" numa linha só; recompensa como `R$ 200,00`; observações em destaque; nada é cortado; cabeçalho e rodapé na cor escolhida.
+
+### CT38 — Telefone e consentimento (RF47)
+- **Passos**: tutor sem telefone válido; tutor com telefone, sem marcar a autorização; marcar; trocar para o contato do QR do pet.
+- **Resultado esperado**: sem telefone, aviso e exportação bloqueada; sem autorização, o contato fica vazio e os botões desligados; ao autorizar, o número aparece; trocar de número pede a autorização de novo.
+
+### CT39 — Exportar (RF48)
+- **Passos**: Compartilhar imagem, Salvar imagem e Gerar PDF; repetir com uma foto que não carrega.
+- **Resultado esperado**: PNG de 2110 × 2982, PDF A4 e imagem salva na galeria, igual à prévia; o aviso de salvo só aparece depois de salvar; com foto que não carrega, aviso e nada é exportado.
+
+### CT40 — Rascunho e nenhuma mudança no pet (RF49)
+- **Passos**: preencher, sair e voltar; sair com foto do celular; descartar; conferir o pet.
+- **Resultado esperado**: textos e fotos da galeria voltam, a autorização e as fotos do celular não; sair com foto do celular pede confirmação; descartar limpa; o pet, os dados clínicos, a galeria e o QR não mudam.

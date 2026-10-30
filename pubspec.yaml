@@ -1,7 +1,7 @@
 name: pet_connect
 description: "App para localização de pets desaparecidos, com carteira de vacina, histórico médico e QR code de identificação."
 publish_to: "none"
-version: 0.1.0
+version: 0.1.0+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -9,6 +9,9 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+  # Calendário e relógio em português no cartaz de pet desaparecido.
+  flutter_localizations:
     sdk: flutter
 
   # Estado e navegação
@@ -20,9 +23,9 @@ dependencies:
   firebase_auth:
   cloud_firestore:
 
-  # Login social
+  # Login social (só Google; Facebook fora do escopo, ver
+  # docs/features/login-social.md)
   google_sign_in:
-  flutter_facebook_auth:
 
   # QR code
   qr_flutter:
@@ -36,6 +39,10 @@ dependencies:
   shared_preferences:
 
   cupertino_icons: ^1.0.6
+  share_plus: ^13.3.1
+  pdf: ^3.13.1
+  gal: ^2.3.3
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

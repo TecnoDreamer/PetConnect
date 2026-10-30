@@ -29,6 +29,9 @@ sequenceDiagram
     end
 ```
 
+Login com Google (RF04-A), incluindo a vinculação de conta existente:
+diagramas em `docs/features/login-social.md`.
+
 ## 2. Cadastro de pet e geração de QR code (RF10, RF16)
 
 ```mermaid
@@ -73,3 +76,13 @@ sequenceDiagram
         Web-->>Visitante: exibe mensagem de erro amigável
     end
 ```
+
+## Galeria de fotos do pet (RF37–RF42)
+
+Publicar, listar e excluir, com o tratamento de falha parcial: ver
+`docs/features/galeria-fotos-pet.md` ("Arquitetura").
+
+## Cartaz de pet desaparecido (RF43–RF49)
+
+Prévia, captura em PNG, PDF e compartilhamento: ver
+`docs/features/cartaz-pet-desaparecido.md` ("Arquitetura").

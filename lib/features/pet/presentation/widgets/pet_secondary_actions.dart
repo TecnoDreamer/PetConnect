@@ -16,9 +16,13 @@ import '../../../../core/widgets/settings_menu_tile.dart';
 /// Reaproveita [SettingsMenuTile] (mesmo componente dos menus de
 /// configurações) — mesmo padrão visual em todo o app.
 class PetSecondaryActions extends StatelessWidget {
-  const PetSecondaryActions({super.key, required this.petId});
+  const PetSecondaryActions(
+      {super.key, required this.petId, this.mostrarFotos = false});
 
   final String petId;
+
+  /// Galeria de fotos do pet (docs/features/galeria-fotos-pet.md).
+  final bool mostrarFotos;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +31,29 @@ class PetSecondaryActions extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Column(
         children: [
+          // Cartaz "Procura-se" (docs/features/cartaz-pet-desaparecido.md).
+          SettingsMenuTile(
+            icon: Icons.campaign_outlined,
+            title: 'Pet desaparecido',
+            onTap: () => context.push('/pet/$petId/cartaz'),
+          ),
+          Divider(
+              height: 1,
+              indent: 56,
+              endIndent: 16,
+              color: context.colors.divider),
+          if (mostrarFotos) ...[
+            SettingsMenuTile(
+              icon: Icons.photo_library_outlined,
+              title: 'Fotos',
+              onTap: () => context.push('/pet/$petId/fotos'),
+            ),
+            Divider(
+                height: 1,
+                indent: 56,
+                endIndent: 16,
+                color: context.colors.divider),
+          ],
           SettingsMenuTile(
             icon: Icons.location_on_outlined,
             title: 'Localização',
