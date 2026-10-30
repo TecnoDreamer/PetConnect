@@ -38,6 +38,10 @@ Resultado: `PASS`, `FAIL` (descrever), `BLOCKED` (motivo) ou
 | A13 | Teclado não cobre campos nem faz a tela pular | PENDENTE — validação do proprietário | |
 | A14 | Sem travamentos, engasgos visíveis ou carregamentos repetidos | PENDENTE — validação do proprietário | |
 | A15 | Sem internet: o app avisa e volta a funcionar quando a conexão volta | PENDENTE — validação do proprietário | |
+| A16 | "Entrar com Google" entra na conta certa; sair e entrar de novo mantém os pets (`docs/validation/login-social.md`) | PENDENTE — validação do proprietário | |
+| A17 | Galeria de fotos (com `GALERIA_FOTOS=true`): publicar, ver e excluir uma foto | PENDENTE — validação do proprietário | |
+| A18 | Cartaz de pet desaparecido: montar, compartilhar e salvar (`docs/validation/cartaz-pet-desaparecido.md`) | PENDENTE — validação do proprietário | |
+| A19 | Textos do sistema e calendários em português, com o celular em inglês (`docs/features/idioma-portugues.md`) | PENDENTE — validação do proprietário | |
 
 Só para build de **release**:
 
