@@ -76,4 +76,5 @@ Print (sem e-mail, telefone ou outros dados pessoais):
 
 | Testador | Celular / Android | Data | S01–S15 | Problemas |
 |---|---|---|---|---|
+| Proprietário | motorola edge 60 fusion / Android 16 | 2026-11-02 | Aprovado; passos não registrados um a um | Nenhum relatado |
 | | | | | |

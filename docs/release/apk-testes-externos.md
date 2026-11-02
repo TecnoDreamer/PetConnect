@@ -174,7 +174,7 @@ Pacote: com.petconnect.pet_connect, versionCode 2, versionName 0.1.1
 SDK: minSdk 24 (Android 7.0), targetSdk 36
 ABIs: arm64-v8a, armeabi-v7a, x86_64 (universal)
 Variante / flags: release, universal, GALERIA_FOTOS=true
-Instalação testada em: pendente (proprietário)
+Instalação testada em: motorola edge 60 fusion (Android 16), 2026-11-02, por cima de um APK 0.1.0 (versionCode 1) com a mesma chave, sem desinstalar; aprovado pelo proprietário
 ```
 
 Permissões no manifesto final (`aapt2 dump permissions`): `INTERNET`,
