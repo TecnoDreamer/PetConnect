@@ -56,15 +56,22 @@ abstract final class AppTheme {
         backgroundColor: palette.brandDark,
         contentTextStyle: TextStyle(color: palette.textOnBrand),
       ),
+      // Os campos de texto seguem os da tela Entrar (docs/features/
+      // padronizacao-campos.md): borda fina em brandLight a 45%, raio 16 e,
+      // com foco, brandDark com 1,5. Erro e desabilitado partem da mesma
+      // borda (o erro em palette.error). Telas com decoração própria
+      // (Entrar, Cadastro) continuam com a delas.
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: palette.surface,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
+        border: _bordaDoCampo(palette.brandLight.withValues(alpha: 0.45)),
+        enabledBorder:
+            _bordaDoCampo(palette.brandLight.withValues(alpha: 0.45)),
+        focusedBorder: _bordaDoCampo(palette.brandDark, largura: 1.5),
+        disabledBorder:
+            _bordaDoCampo(palette.brandLight.withValues(alpha: 0.2)),
         hintStyle: TextStyle(color: palette.textMuted),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -100,6 +107,12 @@ abstract final class AppTheme {
       ),
     );
   }
+
+  static OutlineInputBorder _bordaDoCampo(Color cor, {double largura = 1}) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: cor, width: largura),
+      );
 
   /// Tema fixo das telas de autenticação (Login, Cadastro, Esqueci senha):
   /// a identidade original do app, independente da preferência do tutor —
