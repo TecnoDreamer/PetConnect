@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pet_connect/core/errors/auth_error_translator.dart';
 import 'package:pet_connect/core/widgets/auth_header.dart';
 import 'package:pet_connect/features/auth/presentation/screens/login_screen.dart';
 import 'package:pet_connect/features/usuario/domain/login_social.dart';
@@ -440,6 +441,85 @@ void main() {
       // mexer nada com o erro aparecendo abaixo dele.
       expect(posicaoDepois, posicaoAntes,
           reason: 'o título do card não deveria se mover com o erro');
+    });
+  });
+
+  // --- Correção de 2026-11-02 (docs/features/login-layout-distribuido.md,
+  // "Campos do mesmo tamanho") --------------------------------------------
+
+  group('LoginScreen — e-mail e senha do mesmo tamanho', () {
+    Finder campo(String dica) => find.widgetWithText(TextField, dica);
+
+    void conferir(WidgetTester tester, String estado) {
+      final email = tester.getRect(campo('E-mail:'));
+      final senha = tester.getRect(campo('Senha:'));
+      expect(senha.width, closeTo(email.width, 0.5), reason: estado);
+      expect(senha.height, closeTo(email.height, 0.5), reason: estado);
+      expect(senha.left, closeTo(email.left, 0.5), reason: estado);
+    }
+
+    for (final (tamanho, escala) in const [
+      (Size(360, 800), 1.0),
+      (Size(412, 915), 1.0),
+      (Size(412, 915), 1.3),
+    ]) {
+      testWidgets(
+          '${tamanho.width.toInt()}x${tamanho.height.toInt()}, fonte '
+          '${escala}x: mesma largura, altura e alinhamento', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = escala;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await _abrirEmAparelho(tester, tamanho);
+        expect(tester.takeException(), isNull);
+        conferir(tester, 'repouso');
+      });
+    }
+
+    testWidgets('continuam iguais com foco, senha visível e erro',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_appPara(_FakeUsuarioRepository(
+          erroAoLogar: FirebaseAuthException(code: 'wrong-password'))));
+      await tester.pumpAndSettle();
+      final alturaAntes = tester.getSize(campo('E-mail:')).height;
+
+      await tester.tap(campo('E-mail:'));
+      await tester.pumpAndSettle();
+      conferir(tester, 'foco no e-mail');
+
+      await tester.tap(campo('Senha:'));
+      await tester.pumpAndSettle();
+      conferir(tester, 'foco na senha');
+
+      await tester.tap(find.byTooltip('Mostrar senha'));
+      await tester.pumpAndSettle();
+      conferir(tester, 'senha visível');
+
+      await tester.tap(find.text('ENTRAR'));
+      await tester.pumpAndSettle();
+      expect(find.text(translateAuthError('wrong-password')), findsOneWidget);
+      conferir(tester, 'com erro');
+
+      // O campo de e-mail, a referência, não mudou de tamanho.
+      expect(tester.getSize(campo('E-mail:')).height, alturaAntes);
+    });
+
+    testWidgets('o ícone de mostrar/ocultar senha continua funcionando',
+        (tester) async {
+      await _abrirEmAparelho(tester, const Size(390, 844));
+      TextField senha() => tester.widget<TextField>(campo('Senha:'));
+      expect(senha().obscureText, isTrue);
+
+      await tester.tap(find.byTooltip('Mostrar senha'));
+      await tester.pump();
+      expect(senha().obscureText, isFalse);
+      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Ocultar senha'));
+      await tester.pump();
+      expect(senha().obscureText, isTrue);
+      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
     });
   });
 }
