@@ -16,7 +16,8 @@ rules_version = '2';
 //   - Pet falecido: sem criar ou alterar registros clínicos; leitura e
 //     exclusão continuam (exclusão de conta precisa apagar).
 //   - `eventosSituacao`: só criação pelo dono, junto com a mudança real de
-//     situação do pet; nunca alterado nem apagado.
+//     situação do pet; nunca alterado. Apagado só na escrita que apaga o
+//     pet ou o perfil do dono (exclusão do pet ou da conta).
 //   - `fotos` (galeria): só o dono, inclusive de pet falecido; criação
 //     validada campo a campo, sem edição.
 //
@@ -31,6 +32,13 @@ service cloud.firestore {
 
     function logado() {
       return request.auth != null;
+    }
+
+    // Exclusão de conta: o perfil do próprio usuário existe antes desta
+    // escrita e não existe depois, ou seja, é apagado nela (lote do app).
+    function apagandoOProprioPerfil() {
+      return exists(/databases/$(database)/documents/Usuarios/$(request.auth.uid))
+          && !existsAfter(/databases/$(database)/documents/Usuarios/$(request.auth.uid));
     }
 
     // Dono de um documento de pet. `userId` é o campo de todos os pets
@@ -67,6 +75,11 @@ service cloud.firestore {
       }
       function donoDoPet() {
         return logado() && ehDonoDoPet(pet().data);
+      }
+      // O pet existe antes desta escrita (`donoDoPet` lê o estado anterior)
+      // e não existe depois, ou seja, é apagado nela (lote do app).
+      function apagandoOPet() {
+        return !existsAfter(/databases/$(database)/documents/Pets/$(petId));
       }
       // Escrita clínica = criar ou alterar vacina, consulta, histórico ou
       // localização. Bloqueada para pet falecido (ADR 0002).
@@ -127,9 +140,11 @@ service cloud.firestore {
       // Auditoria das mudanças de situação (Memorial). O evento só é aceito
       // na mesma escrita que muda `situacao` do pet, descrevendo exatamente
       // essa mudança, com o próprio usuário como autor e o horário do
-      // servidor. Limite conhecido: o dono ainda pode mudar `situacao` sem
-      // evento (update direto); auditoria à prova do próprio dono exigiria
-      // servidor.
+      // servidor. Nunca é alterado. Só é apagado pelo dono (LGPD, RF09), no
+      // mesmo lote que apaga o pet (exclusão do pet) ou o perfil dele
+      // (exclusão de conta). Limite conhecido: o dono ainda pode mudar
+      // `situacao` sem evento (update direto); auditoria à prova do próprio
+      // dono exigiria servidor.
       match /eventosSituacao/{id} {
         allow read: if donoDoPet();
         allow create: if donoDoPet()
@@ -141,7 +156,11 @@ service cloud.firestore {
             && request.resource.data.situacaoAnterior == situacaoAntes()
             && request.resource.data.situacaoNova == situacaoDepois()
             && situacaoAntes() != situacaoDepois();
-        allow update, delete: if false;
+        // O perfil vem primeiro: no lote da exclusão de conta, as duas
+        // leituras dele são as mesmas para todos os pets, e o `||` para ali.
+        allow delete: if donoDoPet()
+            && (apagandoOProprioPerfil() || apagandoOPet());
+        allow update: if false;
       }
     }
 

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../pet/data/exclusao_de_pet.dart';
 import '../domain/login_social.dart';
 import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
@@ -147,21 +148,25 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
         .where('userId', isEqualTo: uid)
         .get();
     for (final pet in pets.docs) {
-      await _deleteSubcollection(pet.reference.collection('vacinas'));
-      await _deleteSubcollection(pet.reference.collection('historicoMedico'));
-      await _deleteSubcollection(pet.reference.collection('fotos'));
-      await pet.reference.delete();
+      await apagarSubcolecoesDoPet(pet.reference);
     }
 
-    await _usuarios.doc(uid).delete();
+    // Eventos do Memorial, pets e perfil numa escrita só: a regra só aceita
+    // apagar `eventosSituacao` junto com o pet ou o perfil, e lê o pet para
+    // conferir o dono (por isso o pet sai no mesmo lote, não antes). Limites
+    // de um lote: 500 operações e 20 leituras de regra (cerca de 18 pets com
+    // eventos).
+    final batch = _firestore.batch();
+    for (final pet in pets.docs) {
+      final eventos = await pet.reference.collection('eventosSituacao').get();
+      for (final evento in eventos.docs) {
+        batch.delete(evento.reference);
+      }
+      batch.delete(pet.reference);
+    }
+    batch.delete(_usuarios.doc(uid));
+    await batch.commit();
+
     await user.delete();
-  }
-
-  Future<void> _deleteSubcollection(
-      CollectionReference<Map<String, dynamic>> collection) async {
-    final docs = await collection.get();
-    for (final doc in docs.docs) {
-      await doc.reference.delete();
-    }
   }
 }
