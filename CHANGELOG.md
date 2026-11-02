@@ -83,6 +83,11 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Orientação: o app fica só em retrato, na própria janela. Antes, ele
+  girava com a rotação automática ligada, e com ela desligada o Android
+  oferecia o botão de girar. O app nunca alterou a rotação automática do
+  celular, o que foi conferido no código e no aparelho. Ver
+  `docs/features/orientacao-retrato.md`.
 - Memorial: depois de registrar o falecimento, Voltar leva à lista do
   Memorial e depois à Home, em vez de fechar o app. Vale para o botão e o
   gesto do Android e para a seta da tela; o mesmo vale ao restaurar um
