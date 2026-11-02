@@ -83,6 +83,11 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Orientação: o app fica só em retrato, na própria janela. Antes, ele
+  girava com a rotação automática ligada, e com ela desligada o Android
+  oferecia o botão de girar. O app nunca alterou a rotação automática do
+  celular, o que foi conferido no código e no aparelho. Ver
+  `docs/features/orientacao-retrato.md`.
 - Login: os campos de e-mail e de senha têm o mesmo tamanho. O botão de
   mostrar/ocultar senha deixava a senha 6 px mais alta. Ver
   `docs/features/login-layout-distribuido.md`.

@@ -32,6 +32,7 @@ Convenção: `RNFxx`.
 | ID | Requisito |
 |----|-----------|
 | RNF10 | O app deve funcionar em Android 8+ e iOS 13+. |
+| RNF25 | Em celulares, o app fica só em retrato, na própria janela, e nunca lê nem altera configurações do sistema, como a rotação automática. Ver `docs/features/orientacao-retrato.md`. |
 | RNF11 | A página pública do QR code deve funcionar nos navegadores móveis padrão (Chrome, Safari) sem exigir instalação de app. |
 
 ## Segurança e privacidade
