@@ -28,7 +28,7 @@ Além disso, centraliza para o tutor:
 - 💉 **Carteira de vacina** — histórico de vacinas aplicadas e alertas de próxima dose.
 - 🩺 **Histórico médico** — consultas, exames e anotações por pet.
 - 📅 **Agendamento de consultas** — com lembretes.
-- 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento.
+- 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento; o tutor baixa o QR em PNG ou PDF para imprimir na coleira.
 - 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada por padrão; regras já publicadas, falta liberar).
 - 📢 **Cartaz de pet desaparecido** — cartaz "Procura-se" com 3 fotos e o telefone autorizado, gerado no celular, em PNG ou PDF, para compartilhar ou imprimir.
 
@@ -47,6 +47,7 @@ Além disso, centraliza para o tutor:
 | Edição/exclusão da conta do tutor (nome, sobrenome, telefone, nascimento, gênero, foto) | ✅ Concluído | RF08–RF09 |
 | Gestão de pets (cadastro, listagem, edição, exclusão) | ✅ Concluído | RF10–RF15 |
 | QR code de identificação (exibido no app) | ✅ Concluído | RF16 |
+| Baixar e imprimir o QR code (PNG e PDF) | 🔍 Em revisão — falta validar no aparelho | RF50 |
 | Página pública do QR code + regeneração | ⬜ Não iniciado | RF17–RF19 |
 | Carteira de vacina (registro, listagem, edição, exclusão, alerta visual) | ✅ Concluído | RF20–RF23 |
 | Histórico médico (com anexos no Cloudinary) | ✅ Concluído | RF24–RF26 |
@@ -140,6 +141,7 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Galeria de fotos por pet](docs/features/galeria-fotos-pet.md)
 - [App em português do Brasil](docs/features/idioma-portugues.md)
 - [Campos de texto padronizados](docs/features/padronizacao-campos.md)
+- [Baixar e imprimir o QR code](docs/features/qr-exportacao.md)
 - [Cartaz de pet desaparecido](docs/features/cartaz-pet-desaparecido.md) (como testar: [roteiro de aparelho](docs/validation/cartaz-pet-desaparecido.md))
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 

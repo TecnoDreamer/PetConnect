@@ -47,6 +47,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- QR code do pet para imprimir: "Baixar QR Code" (PNG de alta resolução
+  na galeria), "Compartilhar" (PNG) e "PDF para imprimir" (A4, com o QR
+  vetorial em 8, 4, 3 e 2 cm). O arquivo tem o mesmo QR da tela, e nada vai
+  a servidor. Ver `docs/features/qr-exportacao.md`.
 - "Pet desaparecido" no perfil do pet: o tutor monta um cartaz "Procura-se"
   no modelo minimalista, com o nome, a espécie, a raça e a cor do cadastro,
   três fotos (da galeria do pet, a do perfil ou do celular) com
@@ -87,6 +91,14 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Orientação: o app fica só em retrato, na própria janela. Antes, ele
+  girava com a rotação automática ligada, e com ela desligada o Android
+  oferecia o botão de girar. O app nunca alterou a rotação automática do
+  celular, o que foi conferido no código e no aparelho. Ver
+  `docs/features/orientacao-retrato.md`.
+- Login: os campos de e-mail e de senha têm o mesmo tamanho. O botão de
+  mostrar/ocultar senha deixava a senha 6 px mais alta. Ver
+  `docs/features/login-layout-distribuido.md`.
 - Memorial: depois de registrar o falecimento, Voltar leva à lista do
   Memorial e depois à Home, em vez de fechar o app. Vale para o botão e o
   gesto do Android e para a seta da tela; o mesmo vale ao restaurar um
