@@ -19,6 +19,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- Campos de texto com a aparência dos da tela Entrar, nos três temas:
+  borda fina com raio 16 e borda mais forte com foco. Antes, as telas
+  internas tinham campos sem borda. "Esqueceu sua senha?" ganhou a borda e
+  a altura do login. Ver `docs/features/padronizacao-campos.md`.
 - APK para testadores `0.1.1` (versionCode `2`), com login com Google,
   cartaz de pet desaparecido e app em português; instala por cima da
   `0.1.0`. Ver `docs/release/apk-testes-externos.md`.

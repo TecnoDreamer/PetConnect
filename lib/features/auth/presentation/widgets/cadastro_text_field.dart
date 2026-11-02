@@ -65,9 +65,11 @@ class CadastroTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final temErro = errorText != null;
+    // Mesma borda dos campos da tela Entrar (docs/features/
+    // padronizacao-campos.md).
     final corBorda = temErro
         ? AppColors.error
-        : AppColors.brandLight.withValues(alpha: 0.35);
+        : AppColors.brandLight.withValues(alpha: 0.45);
 
     OutlineInputBorder borda(Color cor, {double largura = 1}) =>
         OutlineInputBorder(
