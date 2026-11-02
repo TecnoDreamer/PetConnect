@@ -73,6 +73,44 @@ continuam iguais.
 - Os testes anteriores continuam valendo: teclado, mostrar/ocultar senha,
   loading e erro sem mover o card.
 
+## Campos do mesmo tamanho (2026-11-02)
+
+**Problema:** o campo de senha era mais alto que o de e-mail.
+
+**Causa:** o botão de mostrar/ocultar senha (`IconButton` no `suffixIcon`)
+reservava 48 × 48, o alvo de toque padrão do Material, e o `InputDecorator`
+também exige 48 de altura mínima para ícones laterais. O campo de e-mail,
+denso, tem 42 com a fonte padrão. Medido com a Roboto a 390×844:
+
+| | E-mail | Senha |
+|---|---|---|
+| Antes | 286 × 42 | 286 × 48 |
+| Depois | 286 × 42 | 286 × 42 |
+
+**Correção** (só no campo de senha, `login_screen.dart`):
+`suffixIconConstraints` de 48 × 40 e o `IconButton` com 48 × 40, sem
+padding e sem a área de toque extra (`MaterialTapTargetSize.shrinkWrap`).
+
+**O que não mudou:**
+- o campo de e-mail;
+- o ícone e o que ele faz;
+- o espaço entre os campos e até o botão ENTRAR;
+- cores, bordas, fontes e o resto da tela.
+
+Como o card ficou 6 px mais baixo, o layout distribuído desloca o
+conteúdo em cerca de 3 px. Isso foi conferido comparando capturas de antes
+e depois.
+
+**Acessibilidade:** o botão do olho passa a ter área de toque de 48 × 40
+(antes, 48 × 48). Fica abaixo dos 48 × 48 recomendados na altura; tocar
+logo acima ou abaixo dele foca o campo de senha.
+
+**Testes:** grupo "e-mail e senha do mesmo tamanho" em
+`login_screen_test.dart`. Ele confere largura, altura e alinhamento iguais
+em 360×800 e 412×915, inclusive com fonte 1,3×, com foco, senha visível e
+mensagem de erro. Também confere que mostrar/ocultar senha continua
+funcionando. Antes da correção, a altura diferia em 6 px.
+
 ## Rollback
 
 Reverter o merge. A mudança é só de apresentação.
