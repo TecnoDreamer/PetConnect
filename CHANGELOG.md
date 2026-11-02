@@ -43,6 +43,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- QR code do pet para imprimir: "Baixar QR Code" (PNG de alta resolução
+  na galeria), "Compartilhar" (PNG) e "PDF para imprimir" (A4, com o QR
+  vetorial em 8, 4, 3 e 2 cm). O arquivo tem o mesmo QR da tela, e nada vai
+  a servidor. Ver `docs/features/qr-exportacao.md`.
 - "Pet desaparecido" no perfil do pet: o tutor monta um cartaz "Procura-se"
   no modelo minimalista, com o nome, a espécie, a raça e a cor do cadastro,
   três fotos (da galeria do pet, a do perfil ou do celular) com
