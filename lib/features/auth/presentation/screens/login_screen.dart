@@ -287,7 +287,17 @@ class _LoginCard extends StatelessWidget {
               isDense: true,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+              // O botão do olho reservava 48 × 48 e deixava a senha 6 px
+              // mais alta que o e-mail. Com 48 × 40 ele cabe na altura do
+              // campo de e-mail (42 px com a fonte padrão).
+              suffixIconConstraints:
+                  const BoxConstraints(minWidth: 48, minHeight: 40),
               suffixIcon: IconButton(
+                constraints:
+                    const BoxConstraints.tightFor(width: 48, height: 40),
+                padding: EdgeInsets.zero,
+                style: const ButtonStyle(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                 icon: Icon(
                   senhaVisivel
                       ? Icons.visibility_off_outlined
