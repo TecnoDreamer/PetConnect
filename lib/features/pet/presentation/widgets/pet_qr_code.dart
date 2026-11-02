@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_palette.dart';
+import '../../data/exportacao_qr.dart';
 import '../../domain/pet.dart';
 import '../../domain/pet_qr_code.dart';
 
@@ -31,6 +32,8 @@ class PetQrCode extends StatelessWidget {
             // Chave pela URL: ao regenerar, o QR é redesenhado do zero.
             key: ValueKey(publicPetUrl(pet)),
             data: publicPetUrl(pet),
+            // O mesmo nível dos arquivos exportados (exportacao_qr.dart).
+            errorCorrectionLevel: nivelDeCorrecaoDoQr,
             size: 180,
             backgroundColor: Colors.white,
           ),
