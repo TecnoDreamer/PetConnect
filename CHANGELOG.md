@@ -47,6 +47,18 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Página pública do QR com consentimento: em Configurações do pet >
+  Compartilhamento via QR Code, o tutor escolhe um a um os dados que quem
+  escanear vai ver (nome, espécie, raça, cor, foto, nome do tutor,
+  telefone) e publica com um consentimento explícito. Pode alterar ou
+  desativar quando quiser.
+  - Sem consentimento, a página mostra só que o pet está cadastrado e o
+    formulário para avisar o tutor; antes, mostrava nome, espécie, situação
+    e foto de qualquer pet.
+  - A caixa de localização da página deixa de vir marcada, e a página não
+    promete mais que "o tutor foi avisado".
+  - Depende da API com a PR da fase 1 e da página publicada no Hosting. Ver
+    `docs/features/qr-compartilhamento-publico.md`.
 - QR code do pet para imprimir: "Baixar QR Code" (PNG de alta resolução
   na galeria), "Compartilhar" (PNG) e "PDF para imprimir" (A4, com o QR
   vetorial em 8, 4, 3 e 2 cm). O arquivo tem o mesmo QR da tela, e nada vai

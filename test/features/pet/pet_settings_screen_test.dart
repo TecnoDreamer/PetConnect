@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pet_connect/core/theme/app_theme.dart';
+import 'package:pet_connect/features/pet/domain/compartilhamento_publico.dart';
 import 'package:pet_connect/features/pet/domain/pet.dart';
 import 'package:pet_connect/features/pet/presentation/providers/anexo_providers.dart';
 import 'package:pet_connect/features/pet/presentation/widgets/cover_position_editor.dart';
@@ -57,7 +58,8 @@ Pet _pet({
 /// Monta o app com go_router só com o essencial pra testar as
 /// configurações do pet — a rota de "editar" é uma tela-marcador, só pra
 /// confirmar que a navegação preserva o pet certo.
-Widget _appPara(FakePetRepository repo, String petIdInicial) {
+Widget _appPara(FakePetRepository repo, String petIdInicial,
+    {CompartilhamentoRepository? compartilhamento}) {
   final router = GoRouter(
     initialLocation: '/pet/$petIdInicial/configuracoes',
     routes: [
@@ -73,6 +75,11 @@ Widget _appPara(FakePetRepository repo, String petIdInicial) {
           return Scaffold(body: Text('Tela Editar: ${pet?.nome}'));
         },
       ),
+      GoRoute(
+        path: '/pet/:id/compartilhamento',
+        builder: (context, state) =>
+            Text('Tela Compartilhamento: ${state.pathParameters['id']}'),
+      ),
       GoRoute(path: '/home', builder: (context, state) => const Text('Home')),
     ],
   );
@@ -84,9 +91,38 @@ Widget _appPara(FakePetRepository repo, String petIdInicial) {
       petsProvider.overrideWith((ref) => repo.watchPets(_tutor.id)),
       petProvider.overrideWith((ref, id) => repo.watchPet(id)),
       anexoRepositoryProvider.overrideWithValue(FakeAnexoRepository()),
+      compartilhamentoRepositoryProvider.overrideWithValue(compartilhamento),
     ],
     child: MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
   );
+}
+
+/// Registra se o pet ainda existia quando a página pública foi revogada.
+class _CompartilhamentoFake implements CompartilhamentoRepository {
+  _CompartilhamentoFake(this.pets, {this.falhar = false});
+
+  final FakePetRepository pets;
+  final bool falhar;
+  final petExistiaAoRevogar = <bool>[];
+
+  @override
+  Future<CompartilhamentoPublico> buscar(Pet pet) async =>
+      const CompartilhamentoPublico(ativado: false, ativo: false, campos: {});
+
+  @override
+  Future<CompartilhamentoPublico> publicar(
+          Pet pet, PedidoDeCompartilhamento pedido) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CompartilhamentoPublico> revogar(Pet pet) async {
+    petExistiaAoRevogar.add(await pets.watchPet(pet.id).first != null);
+    if (falhar) {
+      throw const CompartilhamentoException(FalhaDoCompartilhamento.semConexao);
+    }
+    return const CompartilhamentoPublico(
+        ativado: false, ativo: false, campos: {});
+  }
 }
 
 void main() {
@@ -292,6 +328,69 @@ void main() {
       final pet = await repo.watchPet(id).first;
       expect(pet!.capa, anyOf(isNull, isEmpty));
       expect(find.text('Adicionar capa'), findsOneWidget);
+    });
+  });
+
+  group('PetSettingsScreen — página pública do QR (issue #35)', () {
+    testWidgets('sem servidor configurado a opção não aparece', (tester) async {
+      final repo = FakePetRepository();
+      final id = await repo.createPet(_pet(id: '', nome: 'Felícia'));
+
+      await tester.pumpWidget(_appPara(repo, id));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compartilhamento via QR Code'), findsNothing);
+    });
+
+    testWidgets('com servidor abre o compartilhamento do mesmo pet',
+        (tester) async {
+      final repo = FakePetRepository();
+      final id = await repo.createPet(_pet(id: '', nome: 'Felícia'));
+
+      await tester.pumpWidget(
+          _appPara(repo, id, compartilhamento: _CompartilhamentoFake(repo)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Compartilhamento via QR Code'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tela Compartilhamento: $id'), findsOneWidget);
+    });
+
+    testWidgets('excluir o pet desliga a página pública antes de apagar',
+        (tester) async {
+      final repo = FakePetRepository();
+      final id = await repo.createPet(_pet(id: '', nome: 'Felícia'));
+      final compartilhamento = _CompartilhamentoFake(repo);
+
+      await tester
+          .pumpWidget(_appPara(repo, id, compartilhamento: compartilhamento));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Excluir perfil do pet'), 200);
+      await tester.tap(find.text('Excluir perfil do pet'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+
+      expect(compartilhamento.petExistiaAoRevogar, [true]);
+      expect((await repo.watchPet(id).first), isNull);
+    });
+
+    testWidgets('falha ao desligar a página não impede a exclusão',
+        (tester) async {
+      final repo = FakePetRepository();
+      final id = await repo.createPet(_pet(id: '', nome: 'Felícia'));
+
+      await tester.pumpWidget(_appPara(repo, id,
+          compartilhamento: _CompartilhamentoFake(repo, falhar: true)));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Excluir perfil do pet'), 200);
+      await tester.tap(find.text('Excluir perfil do pet'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsOneWidget);
+      expect((await repo.watchPet(id).first), isNull);
     });
   });
 }

@@ -193,6 +193,17 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
 
     setState(() => _excluindo = true);
 
+    // Antes de excluir, desliga a página pública: depois, a API não teria
+    // mais o pet para conferir o dono. Melhor esforço e com prazo curto (o
+    // servidor pode estar acordando); se falhar, a API apaga a configuração
+    // no próximo acesso ao QR.
+    final compartilhamento = ref.read(compartilhamentoRepositoryProvider);
+    if (compartilhamento != null) {
+      try {
+        await compartilhamento.revogar(pet).timeout(const Duration(seconds: 5));
+      } catch (_) {}
+    }
+
     try {
       await ref.read(petRepositoryProvider).deletePet(pet.id);
       // O rascunho do cartaz de desaparecido fica neste aparelho; sai junto.
@@ -257,6 +268,15 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
                   onTap: () =>
                       context.push('/pet/${pet.id}/editar', extra: pet),
                 ),
+                if (ref.watch(compartilhamentoRepositoryProvider) != null) ...[
+                  const SettingsSectionHeader(title: 'QR Code'),
+                  SettingsMenuTile(
+                    icon: Icons.qr_code_2,
+                    title: 'Compartilhamento via QR Code',
+                    onTap: () =>
+                        context.push('/pet/${pet.id}/compartilhamento'),
+                  ),
+                ],
                 const SettingsSectionHeader(title: 'Foto de capa'),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

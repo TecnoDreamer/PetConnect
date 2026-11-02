@@ -7,6 +7,7 @@ import '../features/pet/domain/pet.dart';
 import '../features/pet/domain/vacina.dart';
 import '../features/pet/presentation/screens/cartaz_editor_screen.dart';
 import '../features/pet/presentation/screens/cartaz_previa_screen.dart';
+import '../features/pet/presentation/screens/compartilhamento_qr_screen.dart';
 import '../features/pet/presentation/screens/consulta_form_screen.dart';
 import '../features/pet/presentation/screens/consulta_list_screen.dart';
 import '../features/pet/presentation/screens/galeria_screen.dart';
@@ -53,6 +54,14 @@ List<GoRoute> buildPetRoutes() => [
         builder: (context, state) => _soPetAtivo(
           state,
           PetSettingsScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      // Página pública do QR (issue #35): só pet ativo, só do dono.
+      GoRoute(
+        path: '/pet/:id/compartilhamento',
+        builder: (context, state) => _soPetAtivo(
+          state,
+          CompartilhamentoQrScreen(petId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(

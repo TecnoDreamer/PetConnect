@@ -34,6 +34,7 @@ Convenção: `RNFxx`.
 | RNF10 | O app deve funcionar em Android 8+ e iOS 13+. |
 | RNF25 | Em celulares, o app fica só em retrato, na própria janela, e nunca lê nem altera configurações do sistema, como a rotação automática. Ver `docs/features/orientacao-retrato.md`. |
 | RNF11 | A página pública do QR code deve funcionar nos navegadores móveis padrão (Chrome, Safari) sem exigir instalação de app. |
+| RNF26 | A resposta pública do QR não é guardada em cache (`Cache-Control: no-store`) e só contém os campos autorizados: os outros não aparecem nem no JSON. Revogar vale no acesso seguinte. Ver `docs/features/qr-compartilhamento-publico.md`. |
 
 ## Segurança e privacidade
 
