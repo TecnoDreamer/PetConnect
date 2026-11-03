@@ -144,6 +144,7 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Baixar e imprimir o QR code](docs/features/qr-exportacao.md)
 - [Página pública do QR com consentimento](docs/features/qr-compartilhamento-publico.md) (como testar: [roteiro](docs/validation/qr-compartilhamento-publico.md))
 - [Acessos e avistamentos do QR](docs/features/qr-avistamentos.md) (como testar: [roteiro](docs/validation/qr-avistamentos.md))
+- [Avisos do QR por push](docs/features/qr-notificacoes.md) (como testar: [roteiro](docs/validation/qr-notificacoes.md))
 - [Cartaz de pet desaparecido](docs/features/cartaz-pet-desaparecido.md) (como testar: [roteiro de aparelho](docs/validation/cartaz-pet-desaparecido.md))
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 

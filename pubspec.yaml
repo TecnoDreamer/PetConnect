@@ -22,6 +22,8 @@ dependencies:
   firebase_core:
   firebase_auth:
   cloud_firestore:
+  # Avisos do QR por push (issue #36).
+  firebase_messaging:
 
   # Login social (só Google; Facebook fora do escopo, ver
   # docs/features/login-social.md)
