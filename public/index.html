@@ -193,36 +193,64 @@
     ));
   }
 
-  function renderPet(card, pet, publicId) {
-    var statusInfo = STATUS_LABEL[pet.status] || { text: pet.status || '', cls: 'badge-other' };
-    var speciesLabel = SPECIES_LABEL[pet.species] || pet.species || '';
+  // +5519999990000 → (19) 99999-0000; outros países ficam como vieram.
+  function formatPhone(e164) {
+    var m = /^\+55(\d{2})(\d{4,5})(\d{4})$/.exec(e164 || '');
+    return m ? '(' + m[1] + ') ' + m[2] + '-' + m[3] : e164;
+  }
 
+  // A API só manda o que o tutor marcou e consentiu (issue #35). Sem
+  // consentimento, `shared` vem false e nada do pet aparece: só o aviso de
+  // que ele está cadastrado e o formulário para avisar o tutor.
+  function renderPet(card, pet, publicId) {
     card.innerHTML = '';
 
-    if (pet.photoUrl) {
-      card.appendChild(el('<img class="photo" src="' + escapeHtml(pet.photoUrl) + '" alt="Foto de ' + escapeHtml(pet.name) + '">'));
-    } else {
-      card.appendChild(el('<div class="photo-placeholder">🐾</div>'));
+    if (pet.shared === false) {
+      card.appendChild(el('<div class="photo-placeholder" aria-hidden="true">🐾</div>'));
+      card.appendChild(el('<h1>Este pet está cadastrado no PetConnect</h1>'));
+      card.appendChild(el('<div class="meta">O tutor não publicou os dados do pet nesta página. Se você o encontrou, avise pelo formulário abaixo.</div>'));
+      renderSightingForm(card, publicId);
+      return;
     }
 
-    card.appendChild(el('<span class="badge ' + statusInfo.cls + '">' + escapeHtml(statusInfo.text) + '</span>'));
-    card.appendChild(el('<h1>' + escapeHtml(pet.name || 'Pet') + '</h1>'));
+    var speciesLabel = SPECIES_LABEL[pet.species] || pet.species || '';
+
+    if (pet.photoUrl) {
+      card.appendChild(el('<img class="photo" src="' + escapeHtml(pet.photoUrl) + '" alt="' +
+        escapeHtml(pet.name ? 'Foto de ' + pet.name : 'Foto do pet') + '">'));
+    } else {
+      card.appendChild(el('<div class="photo-placeholder" aria-hidden="true">🐾</div>'));
+    }
+
+    // `status` só vem da API antiga, de antes do consentimento.
+    if (pet.status) {
+      var statusInfo = STATUS_LABEL[pet.status] || { text: pet.status, cls: 'badge-other' };
+      card.appendChild(el('<span class="badge ' + statusInfo.cls + '">' + escapeHtml(statusInfo.text) + '</span>'));
+    }
+    card.appendChild(el('<h1>' + escapeHtml(pet.name || 'Pet cadastrado no PetConnect') + '</h1>'));
     if (speciesLabel) card.appendChild(el('<div class="meta">' + escapeHtml(speciesLabel) + '</div>'));
+    if (pet.breed) card.appendChild(el('<div class="meta">Raça: ' + escapeHtml(pet.breed) + '</div>'));
+    if (pet.color) card.appendChild(el('<div class="meta">Cor: ' + escapeHtml(pet.color) + '</div>'));
+    if (pet.tutorName) card.appendChild(el('<div class="meta">Tutor: ' + escapeHtml(pet.tutorName) + '</div>'));
 
     if (pet.publicContactPhone) {
       card.appendChild(el(
         '<div class="contact">📞 Contato do tutor: <a href="tel:' + escapeHtml(pet.publicContactPhone) + '">' +
-        escapeHtml(pet.publicContactPhone) + '</a></div>'
+        escapeHtml(formatPhone(pet.publicContactPhone)) + '</a></div>'
       ));
     }
 
+    renderSightingForm(card, publicId);
+  }
+
+  function renderSightingForm(card, publicId) {
     card.appendChild(el('<div class="section-title">Encontrou este pet?</div>'));
 
     var form = el(
       '<form>' +
         '<label for="desc">Onde você viu? (opcional)</label>' +
         '<textarea id="desc" rows="3" maxlength="1000" placeholder="Ex: perto da praça, andando sozinho"></textarea>' +
-        '<div class="geo-row"><input type="checkbox" id="geo" checked><label for="geo" style="margin:0;font-weight:400;">Incluir minha localização atual</label></div>' +
+        '<div class="geo-row"><input type="checkbox" id="geo"><label for="geo" style="margin:0;font-weight:400;">Incluir minha localização atual</label></div>' +
         '<label for="contact">Seu contato (opcional, caso o tutor queira falar com você)</label>' +
         '<input type="text" id="contact" maxlength="120" placeholder="Telefone ou nome">' +
         '<button type="submit">Avisar o tutor</button>' +
@@ -262,7 +290,8 @@
       }).then(function (res) {
         if (res.status === 201) {
           feedback.className = 'feedback success';
-          feedback.textContent = 'Obrigado! O tutor foi avisado.';
+          // Ainda não há notificação ao tutor (fase 4, issue #36): não prometer aviso.
+          feedback.textContent = 'Obrigado! Seu relato foi registrado.';
           form.querySelectorAll('textarea, input').forEach(function (f) { f.disabled = true; });
         } else if (res.status === 429) {
           feedback.className = 'feedback error';

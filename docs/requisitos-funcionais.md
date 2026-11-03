@@ -34,9 +34,10 @@ Convenção: `RFxx` — identificador único, usado também para rastrear casos 
 | ID | Requisito |
 |----|-----------|
 | RF16 | O sistema deve gerar um QR code único para cada pet cadastrado, exibido no perfil do pet. |
-| RF17 | Ao ser escaneado por qualquer pessoa, o QR code deve abrir uma página web pública com informações do pet destinadas à sua identificação e devolução (nome, foto, espécie/raça, contato do tutor). |
-| RF18 | A página pública do QR code não deve exibir histórico médico completo nem dados de contato além do necessário para a devolução do pet. |
+| RF17 | Ao ser escaneado por qualquer pessoa, o QR code deve abrir uma página web pública com informações do pet destinadas à sua identificação e devolução, **só as que o tutor autorizou** (RF51). Sem autorização, a página mostra apenas que o pet está cadastrado e o formulário para avisar o tutor. |
+| RF18 | A página pública do QR code não deve exibir histórico médico, e-mail, endereço, ids internos nem a situação do pet; o contato do tutor só aparece se ele marcou (RF51). |
 | RF19 | O sistema deve permitir ao tutor regenerar o QR code de um pet (ex: em caso de suspeita de uso indevido do código anterior). |
+| RF51 | O tutor escolhe, um a um, os dados que a página pública mostra (nome do pet, espécie, raça, cor, foto de perfil, nome do tutor, telefone ou WhatsApp) e publica com um consentimento explícito, registrado com data, versão do texto e escopo. Nenhuma caixa vem marcada; o telefone vale só para a página; desativar revoga na hora e apaga o telefone e o nome salvos para a página. Ver `docs/features/qr-compartilhamento-publico.md`. |
 | RF50 | O tutor baixa o QR code do pet para imprimir: PNG de alta resolução (salvo na galeria ou compartilhado) e PDF A4 com o QR vetorial em vários tamanhos. O arquivo tem o mesmo conteúdo do QR exibido e só o nome do pet como dado adicional. Ver `docs/features/qr-exportacao.md`. |
 
 ## Carteira de vacina
