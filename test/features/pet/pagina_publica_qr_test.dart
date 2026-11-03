@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Regras da página pública do QR (`public/index.html`, issue #35) que dá
-/// para conferir no próprio arquivo. O comportamento no navegador está no
+/// Regras da página pública do QR (`public/index.html`, issues #35 e #37)
+/// que dá para conferir no próprio arquivo. O comportamento no navegador está no
 /// roteiro de aparelho (docs/validation/qr-compartilhamento-publico.md).
 void main() {
   final html = File('public/index.html').readAsStringSync();
@@ -13,12 +13,27 @@ void main() {
     expect(html, contains('Este pet está cadastrado no PetConnect'));
   });
 
-  test('a localização de quem achou o pet não vem marcada', () {
-    final caixa = RegExp(r'<input type="checkbox" id="geo"[^>]*>')
-        .firstMatch(html)
-        ?.group(0);
-    expect(caixa, isNotNull);
-    expect(caixa, isNot(contains('checked')));
+  test('a localização só é pedida depois do clique no botão (issue #37)', () {
+    expect(html, contains('Compartilhar local onde vi o pet'));
+    expect(RegExp('getCurrentPosition').allMatches(html), hasLength(1));
+    final clique = html.indexOf("geoBtn.addEventListener('click'");
+    expect(clique, isNot(-1));
+    expect(html.indexOf('getCurrentPosition'), greaterThan(clique));
+    expect(html, isNot(contains('watchPosition')));
+  });
+
+  test('o relato com localização leva a precisão e um id de envio', () {
+    expect(html, contains('body.accuracyMeters'));
+    expect(html, contains('clientRequestId: state.requestId'));
+  });
+
+  test('a abertura da página é um evento à parte, sem coordenada', () {
+    final inicio = html.indexOf('function reportPageOpened');
+    final fim = html.indexOf('}\n', html.indexOf("type: 'qr_page_opened'"));
+    expect(inicio, isNot(-1));
+    final evento = html.substring(inicio, fim);
+    expect(evento, contains('/events'));
+    expect(evento, isNot(contains('latitude')));
   });
 
   test('não promete que o tutor foi avisado', () {

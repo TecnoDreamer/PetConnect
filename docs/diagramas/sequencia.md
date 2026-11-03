@@ -83,7 +83,44 @@ sequenceDiagram
             API-->>Web: só os campos marcados (no-store)
             Web-->>Visitante: dados autorizados + formulário
         end
+        Web-)API: POST /events {"type":"qr_page_opened"} (sem coordenada, sem esperar)
+        API->>Mongo: qr_access_events (pet e hora, TTL 90 dias)
     end
+```
+
+### Visitante relata o avistamento e o tutor vê (RF31, RF32, RF52)
+
+Adicionado em 2026-11-03 (issue #37). A localização só é pedida depois do
+clique e vai uma vez, quando o visitante envia.
+
+```mermaid
+sequenceDiagram
+    actor Visitante
+    participant Nav as Navegador (Geolocation)
+    participant Web as Página pública
+    participant API as API Spring
+    participant Mongo as MongoDB (locations, qr_access_events)
+    actor Tutor
+    participant App
+
+    Visitante->>Web: toca em "Compartilhar local onde vi o pet"
+    Web->>Nav: getCurrentPosition (alta precisão, 15 s)
+    alt permissão negada ou sem sinal
+        Nav-->>Web: erro
+        Web-->>Visitante: "descreva onde viu o pet" (relato em texto continua possível)
+    else posição obtida
+        Nav-->>Web: latitude, longitude, precisão
+        Web-->>Visitante: "pronta para enviar, precisão de cerca de X m" + Conferir no mapa / Não enviar
+    end
+    Visitante->>Web: Enviar relato
+    Web->>API: POST /sightings {coordenada?, accuracyMeters?, texto?, clientRequestId}
+    API->>Mongo: locations (positionSource decidido pelo servidor; mesmo clientRequestId não duplica)
+    API-->>Web: 201 sem corpo
+    Tutor->>App: abre Localização do pet
+    App->>API: GET /legacy-pets/{id}/qr-activity (token)
+    API->>Mongo: relatos e acessos do pet (dono conferido no Firestore)
+    API-->>App: sightings + recentAccesses + accessesLast30Days
+    App-->>Tutor: relatos com precisão e "Abrir no mapa"; acessos à parte
 ```
 
 ### Tutor publica ou revoga (RF51)

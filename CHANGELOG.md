@@ -47,6 +47,16 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Relatos e acessos do QR na aba Localização do pet: o tutor passa a ver os
+  relatos enviados pela página pública, que antes ficavam só no servidor,
+  com data e hora, precisão, origem e "Abrir no mapa". Os acessos à página
+  aparecem à parte, com o aviso de que abrir a página não confirma que
+  alguém viu o pet.
+  - Na página, a localização só é pedida depois do botão "Compartilhar local
+    onde vi o pet". Ela aparece com a precisão antes do envio e vai uma única
+    vez; negar a permissão não impede o relato em texto.
+  - Depende da API com a PR da fase 3 e da página publicada no Hosting. Ver
+    `docs/features/qr-avistamentos.md`.
 - Página pública do QR com consentimento: em Configurações do pet >
   Compartilhamento via QR Code, o tutor escolhe um a um os dados que quem
   escanear vai ver (nome, espécie, raça, cor, foto, nome do tutor,

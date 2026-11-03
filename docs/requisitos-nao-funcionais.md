@@ -35,6 +35,7 @@ Convenção: `RNFxx`.
 | RNF25 | Em celulares, o app fica só em retrato, na própria janela, e nunca lê nem altera configurações do sistema, como a rotação automática. Ver `docs/features/orientacao-retrato.md`. |
 | RNF11 | A página pública do QR code deve funcionar nos navegadores móveis padrão (Chrome, Safari) sem exigir instalação de app. |
 | RNF26 | A resposta pública do QR não é guardada em cache (`Cache-Control: no-store`) e só contém os campos autorizados: os outros não aparecem nem no JSON. Revogar vale no acesso seguinte. Ver `docs/features/qr-compartilhamento-publico.md`. |
+| RNF27 | Defesas da página pública contra abuso: além do limite por IP, no máximo 20 relatos e 30 acessos gravados por pet por hora; relato repetido com o mesmo `clientRequestId` não duplica; coordenada validada (latitude e longitude juntas, precisão até 100 km). Acessos apagados em 90 dias (TTL). Ver `docs/features/qr-avistamentos.md`. |
 
 ## Segurança e privacidade
 
