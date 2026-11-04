@@ -53,27 +53,14 @@ final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
 });
 
 /// Sessão do Firebase Auth (null = deslogado). Usado pelo guard de rotas.
+///
+/// O FirebaseAuth guarda a sessão no aparelho: fechar e reabrir o app volta
+/// direto para a Home. A sessão só termina em "Sair da conta", com
+/// confirmação (decisão do proprietário de 2026-11-04, que substitui o login
+/// obrigatório a cada abertura). O primeiro acesso de cada instalação pede
+/// login (`PrimeiroAcesso`).
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   return ref.watch(firebaseAuthProvider).authStateChanges();
-});
-
-/// Garante login explícito a cada abertura do app: mesmo com uma sessão do
-/// Firebase Auth persistida no aparelho de uma vez anterior, o tutor deve
-/// informar as credenciais de novo (decisão de produto pós-validação física
-/// — por padrão o FirebaseAuth mantém a sessão entre reaberturas, o que
-/// levaria direto pra Home sem pedir login).
-///
-/// Roda uma única vez, na [SplashScreen], e precisa terminar **antes** de
-/// [authStateChangesProvider] ser lido pela primeira vez — senão a Home
-/// chegaria a aparecer por um instante antes do redirect corrigir.
-final sessionBootstrapProvider = FutureProvider<void>((ref) async {
-  try {
-    await ref.watch(firebaseAuthProvider).signOut();
-  } catch (_) {
-    // Mesmo se o signOut falhar (ex.: sem rede no momento exato da
-    // abertura), a splash não deve travar esperando por isso — ela decide
-    // o destino pelo estado de auth de qualquer forma logo em seguida.
-  }
 });
 
 /// Perfil do usuário logado, combinando com o estado de autenticação — null

@@ -13,11 +13,6 @@ void main() async {
   await fixarOrientacaoDoApp();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final prefs = await SharedPreferences.getInstance();
-  // O signOut() que exige login a cada abertura do app (mesmo com sessão
-  // persistida) não fica aqui — fica em sessionBootstrapProvider, aguardado
-  // pela SplashScreen. Só assim dá pra testar a ordenação (bootstrap antes
-  // da decisão de destino) sem depender de um app real rodando; feito aqui
-  // dentro de main(), isso não seria possível de verificar em teste algum.
   runApp(ProviderScope(
     overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
     child: const PetConnectApp(),

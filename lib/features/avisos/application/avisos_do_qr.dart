@@ -6,9 +6,9 @@ import '../domain/aviso_do_qr.dart';
 ///
 /// - **Login:** pede a permissão de notificação (o sistema só pergunta uma
 ///   vez) e registra o token na API. Token novo do FCM é registrado de novo.
-/// - **Toque na notificação:** abre a aba Localização do pet. O app pede
-///   login a cada abertura, então o destino espera o login terminar
-///   ([abrirQuandoPossivel]).
+/// - **Toque na notificação:** abre a aba Localização do pet. Se o toque
+///   abriu o app, o destino espera a sessão e a chegada à Home
+///   ([abrirQuandoPossivel]): sem login, ou ainda na splash.
 /// - **App aberto:** o sistema não mostra a notificação; [mostrar] recebe o
 ///   aviso para a tela exibir, e [atualizar] recarrega a atividade do pet.
 /// - **Sair da conta:** [esquecerAparelho] remove o token antes do signOut.
@@ -34,6 +34,7 @@ class AvisosDoQr {
   late void Function(String rota) _abrir;
   late void Function(AvisoDoQr aviso, String? titulo) _mostrar;
   late void Function(String petId) _atualizar;
+  late bool Function() _podeAbrirAgora;
 
   static const _limite = Duration(seconds: 10);
 
@@ -41,16 +42,19 @@ class AvisosDoQr {
   static const _limiteAoSair = Duration(seconds: 4);
 
   /// [logado] emite a cada mudança de sessão. [abrir] navega para uma rota
-  /// com o tutor já logado.
+  /// com o tutor já logado. [podeAbrirAgora] é falso enquanto o app ainda
+  /// decide para onde ir (splash): navegar ali seria desfeito pela splash.
   Future<void> iniciar({
     required Stream<bool> logado,
     required void Function(String rota) abrir,
     required void Function(AvisoDoQr aviso, String? titulo) mostrar,
     required void Function(String petId) atualizar,
+    bool Function()? podeAbrirAgora,
   }) async {
     _abrir = abrir;
     _mostrar = mostrar;
     _atualizar = atualizar;
+    _podeAbrirAgora = podeAbrirAgora ?? () => true;
 
     _assinaturas
       ..add(logado.listen(_mudouSessao))
@@ -97,7 +101,7 @@ class AvisosDoQr {
     final aviso = AvisoDoQr.doPayload(dados, petsNaApi: _petsNaApi);
     if (aviso == null) return;
     _atualizar(aviso.petId);
-    if (_logado) {
+    if (_logado && _podeAbrirAgora()) {
       _abrir(aviso.rota);
     } else {
       _destinoPendente = aviso.rota;

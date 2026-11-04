@@ -6,15 +6,14 @@ import '../../../../core/theme/app_palette.dart';
 import '../../../pet/presentation/providers/pet_providers.dart';
 import '../../../pet/presentation/widgets/pet_card.dart';
 import '../../domain/usuario.dart';
-import '../../../avisos/presentation/avisos_providers.dart';
 import '../providers/auth_providers.dart';
 
 /// Home do tutor: lista os pets vinculados à conta (RF11), com atalho para
 /// cadastrar um novo (RF10) e acessar configurações.
 ///
-/// A Home é a raiz da navegação autenticada — o botão físico/gesto de
-/// voltar não fecha o app: encerra a sessão (com confirmação) e volta ao
-/// login, mesmo fluxo do ícone de logout em Configurações.
+/// A Home é a raiz da navegação autenticada: o botão físico/gesto de voltar
+/// fecha o app como em qualquer outro, sem encerrar a sessão. Sair da conta
+/// só pelo botão em Configurações, com confirmação.
 ///
 /// Redesign de 2026-09-13 (ver docs/features/tutor-home.md): a página não
 /// tem mais um "card mestre" branco flutuando sobre o fundo — o próprio
@@ -22,30 +21,6 @@ import '../providers/auth_providers.dart';
 /// cabeçalho, título da seção e lista de pets soltos sobre ele.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  Future<void> _handleSair(BuildContext context, WidgetRef ref) async {
-    final confirmou = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sair da conta'),
-        content: const Text('Tem certeza que deseja sair da sua conta?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sair'),
-          ),
-        ],
-      ),
-    );
-    if (confirmou != true) return;
-    // Antes do signOut: depois dele não há mais login para falar com a API.
-    await ref.read(avisosDoQrProvider)?.esquecerAparelho();
-    await ref.read(usuarioRepositoryProvider).signOut();
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,137 +30,129 @@ class HomeScreen extends ConsumerWidget {
         ref.watch(petsFalecidosProvider).valueOrNull?.length ?? 0;
     final colors = context.colors;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        await _handleSair(context, ref);
-      },
-      child: Scaffold(
-        backgroundColor: colors.homeBackdrop,
-        body: SafeArea(
-          child: usuarioAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => Center(
-              child: Text(
-                'Não foi possível carregar seus dados.',
-                style: TextStyle(color: colors.error),
-              ),
+    return Scaffold(
+      backgroundColor: colors.homeBackdrop,
+      body: SafeArea(
+        child: usuarioAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => Center(
+            child: Text(
+              'Não foi possível carregar seus dados.',
+              style: TextStyle(color: colors.error),
             ),
-            data: (usuario) => Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: _Cabecalho(usuario: usuario),
-                ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Meus Pets',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: colors.textPrimary,
-                            ),
+          ),
+          data: (usuario) => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: _Cabecalho(usuario: usuario),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Meus Pets',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: colors.textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        // Teto de largura pro botão: em telas estreitas com
-                        // fonte ampliada (320px a 1.3x) ele passava da
-                        // largura da linha e a Row estourava. Com o teto o
-                        // rótulo quebra dentro da pílula e o título mantém
-                        // espaço; em tamanhos normais nada muda.
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                              maxWidth: constraints.maxWidth * 0.6),
-                          child: _AdicionarPetButton(
-                              onTap: () => context.push('/pet/novo')),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Teto de largura pro botão: em telas estreitas com
+                      // fonte ampliada (320px a 1.3x) ele passava da
+                      // largura da linha e a Row estourava. Com o teto o
+                      // rótulo quebra dentro da pílula e o título mantém
+                      // espaço; em tamanhos normais nada muda.
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * 0.6),
+                        child: _AdicionarPetButton(
+                            onTap: () => context.push('/pet/novo')),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: petsAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => Center(
-                      child: Text(
-                        'Não foi possível carregar seus pets.',
-                        style: TextStyle(color: colors.error),
-                      ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: petsAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (_, __) => Center(
+                    child: Text(
+                      'Não foi possível carregar seus pets.',
+                      style: TextStyle(color: colors.error),
                     ),
-                    data: (pets) {
-                      Future<void> atualizar() async {
-                        ref.invalidate(petsProvider);
-                        await ref.read(petsProvider.future);
-                      }
+                  ),
+                  data: (pets) {
+                    Future<void> atualizar() async {
+                      ref.invalidate(petsProvider);
+                      await ref.read(petsProvider.future);
+                    }
 
-                      if (pets.isEmpty) {
-                        return RefreshIndicator(
-                          onRefresh: atualizar,
-                          child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              const SizedBox(height: 120),
-                              Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Text(
-                                  quantidadeNoMemorial > 0
-                                      ? 'Nenhum pet ativo no momento.\nToque em "Adicionar pet" para cadastrar.'
-                                      : 'Você ainda não cadastrou nenhum pet.\nToque em "Adicionar pet" para começar.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: colors.textMuted),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
+                    if (pets.isEmpty) {
                       return RefreshIndicator(
                         onRefresh: atualizar,
-                        child: ListView.separated(
+                        child: ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                          itemCount: pets.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final pet = pets[index];
-                            return PetCard(
-                              pet: pet,
-                              colorIndex: index,
-                              onTap: () => context.push('/pet/${pet.id}'),
-                            );
-                          },
+                          children: [
+                            const SizedBox(height: 120),
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                quantidadeNoMemorial > 0
+                                    ? 'Nenhum pet ativo no momento.\nToque em "Adicionar pet" para cadastrar.'
+                                    : 'Você ainda não cadastrou nenhum pet.\nToque em "Adicionar pet" para começar.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: colors.textMuted),
+                              ),
+                            ),
+                          ],
                         ),
                       );
-                    },
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: atualizar,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                        itemCount: pets.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final pet = pets[index];
+                          return PetCard(
+                            pet: pet,
+                            colorIndex: index,
+                            onTap: () => context.push('/pet/${pet.id}'),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              if (quantidadeNoMemorial > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: _EntradaMemorial(
+                    quantidade: quantidadeNoMemorial,
+                    onTap: () => context.push('/memorial'),
                   ),
                 ),
-                if (quantidadeNoMemorial > 0)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: _EntradaMemorial(
-                      quantidade: quantidadeNoMemorial,
-                      onTap: () => context.push('/memorial'),
-                    ),
-                  ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
-                  child: _RodapeInfo(),
-                ),
-              ],
-            ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: _RodapeInfo(),
+              ),
+            ],
           ),
         ),
       ),

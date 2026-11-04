@@ -12,9 +12,9 @@ A API correspondente está em AleksGustavo/PetConnect-API (branch
 | A página do QR foi aberta | "O QR Code de [pet] foi acessado". O texto diz que isso não confirma que o pet foi visto | No máximo uma a cada 15 minutos por pet |
 | Alguém enviou um relato | "Novo avistamento de [pet]", com ou sem localização | A cada relato novo; o mesmo envio repetido não avisa de novo |
 
-- **Toque na notificação:** abre a aba Localização do pet. Como o app pede
-  login a cada abertura, o app espera o login e a chegada à Home para abrir
-  a tela.
+- **Toque na notificação:** abre a aba Localização do pet. Se o toque abriu
+  o app, ele espera a splash e a chegada à Home (e o login, se a sessão não
+  estiver guardada) para abrir a tela.
 - **App aberto:** o Android não mostra a notificação; o app mostra uma faixa
   com "Ver" e atualiza a aba Localização do pet.
 - **Preferências:** em Configurações do pet > Compartilhamento via QR Code >

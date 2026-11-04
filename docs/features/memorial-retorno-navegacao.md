@@ -58,7 +58,7 @@ flowchart LR
     R -->|"go('/memorial/id')"| M["Memorial do pet<br/>pilha: lista → memorial"]
     M -->|Voltar| L[Lista do Memorial]
     L -->|"Voltar (sem histórico → go('/home'))"| H
-    H -->|"Voltar: confirmar saída (já existia)"| S[Sair da conta]
+    H -->|"Voltar: fecha o app, sessão continua (desde 2026-11-04)"| S[App fechado]
 ```
 
 ```mermaid
