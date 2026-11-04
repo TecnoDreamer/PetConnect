@@ -6,24 +6,38 @@ import 'package:flutter_test/flutter_test.dart';
 /// que dá para conferir no próprio arquivo. O comportamento no navegador está no
 /// roteiro de aparelho (docs/validation/qr-compartilhamento-publico.md).
 void main() {
-  final html = File('public/index.html').readAsStringSync();
+  final html =
+      File('public/index.html').readAsStringSync().replaceAll('\r\n', '\n');
 
   test('sem consentimento, mostra só o mínimo neutro', () {
     expect(html, contains('pet.shared === false'));
     expect(html, contains('Este pet está cadastrado no PetConnect'));
   });
 
-  test('a localização só é pedida depois do clique no botão (issue #37)', () {
-    expect(html, contains('Compartilhar local onde vi o pet'));
+  test('a localização é pedida assim que a página abre, uma vez só', () {
     expect(RegExp('getCurrentPosition').allMatches(html), hasLength(1));
-    final clique = html.indexOf("geoBtn.addEventListener('click'");
-    expect(clique, isNot(-1));
-    expect(html.indexOf('getCurrentPosition'), greaterThan(clique));
     expect(html, isNot(contains('watchPosition')));
+    final form = html.substring(html.indexOf('function renderSightingForm'),
+        html.indexOf('function submitSighting'));
+    expect(form, contains('} else {\n      requestLocation();\n    }'),
+        reason: 'pedida ao montar o formulário, sem esperar clique');
+    expect(form, contains('pede a sua localização assim que abre'),
+        reason: 'o motivo aparece junto do pedido do navegador');
   });
 
-  test('o relato com localização leva a precisão e um id de envio', () {
-    expect(html, contains('body.accuracyMeters'));
+  test('com permissão, a localização vai sozinha, com precisão e id próprio',
+      () {
+    final envio = html.substring(html.indexOf('function sendLocation'),
+        html.indexOf('function requestLocation'));
+    expect(envio, contains('clientRequestId: state.locationRequestId'));
+    expect(envio, contains('accuracyMeters'));
+    expect(html, contains('Localização enviada ao tutor'));
+  });
+
+  test('sem permissão, fica o relato em texto e um botão para tentar de novo',
+      () {
+    expect(html, contains('Você não permitiu a localização'));
+    expect(html, contains('Tentar enviar a localização'));
     expect(html, contains('clientRequestId: state.requestId'));
   });
 

@@ -5,8 +5,11 @@ import '../../../../core/theme/app_palette.dart';
 import '../../domain/atividade_do_qr.dart';
 
 /// Relato recebido pela página pública do QR (issue #37). Deixa claro que o
-/// ponto é o que o navegador de quem relatou informou, com a precisão dele,
+/// ponto é o que o navegador de quem escaneou informou, com a precisão dele,
 /// e não a posição atual do pet.
+///
+/// Só com localização, sem texto, é o envio automático da página ao abrir:
+/// o local onde o QR foi escaneado.
 class AvistamentoDoQrTile extends StatelessWidget {
   const AvistamentoDoQrTile({
     super.key,
@@ -26,9 +29,12 @@ class AvistamentoDoQrTile extends StatelessWidget {
     final colors = context.colors;
     final a = avistamento;
     final origem = a.temLocalizacao
-        ? 'Localização enviada por quem encontrou'
+        ? 'Localização do celular de quem escaneou'
             '${a.precisaoMetros == null ? '' : ', com precisão de ${descreverPrecisao(a.precisaoMetros!)}'}'
         : 'Sem localização: relato em texto, não verificado';
+    final titulo = a.temLocalizacao && a.descricao == null
+        ? 'Local onde o QR Code foi escaneado'
+        : 'Avistamento pelo QR Code';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -49,7 +55,7 @@ class AvistamentoDoQrTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Avistamento pelo QR Code',
+                  titulo,
                   style: TextStyle(
                       fontWeight: FontWeight.bold, color: colors.textPrimary),
                 ),
@@ -142,7 +148,7 @@ class AcessosDoQrCard extends StatelessWidget {
                 Text(resumo, style: TextStyle(color: colors.textPrimary)),
                 const SizedBox(height: 4),
                 Text(
-                  'Abrir a página não confirma que alguém viu o pet. A localização só aparece quando quem encontrou decide enviá-la.',
+                  'Abrir a página não confirma que alguém viu o pet. A localização só aparece quando quem escaneou permite no navegador.',
                   style: TextStyle(color: colors.textMuted, fontSize: 12),
                 ),
               ],

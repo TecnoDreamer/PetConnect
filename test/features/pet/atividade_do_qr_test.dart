@@ -175,11 +175,36 @@ void main() {
       expect(find.text('Avistamento pelo QR Code'), findsNWidgets(2));
       expect(
           find.text(
-              'Localização enviada por quem encontrou, com precisão de cerca de 35 m'),
+              'Localização do celular de quem escaneou, com precisão de cerca de 35 m'),
           findsOneWidget);
       expect(find.text('Sem localização: relato em texto, não verificado'),
           findsOneWidget);
       expect(find.text('Contato: Carlos'), findsOneWidget);
+    });
+
+    testWidgets('localização sem texto aparece como o local do escaneamento',
+        (tester) async {
+      await montar(
+        tester,
+        atividade: () async => AtividadeDoQr.daApi(const {
+          'sightings': [
+            {
+              'id': 's-auto',
+              'reportedAt': '2026-11-04T09:00:00Z',
+              'latitude': -22.17,
+              'longitude': -47.39,
+              'accuracyMeters': 12,
+              'positionSource': 'BROWSER_GEOLOCATION',
+            },
+          ],
+          'recentAccesses': [],
+          'accessesLast30Days': 1,
+        }),
+      );
+
+      expect(find.text('Local onde o QR Code foi escaneado'), findsOneWidget);
+      expect(find.text('Avistamento pelo QR Code'), findsNothing);
+      expect(find.byKey(const ValueKey('mapa-s-auto')), findsOneWidget);
     });
 
     testWidgets('resume os acessos sem chamar de avistamento', (tester) async {

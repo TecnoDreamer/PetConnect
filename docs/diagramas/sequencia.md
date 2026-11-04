@@ -90,8 +90,9 @@ sequenceDiagram
 
 ### Visitante relata o avistamento e o tutor vê (RF31, RF32, RF52)
 
-Adicionado em 2026-11-03 (issue #37). A localização só é pedida depois do
-clique e vai uma vez, quando o visitante envia.
+Adicionado em 2026-11-03 (issue #37). Desde 2026-11-04, a localização é
+pedida assim que a página mostra o pet e, com a permissão, vai sozinha uma
+vez.
 
 ```mermaid
 sequenceDiagram
@@ -103,19 +104,23 @@ sequenceDiagram
     actor Tutor
     participant App
 
-    Visitante->>Web: toca em "Compartilhar local onde vi o pet"
-    Web->>Nav: getCurrentPosition (alta precisão, 15 s)
+    Web->>Nav: getCurrentPosition ao mostrar o pet (alta precisão, 15 s)
+    Nav-->>Visitante: "Permitir que o site use sua localização?"
     alt permissão negada ou sem sinal
         Nav-->>Web: erro
-        Web-->>Visitante: "descreva onde viu o pet" (relato em texto continua possível)
-    else posição obtida
+        Web-->>Visitante: "descreva onde viu o pet" + Tentar enviar a localização
+    else permitido
         Nav-->>Web: latitude, longitude, precisão
-        Web-->>Visitante: "pronta para enviar, precisão de cerca de X m" + Conferir no mapa / Não enviar
+        Web->>API: POST /sightings {coordenada, accuracyMeters, clientRequestId}
+        API->>Mongo: locations (positionSource decidido pelo servidor; mesmo clientRequestId não duplica)
+        API-->>Web: 201 sem corpo
+        Web-->>Visitante: "Localização enviada ao tutor, precisão de cerca de X m"
     end
-    Visitante->>Web: Enviar relato
-    Web->>API: POST /sightings {coordenada?, accuracyMeters?, texto?, clientRequestId}
-    API->>Mongo: locations (positionSource decidido pelo servidor; mesmo clientRequestId não duplica)
-    API-->>Web: 201 sem corpo
+    opt relato em texto
+        Visitante->>Web: escreve e toca em Avisar o tutor
+        Web->>API: POST /sightings {texto, coordenada?, outro clientRequestId}
+        API-->>Web: 201 sem corpo
+    end
     Tutor->>App: abre Localização do pet
     App->>API: GET /legacy-pets/{id}/qr-activity (token)
     API->>Mongo: relatos e acessos do pet (dono conferido no Firestore)

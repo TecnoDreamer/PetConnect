@@ -270,19 +270,29 @@
     return Math.max(1, Math.round(meters)) + ' m';
   }
 
+  // Resolve com o status HTTP, ou 0 sem conexão.
+  function postSighting(publicId, body) {
+    return fetch(API_BASE_URL + '/api/v1/public/pets/' + encodeURIComponent(publicId) + '/sightings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) { return res.status; }, function () { return 0; });
+  }
+
   function renderSightingForm(card, publicId) {
     card.appendChild(el('<div class="section-title">Encontrou este pet?</div>'));
 
     var form = el(
       '<form>' +
-        '<label for="desc">Onde você viu?</label>' +
-        '<textarea id="desc" rows="3" maxlength="1000" placeholder="Ex: perto da praça, andando sozinho"></textarea>' +
         '<div class="geo-box" id="geo-box">' +
-          '<p class="hint">Se você está perto de onde viu o pet, pode enviar sua localização atual ao tutor. ' +
-          'Ela é enviada uma única vez, só se você confirmar no botão de envio, e serve apenas para ajudar a encontrar o pet.</p>' +
-          '<button type="button" class="secondary" id="geo-btn">📍 Compartilhar local onde vi o pet</button>' +
+          '<p class="hint">Para mostrar ao tutor onde o pet está, esta página pede a sua localização assim que abre. ' +
+          'Se você permitir, ela é enviada uma única vez ao tutor e serve apenas para ajudar a encontrar o pet. ' +
+          'Se não permitir, você ainda pode avisar o tutor pelo formulário abaixo.</p>' +
           '<div class="geo-status" id="geo-status" role="status" aria-live="polite"></div>' +
+          '<button type="button" class="secondary" id="geo-btn" hidden>📍 Tentar enviar a localização</button>' +
         '</div>' +
+        '<label for="desc">Onde você viu o pet?</label>' +
+        '<textarea id="desc" rows="3" maxlength="1000" placeholder="Ex: perto da praça, andando sozinho"></textarea>' +
         '<label for="contact">Seu contato (opcional, caso o tutor queira falar com você)</label>' +
         '<input type="text" id="contact" maxlength="120" placeholder="Telefone ou nome">' +
         '<button type="submit" id="send-btn">Avisar o tutor</button>' +
@@ -291,70 +301,97 @@
     );
     card.appendChild(form);
 
-    var state = { position: null, requestId: newRequestId() };
+    // A localização vai sozinha, com um id próprio; o relato em texto é
+    // outro envio (issue #37, pedido do proprietário de 2026-11-04).
+    var state = { position: null, sent: false, locationRequestId: newRequestId(), requestId: newRequestId() };
     var geoBtn = form.querySelector('#geo-btn');
     var geoStatus = form.querySelector('#geo-status');
-    var sendBtn = form.querySelector('#send-btn');
 
-    // A permissão de localização só é pedida aqui, depois do clique (issue
-    // #37). Sem HTTPS ou sem suporte no navegador, o botão nem aparece.
-    if (!window.isSecureContext || !navigator.geolocation) {
-      geoBtn.hidden = true;
-      geoStatus.textContent = 'Este navegador não permite enviar a localização. Descreva onde viu o pet no campo acima.';
+    function offerRetry(message) {
+      geoStatus.textContent = message;
+      geoBtn.disabled = false;
+      geoBtn.hidden = false;
     }
 
-    function showPosition() {
+    function showSent() {
       var p = state.position;
-      var low = p.accuracy > LOW_ACCURACY_METERS;
       var mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + p.latitude + ',' + p.longitude;
+      geoBtn.hidden = true;
       geoStatus.innerHTML = '';
-      geoStatus.appendChild(el('<p class="geo-ok">Localização pronta para enviar, com precisão de cerca de ' +
-        escapeHtml(formatDistance(p.accuracy)) + '.</p>'));
-      if (low) {
-        geoStatus.appendChild(el('<p class="geo-warn">A precisão está baixa. Se puder, descreva o lugar no campo acima.</p>'));
+      geoStatus.appendChild(el('<p class="geo-ok">Localização enviada ao tutor, com precisão de cerca de ' +
+        escapeHtml(formatDistance(p.accuracy)) + '. Obrigado!</p>'));
+      if (p.accuracy > LOW_ACCURACY_METERS) {
+        geoStatus.appendChild(el('<p class="geo-warn">A precisão está baixa. Se puder, descreva o lugar no campo abaixo.</p>'));
       }
       geoStatus.appendChild(el('<p class="geo-links"><a href="' + escapeHtml(mapUrl) +
-        '" target="_blank" rel="noopener noreferrer">Conferir no mapa</a> · ' +
-        '<a href="#" id="geo-remove">Não enviar a localização</a></p>'));
-      geoStatus.querySelector('#geo-remove').addEventListener('click', function (ev) {
-        ev.preventDefault();
-        state.position = null;
-        geoStatus.textContent = 'A localização não será enviada.';
-        geoBtn.hidden = false;
-        sendBtn.textContent = 'Avisar o tutor';
-      });
-      geoBtn.hidden = true;
-      sendBtn.textContent = 'Enviar relato com a localização';
+        '" target="_blank" rel="noopener noreferrer">Conferir no mapa</a></p>'));
     }
 
-    geoBtn.addEventListener('click', function () {
-      geoBtn.disabled = true;
-      geoStatus.textContent = 'Obtendo a localização…';
+    // Mesmo id em toda tentativa: reenviar depois de uma falha não duplica.
+    function sendLocation() {
+      var p = state.position;
+      geoBtn.hidden = true;
+      geoStatus.textContent = 'Enviando a localização ao tutor…';
+      postSighting(publicId, {
+        clientRequestId: state.locationRequestId,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        accuracyMeters: Math.min(100000, p.accuracy)
+      }).then(function (status) {
+        if (status === 201) {
+          state.sent = true;
+          showSent();
+        } else if (status === 404) {
+          geoStatus.textContent = 'Este pet não está mais disponível.';
+        } else if (status === 429) {
+          offerRetry('Muitas tentativas. Aguarde um instante e tente de novo.');
+        } else {
+          offerRetry('Não foi possível enviar a localização agora. Verifique sua internet e tente de novo.');
+        }
+      });
+    }
+
+    // Uma única leitura, sem acompanhar a posição. O navegador sempre
+    // pergunta antes; sem permissão, nada é enviado.
+    function requestLocation() {
+      geoBtn.hidden = true;
+      geoStatus.textContent = 'Pedindo a sua localização ao navegador…';
       navigator.geolocation.getCurrentPosition(
         function (pos) {
-          geoBtn.disabled = false;
           state.position = {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             accuracy: pos.coords.accuracy
           };
-          showPosition();
+          sendLocation();
         },
         function (err) {
-          geoBtn.disabled = false;
           state.position = null;
-          geoStatus.textContent = err && err.code === 1
-            ? 'Você não permitiu a localização. Tudo bem: descreva onde viu o pet no campo acima.'
-            : 'Não foi possível obter a localização agora. Descreva onde viu o pet no campo acima.';
+          offerRetry(err && err.code === 1
+            ? 'Você não permitiu a localização. Tudo bem: descreva abaixo onde viu o pet.'
+            : 'Não foi possível obter a localização agora. Descreva abaixo onde viu o pet.');
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
+    }
+
+    geoBtn.addEventListener('click', function () {
+      geoBtn.disabled = true;
+      if (state.position && !state.sent) sendLocation();
+      else requestLocation();
     });
 
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       submitSighting(publicId, form, state);
     });
+
+    // Sem HTTPS ou sem suporte no navegador, fica só o relato em texto.
+    if (!window.isSecureContext || !navigator.geolocation) {
+      geoStatus.textContent = 'Este navegador não permite enviar a localização. Descreva abaixo onde viu o pet.';
+    } else {
+      requestLocation();
+    }
   }
 
   function submitSighting(publicId, form, state) {
@@ -363,14 +400,14 @@
     var description = form.querySelector('#desc').value.trim();
     var contact = form.querySelector('#contact').value.trim();
 
-    if (!description && !state.position) {
+    if (!description) {
       feedback.className = 'feedback error';
-      feedback.textContent = 'Conte onde viu o pet ou compartilhe a localização.';
+      feedback.textContent = 'Conte onde viu o pet.';
       return;
     }
 
-    var body = { clientRequestId: state.requestId };
-    if (description) body.description = description;
+    // O relato leva o mesmo ponto já obtido, para o tutor ver o texto no mapa.
+    var body = { clientRequestId: state.requestId, description: description };
     if (contact) body.reporterContact = contact;
     if (state.position) {
       body.latitude = state.position.latitude;
@@ -382,34 +419,28 @@
     feedback.className = 'feedback';
     feedback.textContent = 'Enviando…';
 
-    fetch(API_BASE_URL + '/api/v1/public/pets/' + encodeURIComponent(publicId) + '/sightings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      if (res.status === 201) {
+    postSighting(publicId, body).then(function (status) {
+      if (status === 201) {
         feedback.className = 'feedback success';
-        // Ainda não há notificação ao tutor (fase 4, issue #36): não prometer aviso.
+        // Não promete aviso: o tutor pode ter desligado as notificações.
         feedback.textContent = 'Obrigado! Seu relato foi registrado.';
-        form.querySelectorAll('textarea, input, button').forEach(function (f) { f.disabled = true; });
-        var links = form.querySelector('.geo-links');
-        if (links) links.remove();
-      } else if (res.status === 429) {
+        form.querySelectorAll('textarea, input, #send-btn').forEach(function (f) { f.disabled = true; });
+      } else if (status === 429) {
         feedback.className = 'feedback error';
         feedback.textContent = 'Muitas tentativas. Aguarde um instante e tente de novo.';
         button.disabled = false;
-      } else if (res.status === 404) {
+      } else if (status === 404) {
         feedback.className = 'feedback error';
         feedback.textContent = 'Este pet não está mais disponível.';
+      } else if (status === 0) {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Sem conexão. Verifique sua internet e tente de novo.';
+        button.disabled = false;
       } else {
         feedback.className = 'feedback error';
         feedback.textContent = 'Não foi possível enviar agora. Tente novamente.';
         button.disabled = false;
       }
-    }).catch(function () {
-      feedback.className = 'feedback error';
-      feedback.textContent = 'Sem conexão. Verifique sua internet e tente de novo.';
-      button.disabled = false;
     });
   }
 

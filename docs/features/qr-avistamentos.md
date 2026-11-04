@@ -15,30 +15,34 @@ depende dela. A API correspondente está em AleksGustavo/PetConnect-API
   `Pets/{id}/localizacoes`, mas os relatos da página ficam no MongoDB. O
   tutor nunca via os relatos.
 
-O QR não diz onde foi escaneado. A única localização possível é a que o
-visitante decide compartilhar pelo navegador, com a permissão dele.
+O QR não diz onde foi escaneado. A única localização possível é a do
+navegador de quem escaneou, e nenhuma página web consegue lê-la sem a
+permissão dessa pessoa: o navegador sempre pergunta antes.
 
 ## O que muda
 
 ### Página pública (`public/index.html`)
 
-1. **Relato:**
-   - **Pedido da localização:** o botão "Compartilhar local onde vi o pet"
-     explica para que serve e só então pede a permissão do navegador
-     (`getCurrentPosition`, alta precisão, 15 s). Não existe
-     `watchPosition`: é um ponto, não rastreamento.
-   - **Prévia:** com a posição, a página mostra "Localização pronta para
-     enviar, com precisão de cerca de X m", um link "Conferir no mapa" e
-     "Não enviar a localização". Acima de 500 m, avisa que a precisão está
-     baixa.
-   - **Confirmação:** o botão de envio passa a dizer "Enviar relato com a
-     localização". Enviar é a confirmação.
-   - **Sem localização:** permissão negada, sem sinal ou navegador sem
-     suporte não impedem o relato em texto.
-   - **Validação:** a página exige texto ou localização, e cada relato leva um
-     `clientRequestId` gerado na página, para reenvio não duplicar.
-2. **Acesso:** depois de mostrar um pet válido, a página envia
+1. **Acesso:** depois de mostrar um pet válido, a página envia
    `qr_page_opened` sem esperar resposta e sem coordenada.
+2. **Localização automática** (pedido do proprietário de 2026-11-04, que
+   substitui o botão "Compartilhar local onde vi o pet"):
+   - **Pedido ao abrir:** logo depois de mostrar o pet, a página pede a
+     localização ao navegador (`getCurrentPosition`, alta precisão, 15 s),
+     sem esperar clique. Ao lado, o texto explica para que serve e que ela
+     vai uma única vez. Não existe acompanhamento contínuo: é um ponto, não
+     rastreamento.
+   - **Envio sozinho:** se a pessoa permitir, a página envia o ponto e a
+     precisão na hora, sem botão de envio, e mostra "Localização enviada ao
+     tutor, com precisão de cerca de X m" e "Conferir no mapa". Acima de
+     500 m, avisa que a precisão está baixa.
+   - **Sem localização:** permissão negada, sem sinal ou navegador sem
+     suporte mostram "Tentar enviar a localização" e não impedem o relato
+     em texto.
+   - **Falha de rede:** o mesmo botão reenvia o mesmo ponto com o mesmo
+     `clientRequestId`, sem duplicar.
+3. **Relato em texto:** continua opcional e é outro envio, com outro
+   `clientRequestId`. Exige o texto e leva o ponto já obtido, se houver.
 
 ### API
 
@@ -56,8 +60,11 @@ O servidor decide `positionSource`: `BROWSER_GEOLOCATION` com coordenada,
 - **Lista:** junta os registros do tutor (Firestore) com os relatos do QR
   (API), por data.
 - **Relato do QR:**
+  - "Local onde o QR Code foi escaneado" para o envio automático (só ponto,
+    sem texto); "Avistamento pelo QR Code" para o relato com texto;
   - data e hora no fuso do aparelho;
-  - precisão, ou "Sem localização: relato em texto, não verificado";
+  - "Localização do celular de quem escaneou", com a precisão, ou "Sem
+    localização: relato em texto, não verificado";
   - contato, se quem relatou deixou;
   - "Abrir no mapa", que abre o ponto no app de mapas do aparelho
     (`url_launcher`, link do Google Maps). O mapa dentro do app, com
@@ -93,8 +100,12 @@ O servidor decide `positionSource`: `BROWSER_GEOLOCATION` com coordenada,
 
 - **Acessos:** não guardam nada de quem abriu a página e são apagados em 90
   dias, e também ao excluir o pet pela API.
-- **Relatos:** a coordenada é dado de localização de quem relatou e só o
-  tutor vê. Eles não são apagados automaticamente. A política de
+- **Relatos:** a coordenada é dado de localização de quem escaneou e só o
+  tutor vê. Eles não são apagados automaticamente.
+- **Pedido ao abrir a página:** a única autorização é a permissão do
+  navegador, com o texto de finalidade ao lado. Antes, havia também o
+  clique no botão e a confirmação no envio. A mudança foi pedida pelo
+  proprietário e precisa entrar na revisão jurídica (#28). A política de
   visibilidade e eliminação (12 h, 24 h, 48 h, "até encontrar") depende de
   revisão jurídica (#28) e fica para a fase 5 (#38).
 - **Link "Conferir no mapa" da página:** envia a coordenada ao Google só se

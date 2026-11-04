@@ -64,9 +64,12 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
   com data e hora, precisão, origem e "Abrir no mapa". Os acessos à página
   aparecem à parte, com o aviso de que abrir a página não confirma que
   alguém viu o pet.
-  - Na página, a localização só é pedida depois do botão "Compartilhar local
-    onde vi o pet". Ela aparece com a precisão antes do envio e vai uma única
-    vez; negar a permissão não impede o relato em texto.
+  - Na página, a localização é pedida assim que o pet aparece e, se quem
+    escaneou permitir no navegador, vai sozinha ao tutor, uma única vez e
+    com a precisão (pedido do proprietário de 2026-11-04; antes dependia do
+    botão "Compartilhar local onde vi o pet"). No app, esse envio aparece
+    como "Local onde o QR Code foi escaneado". Negar a permissão não impede
+    o relato em texto.
   - Depende da API com a PR da fase 3 e da página publicada no Hosting. Ver
     `docs/features/qr-avistamentos.md`.
 - Página pública do QR com consentimento: em Configurações do pet >
