@@ -57,7 +57,8 @@ final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
 /// O FirebaseAuth guarda a sessão no aparelho: fechar e reabrir o app volta
 /// direto para a Home. A sessão só termina em "Sair da conta", com
 /// confirmação (decisão do proprietário de 2026-11-04, que substitui o login
-/// obrigatório a cada abertura).
+/// obrigatório a cada abertura). O primeiro acesso de cada instalação pede
+/// login (`PrimeiroAcesso`).
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   return ref.watch(firebaseAuthProvider).authStateChanges();
 });

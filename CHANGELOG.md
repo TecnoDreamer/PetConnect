@@ -23,7 +23,8 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
   para a Home, sem pedir login. Voltar a partir da Home fecha o app sem
   perguntar se quer sair da conta. A sessão só termina em Configurações >
   "Sair da conta", com confirmação. Substitui o login obrigatório a cada
-  abertura.
+  abertura. O primeiro acesso depois de instalar ou atualizar o app pede
+  login uma vez.
 - Campos de texto com a aparência dos da tela Entrar, nos três temas:
   borda fina com raio 16 e borda mais forte com foco. Antes, as telas
   internas tinham campos sem borda. "Esqueceu sua senha?" ganhou a borda e
