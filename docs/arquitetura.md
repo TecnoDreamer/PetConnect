@@ -104,6 +104,7 @@ Toque no ícone
   → splash nativa (sistema; Android 12+ via API SplashScreen) — cor da marca + logo
   → main(): Firebase.initializeApp + SharedPreferences (tema) → runApp
   → SplashScreen (Flutter) — mesma cor e logo, sem tempo mínimo
+      no primeiro acesso da instalação: signOut (PrimeiroAcesso)
       aguarda a primeira leitura de authStateChanges
   → /home, se a sessão estiver guardada no aparelho; senão /login
 ```
@@ -119,3 +120,10 @@ Toque no ícone
   Configurações > "Sair da conta", com confirmação. Decisão do proprietário
   de 2026-11-04, que substitui o login obrigatório a cada abertura
   (`fix/login-inicial-obrigatorio`).
+- O primeiro acesso de cada instalação pede login, também para quem
+  atualiza de uma versão anterior com a sessão ainda guardada
+  (`lib/features/auth/application/primeiro_acesso.dart`). A marca
+  `sessao_primeiro_acesso_feito_v1` fica nas `SharedPreferences` e só é
+  gravada depois de o `signOut` dar certo. Limite: se o Android restaurar um
+  backup na reinstalação, a sessão e a marca voltam juntas e o app entra
+  direto.

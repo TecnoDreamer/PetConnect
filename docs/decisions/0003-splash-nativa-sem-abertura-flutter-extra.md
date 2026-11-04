@@ -36,4 +36,5 @@ diferentes e a primeira tinha a marca errada.
 O login a cada abertura foi removido a pedido do proprietário: a sessão
 fica guardada no aparelho (`fix/sessao-persistente`). A rota `/` continua
 pelo mesmo motivo, agora só para ler a sessão antes de escolher entre Home
-e Login.
+e Login. No primeiro acesso de cada instalação, a splash encerra a sessão
+antes dessa leitura, e o tutor entra pelo login.

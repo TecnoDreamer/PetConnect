@@ -1,6 +1,7 @@
 // A sessão do Firebase Auth fica guardada no aparelho: reabrir o app volta
 // direto para a Home, e só "Sair da conta" encerra a sessão (decisão do
-// proprietário de 2026-11-04, que substitui o login a cada abertura).
+// proprietário de 2026-11-04, que substitui o login a cada abertura). O
+// primeiro acesso de cada instalação pede login.
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,13 +10,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pet_connect/core/theme/app_colors.dart';
+import 'package:pet_connect/features/auth/application/primeiro_acesso.dart';
 import 'package:pet_connect/features/auth/presentation/screens/splash_screen.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
 
 class _UsuarioFalso extends Fake implements User {}
 
-Widget _appComSplash({required Stream<User?> authStateChanges}) {
+/// O primeiro acesso já passou: a splash só lê a sessão.
+class _AcessoJaFeito extends Fake implements PrimeiroAcesso {
+  @override
+  Future<void> exigirLoginSeForOPrimeiro() async {}
+}
+
+Widget _appComSplash({
+  required Stream<User?> authStateChanges,
+  PrimeiroAcesso? primeiroAcesso,
+}) {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
@@ -28,12 +40,59 @@ Widget _appComSplash({required Stream<User?> authStateChanges}) {
   return ProviderScope(
     overrides: [
       authStateChangesProvider.overrideWith((ref) => authStateChanges),
+      primeiroAcessoProvider
+          .overrideWithValue(primeiroAcesso ?? _AcessoJaFeito()),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
 }
 
 void main() {
+  group('SplashScreen — primeiro acesso da instalação', () {
+    testWidgets(
+        'com uma sessão que veio de antes (ex.: versão anterior), encerra e '
+        'vai para o login', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      User? sessao = _UsuarioFalso();
+
+      await tester.pumpWidget(_appComSplash(
+        // Lida depois do primeiro acesso, como o authStateChanges real.
+        authStateChanges: Stream.multi((c) => c
+          ..add(sessao)
+          ..close()),
+        primeiroAcesso: PrimeiroAcesso(
+          prefs: prefs,
+          encerrarSessao: () async => sessao = null,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Login'), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
+      expect(prefs.getBool(PrimeiroAcesso.chave), isTrue);
+    });
+
+    testWidgets('depois do primeiro acesso, a sessão guardada vai para a Home',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({PrimeiroAcesso.chave: true});
+      final prefs = await SharedPreferences.getInstance();
+      var encerrou = false;
+
+      await tester.pumpWidget(_appComSplash(
+        authStateChanges: Stream.value(_UsuarioFalso()),
+        primeiroAcesso: PrimeiroAcesso(
+          prefs: prefs,
+          encerrarSessao: () async => encerrou = true,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsOneWidget);
+      expect(encerrou, isFalse);
+    });
+  });
+
   group('SplashScreen — sessão guardada no aparelho', () {
     testWidgets('com sessão guardada, vai direto para a Home', (tester) async {
       await tester.pumpWidget(

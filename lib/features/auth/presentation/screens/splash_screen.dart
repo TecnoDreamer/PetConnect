@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
+import '../../application/primeiro_acesso.dart';
 
 /// Continuação visual da splash nativa do Android enquanto a sessão é
 /// resolvida — não é uma segunda tela de abertura. Mesma cor
@@ -14,8 +15,9 @@ import '../../../usuario/presentation/providers/auth_providers.dart';
 /// para o Flutter não pisca.
 ///
 /// Fica na tela só o tempo da primeira leitura do estado de autenticação,
-/// sem tempo mínimo artificial (antes: 2,5s fixos). Com a sessão guardada
-/// no aparelho, vai para a Home; sem ela, para o login.
+/// sem tempo mínimo artificial (antes: 2,5s fixos). No primeiro acesso desta
+/// instalação, vai sempre para o login ([PrimeiroAcesso]); depois, com a
+/// sessão guardada no aparelho, vai para a Home, e sem ela, para o login.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -38,6 +40,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _decidirDestino() async {
+    // Precisa terminar antes da leitura da sessão, senão a Home apareceria
+    // por um instante no primeiro acesso.
+    await ref.read(primeiroAcessoProvider).exigirLoginSeForOPrimeiro();
     final usuario = await ref.read(authStateChangesProvider.future);
 
     if (!mounted) return;
