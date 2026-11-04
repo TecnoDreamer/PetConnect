@@ -123,11 +123,11 @@ Legenda de origem: **base** = já existia antes deste ciclo de desenvolvimento �
 
 ---
 
-### Subcoleção `Pets/{petId}/fotos` — *nova, ainda sem uso em produção*
+### Subcoleção `Pets/{petId}/fotos` — *nova, só com fotos de teste em produção*
 
 - **Doc ID:** gerado no client (`.doc()`), antes do envio do arquivo, que vai com esse id como nome.
 - **Repo:** `FirebaseGaleriaRepository` (galeria de fotos, `docs/features/galeria-fotos-pet.md`). Desligada por padrão (`GALERIA_FOTOS`).
-- **Regras:** só o dono do pet; criação validada campo a campo; sem `update`. Ver `firestore.rules` (ainda não deployado).
+- **Regras:** só o dono do pet; criação validada campo a campo; sem `update`. Ver `firestore.rules` (deployado em 2026-10-27).
 - **Índices:** nenhum composto (só `orderBy('criadoEm', desc)`).
 
 | Campo | Tipo | Obrigatório | Referência | Origem | Observações |

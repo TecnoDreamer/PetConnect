@@ -1,10 +1,10 @@
+import 'login_social.dart';
 import 'usuario.dart';
 
 /// Interface do repositório de usuário — a UI e os providers dependem
 /// desta abstração, não do Firebase diretamente (ver docs/arquitetura.md).
 ///
-/// Login social (Google/Facebook, RF04-A/RF04-B) fica para uma próxima
-/// etapa; por ora só e-mail/senha.
+/// Login: e-mail/senha e Google (RF04-A, docs/features/login-social.md).
 abstract class UsuarioRepository {
   /// Observa o documento do usuário em `Usuarios/{uid}`, emitindo `null`
   /// se o documento não existir.
@@ -21,6 +21,21 @@ abstract class UsuarioRepository {
   });
 
   Future<void> sendPasswordReset({required String email});
+
+  /// Entra (ou cria a conta, na primeira vez) com o Google. O perfil do
+  /// tutor é criado só se ainda não existir.
+  ///
+  /// Lança [LoginSocialCancelado], [LoginSocialIndisponivel],
+  /// [LoginSocialFalhou] ou [ContaExisteComOutroMetodo].
+  Future<void> entrarComProvedor(ProvedorSocial provedor);
+
+  /// Resolve [ContaExisteComOutroMetodo] entrando na conta existente com
+  /// e-mail e senha; depois vincula o provedor pendente a ela.
+  Future<void> entrarComSenhaEVincular({
+    required String email,
+    required String senha,
+    required ContaExisteComOutroMetodo pendente,
+  });
 
   Future<void> signOut();
 

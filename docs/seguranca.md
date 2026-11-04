@@ -31,14 +31,22 @@
 - Autenticação via **Firebase Authentication** (e-mail/senha, Google, Facebook). Senhas nunca passam pelo nosso código em texto puro — o SDK do Firebase cuida do hashing/transporte.
 - Mensagens de erro de login devem ser genéricas ("e-mail ou senha inválidos"), sem indicar se o e-mail existe, para não facilitar enumeração de contas (ver CT05).
 - Recuperação de senha (RF05) sempre mostra a mesma mensagem de confirmação, exista ou não o e-mail informado (mesmo motivo).
-- Login social (Google/Facebook, RF04-A/RF04-B) usa os SDKs oficiais (`google_sign_in`, `flutter_facebook_auth`) + Firebase Auth — o token do provedor é validado pelo Firebase, nunca confiamos em dados de perfil vindos direto do client sem essa validação.
+- Login com Google (RF04-A) usa o SDK oficial (`google_sign_in`) + Firebase Auth — o token do provedor é validado pelo Firebase, nunca confiamos em dados de perfil vindos direto do client sem essa validação. O Facebook (RF04-B) saiu do escopo (2026-10-27).
+  - O UID do Firebase é a identidade. Contas com o mesmo e-mail **não** são unidas pelo app: no conflito, o tutor entra com a senha e só então o Google é vinculado (ADR 0006).
+  - Só autenticação básica, sem escopos extras. A chave secreta do cliente web não é usada pelo app.
+  - Nenhuma regra do Firestore foi relaxada. Detalhes em `docs/features/login-social.md`.
+- Cartaz de pet desaparecido (RF43–RF49) é gerado no aparelho: nenhuma regra, coleção ou endpoint novo.
+  - O telefone só entra no cartaz com autorização do tutor para aquele número, que não é salva.
+  - Fotos do rascunho só de `https://res.cloudinary.com`, e as rotas usam o mesmo guard de dono e situação das outras telas do pet.
+  - Sem permissões novas no Android. Detalhes em `docs/features/cartaz-pet-desaparecido.md`.
 - Recomenda-se ativar **Firebase App Check** para reduzir abuso automatizado dos endpoints (login, Cloud Functions da página pública).
 
 ## Autorização e isolamento de dados (Firestore Security Rules)
 
 Regra central: **um tutor só lê/escreve os próprios documentos**; dados de pet só são acessíveis pelo `userId` proprietário (campo real já existente em `Pets`, ver `docs/modelo-dados-firestore.md`).
 
-Regras implementadas (proposta, aguardando deploy): [`security/firestore-isolamento-por-dono.md`](security/firestore-isolamento-por-dono.md). O dono do perfil é o ID do documento (= Auth UID) e o dono do pet é `userId`; `dono` e `usuarioID` não são usados para autorização.
+Regras implementadas (deployadas em 2026-10-27, ver
+[`security/firestore-rules-deployed.md`](security/firestore-rules-deployed.md)): [`security/firestore-isolamento-por-dono.md`](security/firestore-isolamento-por-dono.md). O dono do perfil é o ID do documento (= Auth UID) e o dono do pet é `userId`; `dono` e `usuarioID` não são usados para autorização.
 
 Esboço original:
 

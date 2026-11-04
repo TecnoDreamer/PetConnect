@@ -28,8 +28,9 @@ Além disso, centraliza para o tutor:
 - 💉 **Carteira de vacina** — histórico de vacinas aplicadas e alertas de próxima dose.
 - 🩺 **Histórico médico** — consultas, exames e anotações por pet.
 - 📅 **Agendamento de consultas** — com lembretes.
-- 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento.
-- 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada até o deploy das regras do Firestore).
+- 🔗 **QR code** — página pública de identificação, regenerável a qualquer momento; o tutor baixa o QR em PNG ou PDF para imprimir na coleira.
+- 🖼️ **Galeria de fotos** — fotos particulares de cada pet, também no Memorial (desligada por padrão; regras já publicadas, falta liberar).
+- 📢 **Cartaz de pet desaparecido** — cartaz "Procura-se" com 3 fotos e o telefone autorizado, gerado no celular, em PNG ou PDF, para compartilhar ou imprimir.
 
 ## Status do projeto
 
@@ -42,10 +43,11 @@ Além disso, centraliza para o tutor:
 | Cadastro, login e recuperação de senha (e-mail/senha) | ✅ Concluído | RF01–RF03, RF05 |
 | Sessão persistida + rotas protegidas | ✅ Concluído | RF06 |
 | Logout | ✅ Concluído | RF07 |
-| Login social (Google / Facebook) | ⬜ Não iniciado | RF04-A, RF04-B |
+| Login com Google | 🔍 Em revisão — conta criada com o Google no aparelho; falta o resto do roteiro (Facebook fora do escopo) | RF04-A |
 | Edição/exclusão da conta do tutor (nome, sobrenome, telefone, nascimento, gênero, foto) | ✅ Concluído | RF08–RF09 |
 | Gestão de pets (cadastro, listagem, edição, exclusão) | ✅ Concluído | RF10–RF15 |
 | QR code de identificação (exibido no app) | ✅ Concluído | RF16 |
+| Baixar e imprimir o QR code (PNG e PDF) | 🔍 Em revisão — falta validar no aparelho | RF50 |
 | Página pública do QR code + regeneração | ⬜ Não iniciado | RF17–RF19 |
 | Carteira de vacina (registro, listagem, edição, exclusão, alerta visual) | ✅ Concluído | RF20–RF23 |
 | Histórico médico (com anexos no Cloudinary) | ✅ Concluído | RF24–RF26 |
@@ -53,6 +55,7 @@ Além disso, centraliza para o tutor:
 | Localização — tutor registra/visualiza avistamentos | ✅ Concluído | RF32 |
 | Memorial do Pet (registrar falecimento, memorial privado, correção) — modo Firestore | 🔍 Em revisão | RF33–RF36 |
 | Galeria de fotos por pet (privada, também no Memorial) — modo Firestore, flag `GALERIA_FOTOS` | 🔍 Em revisão | RF37–RF42 |
+| Cartaz de pet desaparecido (PNG e PDF, gerado no aparelho) | ✅ Concluído — fluxos principais validados no aparelho; roteiro caso a caso em aberto | RF43–RF49 |
 | Localização — relato direto por quem encontrou o pet (via QR code) | ⬜ Bloqueado por RF17–RF19 | RF31 |
 
 Veja a lista completa de requisitos em [`docs/requisitos-funcionais.md`](docs/requisitos-funcionais.md).
@@ -110,6 +113,14 @@ python tool/branding/gerar_icones_android.py
 APK de teste: `flutter build apk --debug`. Detalhes em
 [`docs/branding/icone-e-splash-android.md`](docs/branding/icone-e-splash-android.md).
 
+APK para testadores (release, assinado com a chave de upload do
+proprietário, que fica fora do Git): `flutter build apk --release
+--dart-define=GALERIA_FOTOS=true`. Sem `android/key.properties`, o build de
+release falha de propósito. Passo a passo da chave, segurança e guia do
+testador em
+[`docs/release/apk-testes-externos.md`](docs/release/apk-testes-externos.md)
+e [`docs/validation/apk-testes-externos.md`](docs/validation/apk-testes-externos.md).
+
 ### Rodando os testes
 
 ```bash
@@ -128,6 +139,11 @@ Toda a documentação detalhada do projeto está em [`docs/`](docs/):
 - [Ícone, nome e splash do Android](docs/branding/icone-e-splash-android.md)
 - [Modelo de dados (Firestore)](docs/modelo-dados-firestore.md)
 - [Galeria de fotos por pet](docs/features/galeria-fotos-pet.md)
+- [App em português do Brasil](docs/features/idioma-portugues.md)
+- [Campos de texto padronizados](docs/features/padronizacao-campos.md)
+- [Baixar e imprimir o QR code](docs/features/qr-exportacao.md)
+- [Página pública do QR com consentimento](docs/features/qr-compartilhamento-publico.md) (como testar: [roteiro](docs/validation/qr-compartilhamento-publico.md))
+- [Cartaz de pet desaparecido](docs/features/cartaz-pet-desaparecido.md) (como testar: [roteiro de aparelho](docs/validation/cartaz-pet-desaparecido.md))
 - Diagramas: [caso de uso](docs/diagramas/caso-de-uso.md) · [sequência](docs/diagramas/sequencia.md) · [classes](docs/diagramas/classes.md)
 
 ## Contribuindo

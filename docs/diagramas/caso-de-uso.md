@@ -69,7 +69,7 @@ graph LR
 | Caso de uso | Ator | RF relacionado |
 |---|---|---|
 | Cadastrar-se | Tutor | RF01–RF03 |
-| Fazer login (e-mail, Google ou Facebook) | Tutor | RF04, RF04-A, RF04-B, RF06 |
+| Fazer login (e-mail ou Google; Facebook fora do escopo) | Tutor | RF04, RF04-A, RF06 |
 | Recuperar senha | Tutor | RF05 |
 | Gerenciar conta | Tutor | RF08, RF09 |
 | Cadastrar pet | Tutor | RF10 |
@@ -81,3 +81,4 @@ graph LR
 | Gerenciar histórico médico | Tutor | RF24–RF26 |
 | Agendar consultas | Tutor | RF27–RF30 |
 | Ver, publicar e excluir fotos do pet (também no Memorial) | Tutor | RF37–RF42 |
+| Gerar e compartilhar cartaz de pet desaparecido | Tutor | RF43–RF49 |

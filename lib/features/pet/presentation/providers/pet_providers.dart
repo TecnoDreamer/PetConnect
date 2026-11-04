@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
+import '../../data/api_compartilhamento_repository.dart';
 import '../../data/api_pet_qr_repository.dart';
 import '../../data/api_pet_repository.dart';
 import '../../data/firebase_pet_repository.dart';
+import '../../domain/compartilhamento_publico.dart';
 import '../../domain/pet.dart';
 import '../../domain/pet_qr_repository.dart';
 import '../../domain/pet_repository.dart';
@@ -32,6 +34,26 @@ final petQrRepositoryProvider = Provider<PetQrRepository>((ref) {
     );
   }
   return const QrRegeneracaoIndisponivel();
+});
+
+/// O que a página pública do QR mostra (issue #35). Quem resolve o QR é a
+/// API, então sem API configurada não há como publicar: a opção não aparece
+/// e a página continua com o mínimo neutro.
+final compartilhamentoRepositoryProvider =
+    Provider<CompartilhamentoRepository?>((ref) {
+  if (AppConfig.useApiForPets) {
+    return ApiCompartilhamentoRepository(
+      api: ref.watch(apiClientProvider),
+      porIdDoFirestore: false,
+    );
+  }
+  if (AppConfig.useApiForQr) {
+    return ApiCompartilhamentoRepository(
+      api: ref.watch(apiClientProvider),
+      porIdDoFirestore: true,
+    );
+  }
+  return null;
 });
 
 /// Pets do tutor autenticado (RF11). Vazio (sem emitir erro) enquanto

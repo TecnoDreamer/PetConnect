@@ -6,6 +6,8 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
 import '../../data/api_usuario_repository.dart';
 import '../../data/firebase_usuario_repository.dart';
+import '../../data/provedores_sociais.dart';
+import '../../domain/login_social.dart';
 import '../../domain/usuario.dart';
 import '../../domain/usuario_repository.dart';
 
@@ -26,16 +28,27 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   return client;
 });
 
+/// Google (docs/features/login-social.md). Sem a configuração do Firebase
+/// (cliente OAuth no google-services.json), o botão avisa que o login ainda
+/// não está disponível em vez de quebrar.
+final provedoresSociaisProvider =
+    Provider<Map<ProvedorSocial, ProvedorDeCredencial>>((ref) => {
+          ProvedorSocial.google: GoogleProvedorDeCredencial(
+              serverClientId: AppConfig.googleServerClientId),
+        });
+
 final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
   if (AppConfig.useApiForUsuario) {
     return ApiUsuarioRepository(
       auth: ref.watch(firebaseAuthProvider),
       api: ref.watch(apiClientProvider),
+      provedores: ref.watch(provedoresSociaisProvider),
     );
   }
   return FirebaseUsuarioRepository(
     auth: ref.watch(firebaseAuthProvider),
     firestore: ref.watch(firestoreProvider),
+    provedores: ref.watch(provedoresSociaisProvider),
   );
 });
 

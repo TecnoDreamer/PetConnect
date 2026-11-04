@@ -1,5 +1,10 @@
 # Validação manual — Memorial do Pet
 
+> **Atualização (2026-10-27):** MP17–MP21 cobrem o Voltar depois do
+> registro (`docs/features/memorial-retorno-navegacao.md`). Aparelho de
+> referência: Motorola Edge 60 Fusion (Android 16). Repetir também numa tela
+> menor e com navegação por 3 botões, se houver.
+
 > Branch: `feat/memorial-pet`. Detalhes em `docs/features/memorial-pet.md`.
 > Rodar no modo padrão (Firestore, sem `--dart-define`). No modo API o
 > Memorial fica desligado de propósito.
@@ -35,5 +40,10 @@ Testado por:
 | MP14 | Sair e entrar de novo: o pet continua no Memorial | |
 | MP15 | Outra conta (segundo login) não vê o pet nem o memorial | |
 | MP16 | Página pública do QR do pet falecido **não** mostra "Falecido" | |
+| MP17 | Registrar falecimento → no memorial, **botão Voltar do sistema**: abre a lista do Memorial com o pet; de novo: Home sem o pet. O app **não fecha** | |
+| MP18 | Mesmo caminho do MP17 com o **gesto** de voltar (navegação por gestos) | |
+| MP19 | Mesmo caminho do MP17 com a **seta da AppBar** | |
+| MP20 | Corrigir marcação → no perfil restaurado, Voltar: Home (o app não fecha) | |
+| MP21 | Sem internet: registrar mostra "Nada foi alterado"; Voltar retorna às Configurações do Pet | |
 
 Marcar `OK` ou `FALHOU: <o que aconteceu>`.

@@ -1,8 +1,9 @@
 # Firestore — isolamento por dono (issue #31)
 
 Fase 1 do plano de próximos passos. Regras em `firestore.rules`, testes em
-`tool/firestore-rules/`. **Estado: proposta em PR, não deployada.** O que
-está em produção continua sendo o descrito em
+`tool/firestore-rules/`. **Estado: deployada em 2026-10-27** pelo
+proprietário, pelo Console, junto das regras da galeria. O que foi e o que
+não foi conferido está em
 [`firestore-rules-deployed.md`](firestore-rules-deployed.md).
 
 ## Problema

@@ -5,15 +5,16 @@ import 'package:flutter/rendering.dart';
 
 /// Composição das telas de autenticação (Login e Cadastro): cabeçalho
 /// marrom atrás, painel na frente invadindo [sobreposicao] pixels da base
-/// do cabeçalho e, opcionalmente, um [rodape] ancorado embaixo.
+/// do cabeçalho e, opcionalmente, um [rodape] logo abaixo do painel.
 ///
-/// O painel e o rodapé são medidos primeiro, na altura natural; a altura
-/// que sobra na tela é dividida entre o cabeçalho
-/// ([fracaoDaSobraParaCabecalho]) e o espaço entre o painel e o rodapé —
-/// nunca vira uma faixa vazia embaixo de tudo. Sem `SingleChildScrollView`
-/// nem `Transform` no estado normal (ver
-/// docs/features/cadastro-layout-estatico.md e
-/// docs/features/login-layout-distribuido.md).
+/// O painel e o rodapé são medidos primeiro, na altura natural; a parte
+/// [fracaoDaSobraParaCabecalho] da altura que sobra na tela vai para o
+/// cabeçalho e o restante fica abaixo de tudo. O rodapé acompanha o painel,
+/// a [espacoAntesDoRodape] dele, em vez de ficar ancorado na base da tela.
+/// Sem `SingleChildScrollView` nem `Transform` no estado normal (ver
+/// docs/features/cadastro-layout-estatico.md,
+/// docs/features/login-layout-distribuido.md e
+/// docs/features/login-espacamento-acoes-sociais.md).
 ///
 /// Rolagem só existe como exceção documentada: enquanto o teclado está
 /// aberto (para o campo focado continuar visível, com o cabeçalho na mesma
@@ -30,7 +31,7 @@ class ComposicaoCabecalhoPainel extends StatefulWidget {
     required this.margemInferior,
     this.alturaMinimaCabecalho,
     this.fracaoDaSobraParaCabecalho = 1.0,
-    this.espacoMinimoAntesDoRodape = 16,
+    this.espacoAntesDoRodape = 16,
   });
 
   /// Recebe uma altura exata; o conteúdo precisa terminar acima da faixa de
@@ -47,9 +48,11 @@ class ComposicaoCabecalhoPainel extends StatefulWidget {
   final double? alturaMinimaCabecalho;
 
   /// Quanto da sobra de altura vai para o cabeçalho (0 a 1); o restante
-  /// separa o painel do rodapé. Sem rodapé, use 1.
+  /// fica abaixo do painel e do rodapé.
   final double fracaoDaSobraParaCabecalho;
-  final double espacoMinimoAntesDoRodape;
+
+  /// Distância entre a base do painel e o topo do rodapé.
+  final double espacoAntesDoRodape;
 
   @override
   State<ComposicaoCabecalhoPainel> createState() =>
@@ -97,7 +100,7 @@ class _ComposicaoCabecalhoPainelState extends State<ComposicaoCabecalhoPainel> {
             margemInferior: widget.margemInferior,
             alturaMinimaCabecalho: widget.alturaMinimaCabecalho,
             fracaoDaSobraParaCabecalho: widget.fracaoDaSobraParaCabecalho,
-            espacoMinimoAntesDoRodape: widget.espacoMinimoAntesDoRodape,
+            espacoAntesDoRodape: widget.espacoAntesDoRodape,
             alturaCabecalhoSemLimite:
                 tecladoAberto ? _alturaCabecalhoEstatico : null,
             alturaDeReferencia: constraints.maxHeight,
@@ -123,7 +126,7 @@ class _GeometriaComposicao {
     required this.margemInferior,
     required this.alturaMinimaCabecalho,
     required this.fracaoDaSobraParaCabecalho,
-    required this.espacoMinimoAntesDoRodape,
+    required this.espacoAntesDoRodape,
     required this.alturaCabecalhoSemLimite,
     required this.alturaDeReferencia,
   });
@@ -133,7 +136,7 @@ class _GeometriaComposicao {
   final double margemInferior;
   final double? alturaMinimaCabecalho;
   final double fracaoDaSobraParaCabecalho;
-  final double espacoMinimoAntesDoRodape;
+  final double espacoAntesDoRodape;
 
   /// Altura do cabeçalho dentro da rolagem (altura sem limite); nula = o
   /// mínimo.
@@ -151,7 +154,7 @@ class _GeometriaComposicao {
       other.margemInferior == margemInferior &&
       other.alturaMinimaCabecalho == alturaMinimaCabecalho &&
       other.fracaoDaSobraParaCabecalho == fracaoDaSobraParaCabecalho &&
-      other.espacoMinimoAntesDoRodape == espacoMinimoAntesDoRodape &&
+      other.espacoAntesDoRodape == espacoAntesDoRodape &&
       other.alturaCabecalhoSemLimite == alturaCabecalhoSemLimite &&
       other.alturaDeReferencia == alturaDeReferencia;
 
@@ -162,7 +165,7 @@ class _GeometriaComposicao {
         margemInferior,
         alturaMinimaCabecalho,
         fracaoDaSobraParaCabecalho,
-        espacoMinimoAntesDoRodape,
+        espacoAntesDoRodape,
         alturaCabecalhoSemLimite,
         alturaDeReferencia,
       );
@@ -260,7 +263,7 @@ class _RenderCabecalhoComPainel extends RenderBox
         parentUsesSize: true);
     final alturaPainel = painel.size.height;
     final alturaRodape = rodape?.size.height ?? 0;
-    final espacoRodape = rodape == null ? 0.0 : g.espacoMinimoAntesDoRodape;
+    final espacoRodape = rodape == null ? 0.0 : g.espacoAntesDoRodape;
 
     final alturaMinimaCabecalho =
         g.alturaMinimaCabecalho ?? cabecalho.getMinIntrinsicHeight(largura);
@@ -288,13 +291,9 @@ class _RenderCabecalhoComPainel extends RenderBox
 
     var fimDoConteudo = topoPainel + alturaPainel;
     if (rodape != null) {
-      final logoAbaixoDoPainel = fimDoConteudo + espacoRodape;
-      // Na tela normal o rodapé fica ancorado embaixo; dentro da rolagem,
-      // logo abaixo do painel.
-      final topoRodape = alturaLimitada
-          ? math.max(logoAbaixoDoPainel,
-              constraints.maxHeight - g.margemInferior - alturaRodape)
-          : logoAbaixoDoPainel;
+      // Logo abaixo do painel, com ou sem rolagem. Ancorado na base da tela,
+      // ele ficava isolado do card, com metade da sobra no meio.
+      final topoRodape = fimDoConteudo + espacoRodape;
       (rodape.parentData! as _PosicaoNaComposicao).offset =
           Offset(g.margemHorizontal, topoRodape);
       fimDoConteudo = topoRodape + alturaRodape;
