@@ -47,6 +47,13 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Avisos do QR por push: o tutor recebe uma notificação quando a página do
+  QR do pet é aberta (no máximo uma a cada 15 minutos, dizendo que isso não
+  confirma que o pet foi visto) e quando alguém envia um relato. Tocar abre
+  a aba Localização do pet. Cada aviso pode ser desligado em Compartilhamento
+  via QR Code > Avisos no celular. O app pede a permissão de notificação
+  depois do login e para de receber avisos ao sair da conta.
+  - Depende da API com a PR da fase 4. Ver `docs/features/qr-notificacoes.md`.
 - Relatos e acessos do QR na aba Localização do pet: o tutor passa a ver os
   relatos enviados pela página pública, que antes ficavam só no servidor,
   com data e hora, precisão, origem e "Abrir no mapa". Os acessos à página

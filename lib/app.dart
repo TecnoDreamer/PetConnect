@@ -6,7 +6,11 @@ import 'core/config/idioma.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_mode.dart';
 import 'core/theme/theme_providers.dart';
+import 'features/avisos/presentation/escuta_de_avisos_do_qr.dart';
 import 'routing/app_router.dart';
+
+/// Para mostrar avisos de fora das telas (aviso do QR com o app aberto).
+final mensageiroDoApp = GlobalKey<ScaffoldMessengerState>();
 
 class PetConnectApp extends ConsumerWidget {
   const PetConnectApp({super.key});
@@ -38,6 +42,12 @@ class PetConnectApp extends ConsumerWidget {
         supportedLocales: IdiomaDoApp.suportados,
         localizationsDelegates: IdiomaDoApp.delegates,
         routerConfig: router,
+        scaffoldMessengerKey: mensageiroDoApp,
+        builder: (context, child) => EscutaDeAvisosDoQr(
+          router: router,
+          mensageiro: mensageiroDoApp,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }

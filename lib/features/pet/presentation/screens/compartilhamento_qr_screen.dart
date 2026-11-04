@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/widgets/settings_menu_tile.dart';
+import '../../../avisos/presentation/avisos_do_pet_secao.dart';
 import '../../../usuario/domain/usuario.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../../domain/compartilhamento_publico.dart';
@@ -398,6 +399,7 @@ class _FormularioState extends ConsumerState<_Formulario> {
                   style: TextStyle(color: colors.error)),
             ),
           ),
+        AvisosDoPetSecao(petId: pet.id),
       ],
     );
   }

@@ -36,6 +36,7 @@ Convenção: `RNFxx`.
 | RNF11 | A página pública do QR code deve funcionar nos navegadores móveis padrão (Chrome, Safari) sem exigir instalação de app. |
 | RNF26 | A resposta pública do QR não é guardada em cache (`Cache-Control: no-store`) e só contém os campos autorizados: os outros não aparecem nem no JSON. Revogar vale no acesso seguinte. Ver `docs/features/qr-compartilhamento-publico.md`. |
 | RNF27 | Defesas da página pública contra abuso: além do limite por IP, no máximo 20 relatos e 30 acessos gravados por pet por hora; relato repetido com o mesmo `clientRequestId` não duplica; coordenada validada (latitude e longitude juntas, precisão até 100 km). Acessos apagados em 90 dias (TTL). Ver `docs/features/qr-avistamentos.md`. |
+| RNF28 | O push ao tutor nunca bloqueia a página pública (roda fora da requisição), leva só o nome do pet e os ids para abrir a tela (nada do relato, do contato ou da coordenada) e usa visibilidade privada na tela bloqueada. O token do aparelho vai no corpo, nunca na URL ou em log. Ver `docs/features/qr-notificacoes.md`. |
 
 ## Segurança e privacidade
 

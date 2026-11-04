@@ -6,6 +6,7 @@ import '../../../../core/theme/app_palette.dart';
 import '../../../pet/presentation/providers/pet_providers.dart';
 import '../../../pet/presentation/widgets/pet_card.dart';
 import '../../domain/usuario.dart';
+import '../../../avisos/presentation/avisos_providers.dart';
 import '../providers/auth_providers.dart';
 
 /// Home do tutor: lista os pets vinculados à conta (RF11), com atalho para
@@ -40,7 +41,10 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmou == true) await ref.read(usuarioRepositoryProvider).signOut();
+    if (confirmou != true) return;
+    // Antes do signOut: depois dele não há mais login para falar com a API.
+    await ref.read(avisosDoQrProvider)?.esquecerAparelho();
+    await ref.read(usuarioRepositoryProvider).signOut();
   }
 
   @override

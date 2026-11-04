@@ -123,6 +123,38 @@ sequenceDiagram
     App-->>Tutor: relatos com precisão e "Abrir no mapa"; acessos à parte
 ```
 
+### Aviso ao tutor por push (RF53)
+
+Adicionado em 2026-11-03 (issue #36). O push sai depois de gravar o evento,
+fora da requisição da página.
+
+```mermaid
+sequenceDiagram
+    participant Web as Página pública
+    participant API as API Spring
+    participant Mongo as MongoDB (push_devices, tutor_notifications)
+    participant FCM as Firebase Cloud Messaging
+    participant App
+    actor Tutor
+
+    App->>API: PUT /me/push-devices {token} (depois do login e da permissão)
+    Web->>API: POST /events (qr_page_opened) ou POST /sightings
+    API-->>Web: 202 / 201 (sem esperar o push)
+    API->>API: preferências do pet; acesso: já avisou nos últimos 15 min?
+    API->>Mongo: tutor_notifications PENDING
+    API->>FCM: título + ids do pet (canal qr_avisos, visibilidade privada)
+    alt token inválido
+        FCM-->>API: UNREGISTERED
+        API->>Mongo: apaga o token; FAILED
+    else entregue ao FCM
+        FCM-->>API: ok
+        API->>Mongo: SENT
+        FCM-)App: notificação
+        Tutor->>App: toca na notificação
+        App-->>Tutor: login (se preciso) e aba Localização do pet
+    end
+```
+
 ### Tutor publica ou revoga (RF51)
 
 ```mermaid

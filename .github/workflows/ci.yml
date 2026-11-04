@@ -33,7 +33,7 @@ jobs:
         run: flutter analyze
 
       - name: flutter test (unit + widget — sem os que precisam de infra externa)
-        run: flutter test test/core/ test/features/pet/ test/features/auth/ test/features/usuario/ test/android/ --exclude-tags=e2e
+        run: flutter test test/core/ test/features/pet/ test/features/auth/ test/features/usuario/ test/features/avisos/ test/android/ --exclude-tags=e2e
 
   # firestore.rules contra o Firestore Emulator (projeto demo, nunca o
   # Firebase real). O emulador é Java e não sobe no Windows de
