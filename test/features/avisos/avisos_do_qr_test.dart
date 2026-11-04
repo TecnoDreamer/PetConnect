@@ -119,12 +119,15 @@ void main() {
     late List<String> atualizados;
     late List<String?> mostrados;
 
+    late bool naSplash;
+
     Future<void> iniciar() async {
       await avisos.iniciar(
         logado: sessao.stream,
         abrir: abertas.add,
         mostrar: (aviso, titulo) => mostrados.add(titulo),
         atualizar: atualizados.add,
+        podeAbrirAgora: () => !naSplash,
       );
     }
 
@@ -136,6 +139,7 @@ void main() {
       abertas = [];
       atualizados = [];
       mostrados = [];
+      naSplash = false;
     });
 
     tearDown(() => avisos.encerrar());
@@ -210,6 +214,22 @@ void main() {
       avisos.abrirQuandoPossivel();
       avisos.abrirQuandoPossivel();
 
+      expect(abertas, ['/pet/fs-rex/localizacao']);
+    });
+
+    test('com a sessão guardada, o toque que abriu o app espera sair da splash',
+        () async {
+      naSplash = true;
+      await iniciar();
+      sessao.add(true);
+      await pumpEventQueue();
+
+      push.tocados.add(_acesso);
+      await pumpEventQueue();
+      expect(abertas, isEmpty, reason: 'a splash ainda vai navegar');
+
+      naSplash = false;
+      avisos.abrirQuandoPossivel();
       expect(abertas, ['/pet/fs-rex/localizacao']);
     });
 

@@ -13,11 +13,9 @@ import '../../../usuario/presentation/providers/auth_providers.dart';
 /// docs/branding/icone-e-splash-android.md), então a troca da splash nativa
 /// para o Flutter não pisca.
 ///
-/// Fica na tela só o tempo de [sessionBootstrapProvider] (o `signOut()` que
-/// exige login a cada abertura) e da primeira leitura do estado de
-/// autenticação — sem tempo mínimo artificial (antes: 2,5s fixos). O
-/// destino é sempre `/login` na prática, já que o bootstrap encerra
-/// qualquer sessão persistida.
+/// Fica na tela só o tempo da primeira leitura do estado de autenticação,
+/// sem tempo mínimo artificial (antes: 2,5s fixos). Com a sessão guardada
+/// no aparelho, vai para a Home; sem ela, para o login.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -40,10 +38,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _decidirDestino() async {
-    // Sempre exige login de novo nesta abertura do app, mesmo com sessão
-    // persistida — precisa terminar antes da linha abaixo (ver
-    // sessionBootstrapProvider).
-    await ref.read(sessionBootstrapProvider.future);
     final usuario = await ref.read(authStateChangesProvider.future);
 
     if (!mounted) return;

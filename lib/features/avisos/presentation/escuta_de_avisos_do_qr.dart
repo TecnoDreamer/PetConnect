@@ -11,7 +11,8 @@ import 'avisos_providers.dart';
 /// acima das telas (no `builder` do MaterialApp) e não desenha nada.
 ///
 /// - Toque na notificação: vai para a Home e abre a aba Localização do pet.
-///   Se o toque abriu o app, espera o login e a chegada à Home.
+///   Se o toque abriu o app, espera a splash, o login (se preciso) e a
+///   chegada à Home.
 /// - Aviso com o app aberto: mostra uma faixa com "Ver" em [mensageiro].
 class EscutaDeAvisosDoQr extends ConsumerStatefulWidget {
   const EscutaDeAvisosDoQr({
@@ -45,13 +46,16 @@ class _EscutaState extends ConsumerState<EscutaDeAvisosDoQr> {
       },
       mostrar: _mostrar,
       atualizar: (petId) => ref.invalidate(atividadeDoQrProvider(petId)),
+      podeAbrirAgora: () => _caminhoAtual() != '/',
     );
     widget.router.routerDelegate.addListener(_navegou);
   }
 
+  String _caminhoAtual() =>
+      widget.router.routerDelegate.currentConfiguration.uri.path;
+
   void _navegou() {
-    final caminho = widget.router.routerDelegate.currentConfiguration.uri.path;
-    if (caminho != '/home') return;
+    if (_caminhoAtual() != '/home') return;
     // Fora do aviso de navegação: navegar dentro dele atrapalharia a troca
     // de tela em andamento.
     WidgetsBinding.instance.addPostFrameCallback((_) {

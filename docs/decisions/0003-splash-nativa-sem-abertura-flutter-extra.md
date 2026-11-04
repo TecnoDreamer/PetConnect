@@ -30,3 +30,10 @@ diferentes e a primeira tinha a marca errada.
   bootstrap, sem espera fixa.
 - Ícones e splash são regerados por script a partir do logo
   (`tool/branding/gerar_icones_android.py`).
+
+## Atualização (2026-11-04)
+
+O login a cada abertura foi removido a pedido do proprietário: a sessão
+fica guardada no aparelho (`fix/sessao-persistente`). A rota `/` continua
+pelo mesmo motivo, agora só para ler a sessão antes de escolher entre Home
+e Login.

@@ -7,6 +7,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -147,6 +148,29 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Tela Configurações do Tutor'), findsOneWidget);
+    });
+
+    testWidgets(
+        'voltar na Home fecha o app sem perguntar se quer sair da conta',
+        (tester) async {
+      final repo = FakePetRepository();
+      var fechouOApp = false;
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'SystemNavigator.pop') fechouOApp = true;
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+
+      await tester.pumpWidget(_appPara(repo));
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sair da conta'), findsNothing);
+      expect(fechouOApp, isTrue);
     });
   });
 

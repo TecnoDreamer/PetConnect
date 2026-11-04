@@ -1,17 +1,9 @@
-// Cobre a correção pós-validação física: o app deve sempre exigir login de
-// novo ao ser reaberto, mesmo com uma sessão do Firebase Auth persistida.
-//
-// Não dá pra simular "sessão persistida" com um `User` de verdade sem uma
-// biblioteca de mocks do Firebase (não usada no projeto — ver auditoria em
-// docs/audit/post-device-validation-fixes.md) — `FirebaseAuth`/`User` são
-// classes concretas do SDK, sem interface própria aqui. O que este teste
-// prova é o mecanismo real da correção: a splash só decide o destino
-// **depois** que [sessionBootstrapProvider] (o `signOut()` de bootstrap)
-// termina — nunca antes. A cobertura de que o `signOut()` de fato limpa uma
-// sessão persistida do Firebase é o próprio `auth_flow_test.dart` (e2e) +
-// validação manual no aparelho físico (ver checklist da PR).
+// A sessão do Firebase Auth fica guardada no aparelho: reabrir o app volta
+// direto para a Home, e só "Sair da conta" encerra a sessão (decisão do
+// proprietário de 2026-11-04, que substitui o login a cada abertura).
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,10 +13,9 @@ import 'package:pet_connect/core/theme/app_colors.dart';
 import 'package:pet_connect/features/auth/presentation/screens/splash_screen.dart';
 import 'package:pet_connect/features/usuario/presentation/providers/auth_providers.dart';
 
-Widget _appComSplash({
-  required Future<void> Function() bootstrap,
-  required Stream<dynamic> authStateChanges,
-}) {
+class _UsuarioFalso extends Fake implements User {}
+
+Widget _appComSplash({required Stream<User?> authStateChanges}) {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
@@ -36,47 +27,27 @@ Widget _appComSplash({
 
   return ProviderScope(
     overrides: [
-      sessionBootstrapProvider.overrideWith((ref) => bootstrap()),
-      authStateChangesProvider.overrideWith((ref) => authStateChanges.cast()),
+      authStateChangesProvider.overrideWith((ref) => authStateChanges),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
 }
 
 void main() {
-  group('SplashScreen — login sempre exigido ao reabrir o app', () {
-    testWidgets(
-        'não navega enquanto o bootstrap de sessão (signOut) não terminar',
-        (tester) async {
-      final bootstrapCompleter = Completer<void>();
-
-      await tester.pumpWidget(_appComSplash(
-        bootstrap: () => bootstrapCompleter.future,
-        authStateChanges: Stream.value(null),
-      ));
-
-      // Bem mais que o necessário para navegar — se a splash não esperasse
-      // o bootstrap, já teria saído daqui.
-      await tester.pump(const Duration(seconds: 3));
-      expect(find.byType(SplashScreen), findsOneWidget,
-          reason: 'ainda deveria estar na splash, esperando o signOut');
-      expect(find.text('Login'), findsNothing);
-      expect(find.text('Home'), findsNothing);
-
-      bootstrapCompleter.complete();
+  group('SplashScreen — sessão guardada no aparelho', () {
+    testWidgets('com sessão guardada, vai direto para a Home', (tester) async {
+      await tester.pumpWidget(
+          _appComSplash(authStateChanges: Stream.value(_UsuarioFalso())));
       await tester.pumpAndSettle();
 
-      expect(find.text('Login'), findsOneWidget,
-          reason: 'só navega depois que o bootstrap de sessão termina');
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Login'), findsNothing);
     });
 
-    testWidgets(
-        'com o bootstrap concluído e sem sessão, vai para o login sem '
-        'tempo mínimo artificial', (tester) async {
-      await tester.pumpWidget(_appComSplash(
-        bootstrap: () async {},
-        authStateChanges: Stream.value(null),
-      ));
+    testWidgets('sem sessão, vai para o login sem tempo mínimo artificial',
+        (tester) async {
+      await tester
+          .pumpWidget(_appComSplash(authStateChanges: Stream.value(null)));
 
       // Só a transição de página (sem os 2,5s fixos de antes).
       await tester.pump();
@@ -86,14 +57,25 @@ void main() {
       expect(find.byType(SplashScreen), findsNothing);
     });
 
+    testWidgets('não navega antes de saber se há sessão', (tester) async {
+      final sessao = StreamController<User?>();
+      addTearDown(sessao.close);
+      await tester.pumpWidget(_appComSplash(authStateChanges: sessao.stream));
+
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.byType(SplashScreen), findsOneWidget);
+
+      sessao.add(_UsuarioFalso());
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+    });
+
     testWidgets(
         'mesma aparência da splash nativa: fundo da marca, só o logo, '
         'ícones claros na status bar', (tester) async {
-      final bootstrap = Completer<void>();
-      await tester.pumpWidget(_appComSplash(
-        bootstrap: () => bootstrap.future,
-        authStateChanges: Stream.value(null),
-      ));
+      final sessao = StreamController<User?>();
+      addTearDown(sessao.close);
+      await tester.pumpWidget(_appComSplash(authStateChanges: sessao.stream));
       await tester.pump();
 
       final scaffold = tester.widget<Scaffold>(find.descendant(
@@ -110,15 +92,8 @@ void main() {
         findsOneWidget,
       );
 
-      bootstrap.complete();
+      sessao.add(null);
       await tester.pumpAndSettle();
     });
-
-    // O try/catch dentro de sessionBootstrapProvider (auth_providers.dart)
-    // garante que um signOut() com falha nunca propaga como erro pra quem
-    // aguarda `sessionBootstrapProvider.future` — não dá pra testar isso
-    // via override (substituiria o próprio catch que se quer verificar) sem
-    // uma forma de fazer o `FirebaseAuth.signOut()` real falhar, que exigiria
-    // uma biblioteca de mocks do Firebase não usada no projeto.
   });
 }

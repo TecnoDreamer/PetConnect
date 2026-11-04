@@ -16,7 +16,7 @@ computador): o do tutor, com o app, e outro para abrir a página do QR.
 | 4 | Fechar o app (voltar para a tela inicial) e abrir a página do QR no outro aparelho | Notificação "O QR Code de [pet] foi acessado" em alguns segundos, com a pata como ícone |
 | 5 | Recarregar a página 3 vezes | Nenhuma notificação nova (limite de 15 minutos) |
 | 6 | Enviar um relato com localização pela página | Notificação "Novo avistamento de [pet]" |
-| 7 | Tocar na notificação | App abre; depois do login, vai para a aba Localização do pet com o relato |
+| 7 | Tocar na notificação | App abre direto (sessão guardada) e vai para a aba Localização do pet com o relato |
 | 8 | Com o app aberto na Home, enviar outro relato | Faixa no rodapé com "Ver"; tocar abre a aba Localização |
 | 9 | Desligar "Quando a página do QR for aberta" e esperar 15 min; abrir a página | Sem notificação de acesso |
 | 10 | Enviar relato | Notificação de avistamento continua |

@@ -1,5 +1,10 @@
 # Validação manual — login obrigatório ao reabrir o app
 
+> **Substituído em 2026-11-04.** A pedido do proprietário, a sessão volta a
+> ficar guardada no aparelho e só termina em "Sair da conta"
+> (`fix/sessao-persistente`). Este roteiro fica como histórico; o atual é
+> o item DV05 de `docs/validation/device-validation-checklist.md`.
+
 > Branch: `fix/login-inicial-obrigatorio`. Fonte:
 > `petconnect_correcoes_pos_validacao_claude.md` (2026-09-12), Feature 1.
 >

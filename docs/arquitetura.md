@@ -104,9 +104,8 @@ Toque no ícone
   → splash nativa (sistema; Android 12+ via API SplashScreen) — cor da marca + logo
   → main(): Firebase.initializeApp + SharedPreferences (tema) → runApp
   → SplashScreen (Flutter) — mesma cor e logo, sem tempo mínimo
-      aguarda sessionBootstrapProvider (signOut: login exigido a cada abertura)
-      e a primeira leitura de authStateChanges
-  → /login (ou /home, se houver sessão — na prática sempre /login)
+      aguarda a primeira leitura de authStateChanges
+  → /home, se a sessão estiver guardada no aparelho; senão /login
 ```
 
 - Antes de `runApp` ficam só as dependências do primeiro frame: Firebase
@@ -115,5 +114,8 @@ Toque no ícone
   uma segunda abertura. O tempo mínimo artificial de 2,5s foi removido. Ver
   `docs/branding/icone-e-splash-android.md` e
   `docs/decisions/0003-splash-nativa-sem-abertura-flutter-extra.md`.
-- Se o `signOut` de bootstrap falhar (ex.: sem rede), o erro é engolido em
-  `sessionBootstrapProvider` e a splash segue para o login, sem travar.
+- A sessão do Firebase Auth fica guardada no aparelho: fechar o app, ou
+  voltar a partir da Home, não encerra a sessão. Ela só termina em
+  Configurações > "Sair da conta", com confirmação. Decisão do proprietário
+  de 2026-11-04, que substitui o login obrigatório a cada abertura
+  (`fix/login-inicial-obrigatorio`).
