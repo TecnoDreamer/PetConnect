@@ -53,9 +53,10 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
-- Avisos do QR por push: o tutor recebe uma notificação quando a página do
-  QR do pet é aberta (no máximo uma a cada 15 minutos, dizendo que isso não
-  confirma que o pet foi visto) e quando alguém envia um relato. Tocar abre
+- Avisos do QR por push: o tutor recebe uma notificação a cada vez que a
+  página do QR do pet é aberta (dizendo que isso não confirma que o pet foi
+  visto; antes, no máximo uma a cada 15 minutos) e quando alguém envia um
+  relato. Tocar abre
   a aba Localização do pet. Cada aviso pode ser desligado em Compartilhamento
   via QR Code > Avisos no celular. O app pede a permissão de notificação
   depois do login e para de receber avisos ao sair da conta.
@@ -129,6 +130,18 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Troca de conta: sair e entrar em outra conta não deixa mais a Home em
+  "Não foi possível carregar seus dados". O perfil passa a acompanhar a
+  sessão; antes ficava preso ao perfil da conta anterior, que o Firestore
+  deixa de liberar ao sair.
+- Fotos de perfil (tutor e pet) e capa do pet: a foto escolhida aparece na
+  hora no formulário, sai do celular com no máximo 1600 px de lado (envio
+  mais rápido) e, depois do envio, já fica no cache de imagens. Assim a
+  Home e o perfil do pet mostram a foto nova sem baixá-la de novo.
+- Avisos do QR: o registro do celular para receber push tenta de novo
+  quando a API demora a responder (a API no Render dorme sem uso e pode
+  levar perto de um minuto para acordar). Antes havia uma tentativa só, e o
+  celular podia ficar sem avisos até o próximo login.
 - Orientação: o app fica só em retrato, na própria janela. Antes, ele
   girava com a rotação automática ligada, e com ela desligada o Android
   oferecia o botão de girar. O app nunca alterou a rotação automática do

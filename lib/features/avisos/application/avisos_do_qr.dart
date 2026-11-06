@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../domain/aviso_do_qr.dart';
 
 /// Liga o push do aparelho à conta do tutor (issue #36).
 ///
-/// - **Login:** pede a permissão de notificação (o sistema só pergunta uma
-///   vez) e registra o token na API. Token novo do FCM é registrado de novo.
+/// - **Login e cada abertura com sessão:** pede a permissão de notificação
+///   (o sistema só pergunta uma vez) e registra o token na API, com novas
+///   tentativas enquanto a API acorda. Token novo do FCM é registrado de novo.
 /// - **Toque na notificação:** abre a aba Localização do pet. Se o toque
 ///   abriu o app, o destino espera a sessão e a chegada à Home
 ///   ([abrirQuandoPossivel]): sem login, ou ainda na splash.
@@ -19,16 +22,30 @@ class AvisosDoQr {
     required PushDoAparelho push,
     required AvisosRepository repository,
     required bool petsNaApi,
+    List<Duration> esperasDoRegistro = esperasPadraoDoRegistro,
   })  : _push = push,
         _repo = repository,
-        _petsNaApi = petsNaApi;
+        _petsNaApi = petsNaApi,
+        _esperasDoRegistro = esperasDoRegistro;
 
   final PushDoAparelho _push;
   final AvisosRepository _repo;
   final bool _petsNaApi;
+  final List<Duration> _esperasDoRegistro;
+
+  /// Entre as tentativas de registrar o aparelho. A API no Render dorme sem
+  /// uso e pode levar perto de um minuto para acordar; antes havia uma
+  /// tentativa só, e o aparelho podia ficar sem receber avisos até o próximo
+  /// login.
+  static const esperasPadraoDoRegistro = [
+    Duration(seconds: 5),
+    Duration(seconds: 20),
+    Duration(seconds: 60),
+  ];
 
   final _assinaturas = <StreamSubscription<Object?>>[];
   bool _logado = false;
+  bool _encerrado = false;
   String? _destinoPendente;
 
   late void Function(String rota) _abrir;
@@ -37,6 +54,9 @@ class AvisosDoQr {
   late bool Function() _podeAbrirAgora;
 
   static const _limite = Duration(seconds: 10);
+
+  /// Cada tentativa de registro; o próprio cliente da API desiste antes.
+  static const _limiteDoRegistro = Duration(seconds: 30);
 
   /// Sair da conta não pode ficar preso esperando a rede.
   static const _limiteAoSair = Duration(seconds: 4);
@@ -89,11 +109,22 @@ class AvisosDoQr {
     }
   }
 
+  /// Tenta de novo, com as [_esperasDoRegistro], enquanto o tutor continuar
+  /// logado. Sem log do token: ele identifica o aparelho.
   Future<void> _registrar(String token) async {
-    try {
-      await _repo.registrarAparelho(token).timeout(_limite);
-    } catch (_) {
-      // Melhor esforço.
+    for (var tentativa = 0;; tentativa++) {
+      if (!_logado || _encerrado) return;
+      try {
+        await _repo.registrarAparelho(token).timeout(_limiteDoRegistro);
+        return;
+      } catch (e) {
+        if (tentativa >= _esperasDoRegistro.length) {
+          debugPrint('Avisos do QR: aparelho não registrado na API '
+              '(${e.runtimeType}); tenta de novo na próxima abertura.');
+          return;
+        }
+        await Future<void>.delayed(_esperasDoRegistro[tentativa]);
+      }
     }
   }
 
@@ -141,6 +172,7 @@ class AvisosDoQr {
   }
 
   Future<void> encerrar() async {
+    _encerrado = true;
     for (final a in _assinaturas) {
       await a.cancel();
     }

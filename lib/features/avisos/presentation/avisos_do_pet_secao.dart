@@ -94,7 +94,7 @@ class _AvisosDoPetSecaoState extends ConsumerState<AvisosDoPetSecao> {
             value: p.avisarAcesso,
             title: const Text('Quando a página do QR for aberta'),
             subtitle: const Text(
-                'No máximo um aviso a cada 15 minutos. Abrir a página não confirma que alguém viu o pet.'),
+                'Um aviso a cada abertura da página. Abrir a página não confirma que alguém viu o pet.'),
             onChanged:
                 _salvando ? null : (v) => _salvar(p.copyWith(avisarAcesso: v)),
           ),

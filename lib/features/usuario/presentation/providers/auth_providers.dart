@@ -68,15 +68,22 @@ final authStateChangesProvider = StreamProvider<User?>((ref) {
 ///
 /// Com [AppConfig.useApiForUsuario], a fonte é `GET /api/v1/me` (emissão
 /// única); telas que editam o perfil chamam `ref.invalidate` para recarregar.
-final currentUsuarioProvider = StreamProvider<Usuario?>((ref) async* {
-  final auth = ref.watch(firebaseAuthProvider);
-  final repository = ref.watch(usuarioRepositoryProvider);
-
-  await for (final user in auth.authStateChanges()) {
-    if (user == null) {
-      yield null;
-    } else {
-      yield* repository.watchUsuario(user.uid);
-    }
-  }
+///
+/// Recomeça a cada mudança de sessão. Antes, um `await for` com `yield*`
+/// ficava preso ao perfil da conta anterior: ao sair, o Firestore negava a
+/// leitura dele, o erro encerrava o provider, e a próxima conta via
+/// "Não foi possível carregar seus dados".
+final currentUsuarioProvider = StreamProvider<Usuario?>((ref) {
+  // Só o uid: renovar o token da mesma conta não recarrega o perfil.
+  final sessao = ref.watch(
+      authStateChangesProvider.select((s) => s.whenData((user) => user?.uid)));
+  return switch (sessao) {
+    AsyncData(value: final uid?) =>
+      ref.watch(usuarioRepositoryProvider).watchUsuario(uid),
+    AsyncData() => Stream.value(null),
+    AsyncError(:final error, :final stackTrace) =>
+      Stream.error(error, stackTrace),
+    // Sessão ainda carregando: o perfil também fica carregando.
+    _ => const Stream.empty(),
+  };
 });

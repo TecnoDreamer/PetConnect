@@ -36,6 +36,8 @@ dependencies:
   intl:
   image_picker:
   cached_network_image:
+  # Para guardar no cache a foto que o app acabou de enviar.
+  flutter_cache_manager: ^3.4.1
   http:
   crypto:
   shared_preferences:

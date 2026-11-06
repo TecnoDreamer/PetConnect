@@ -9,7 +9,7 @@ A API correspondente está em AleksGustavo/PetConnect-API (branch
 
 | Quando | Notificação | Frequência |
 |---|---|---|
-| A página do QR foi aberta | "O QR Code de [pet] foi acessado". O texto diz que isso não confirma que o pet foi visto | No máximo uma a cada 15 minutos por pet |
+| A página do QR foi aberta | "O QR Code de [pet] foi acessado". O texto diz que isso não confirma que o pet foi visto | A cada abertura da página (até 30 acessos gravados por pet por hora) |
 | Alguém enviou um relato | "Novo avistamento de [pet]", com ou sem localização | A cada relato novo; o mesmo envio repetido não avisa de novo |
 
 - **Toque na notificação:** abre a aba Localização do pet. Se o toque abriu

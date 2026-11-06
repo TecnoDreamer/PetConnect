@@ -54,9 +54,18 @@ class _Repo implements AvisosRepository {
   final removidos = <String>[];
   bool falhar = false;
 
+  /// Falhas antes de responder, como a API acordando no Render.
+  int falhasAteAcordar = 0;
+  int tentativas = 0;
+
   @override
   Future<void> registrarAparelho(String token) async {
+    tentativas++;
     if (falhar) throw Exception('sem rede');
+    if (falhasAteAcordar > 0) {
+      falhasAteAcordar--;
+      throw TimeoutException('API acordando');
+    }
     registrados.add(token);
   }
 
@@ -135,7 +144,16 @@ void main() {
       push = _Push();
       repo = _Repo();
       sessao = StreamController<bool>.broadcast();
-      avisos = AvisosDoQr(push: push, repository: repo, petsNaApi: false);
+      avisos = AvisosDoQr(
+        push: push,
+        repository: repo,
+        petsNaApi: false,
+        esperasDoRegistro: const [
+          Duration(milliseconds: 1),
+          Duration(milliseconds: 1),
+          Duration(milliseconds: 1),
+        ],
+      );
       abertas = [];
       atualizados = [];
       mostrados = [];
@@ -184,9 +202,45 @@ void main() {
       await iniciar();
 
       sessao.add(true);
-      await pumpEventQueue();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(repo.registrados, isEmpty);
+      expect(repo.tentativas, 4, reason: 'a primeira e mais 3 tentativas');
+    });
+
+    test('com a API acordando, tenta de novo e registra o aparelho', () async {
+      repo.falhasAteAcordar = 2;
+      await iniciar();
+
+      sessao.add(true);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(repo.registrados, ['token-1']);
+      expect(repo.tentativas, 3);
+    });
+
+    test('para de tentar depois de sair da conta', () async {
+      repo.falhar = true;
+      avisos = AvisosDoQr(
+        push: push,
+        repository: repo,
+        petsNaApi: false,
+        esperasDoRegistro: const [Duration(milliseconds: 30)],
+      );
+      await iniciar();
+
+      sessao.add(true);
+      await pumpEventQueue();
+      sessao.add(false);
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+
+      expect(repo.tentativas, 1);
+    });
+
+    test('nas esperas padrão, cobre o tempo da API acordar', () {
+      final total = AvisosDoQr.esperasPadraoDoRegistro
+          .fold(Duration.zero, (soma, espera) => soma + espera);
+      expect(total, greaterThanOrEqualTo(const Duration(seconds: 60)));
     });
 
     test('toque com login abre a aba Localização do pet', () async {

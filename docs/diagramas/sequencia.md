@@ -145,7 +145,7 @@ sequenceDiagram
     App->>API: PUT /me/push-devices {token} (depois do login e da permissão)
     Web->>API: POST /events (qr_page_opened) ou POST /sightings
     API-->>Web: 202 / 201 (sem esperar o push)
-    API->>API: preferências do pet; acesso: já avisou nos últimos 15 min?
+    API->>API: preferências do pet (acesso: avisa a cada abertura)
     API->>Mongo: tutor_notifications PENDING
     API->>FCM: título + ids do pet (canal qr_avisos, visibilidade privada)
     alt token inválido
