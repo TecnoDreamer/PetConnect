@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -182,8 +183,11 @@ class _Cabecalho extends StatelessWidget {
             child: CircleAvatar(
               radius: 28,
               backgroundColor: colors.background,
-              backgroundImage:
-                  usuario?.foto != null ? NetworkImage(usuario!.foto!) : null,
+              // Do cache de imagens: a foto que o tutor acabou de enviar já
+              // está nele (guardarFotoEnviadaNoCache).
+              backgroundImage: usuario?.foto != null
+                  ? CachedNetworkImageProvider(usuario!.foto!)
+                  : null,
               child: usuario?.foto == null
                   ? Icon(Icons.person, size: 28, color: colors.brandMedium)
                   : null,

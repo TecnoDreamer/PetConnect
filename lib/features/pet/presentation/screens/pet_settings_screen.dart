@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_palette.dart';
+import '../../../../core/utils/foto_enviada.dart';
 import '../../../../core/utils/upload_error.dart';
 import '../../../../core/widgets/settings_menu_tile.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
@@ -50,8 +51,12 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
       _enviandoCapa || _removendoCapa || _salvandoPosicao;
 
   Future<void> _alterarCapa(Pet pet) async {
-    final arquivo = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final arquivo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: ladoMaximoDaFoto,
+      maxHeight: ladoMaximoDaFoto,
+    );
     if (arquivo == null) return;
 
     final bytes = await arquivo.readAsBytes();
@@ -77,6 +82,7 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
           'pets/capas/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg';
       url = await anexos.upload(
           path: path, bytes: bytes, contentType: 'image/jpeg');
+      await guardarFotoEnviadaNoCache(url, bytes);
       // Foto nova recentraliza o alinhamento — a posição antiga não faz
       // sentido pra uma imagem diferente.
       await ref
