@@ -143,6 +143,15 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- "Sem conexão com o servidor" ao voltar para o app: no Android, a rede do
+  app é cortada em segundo plano e a primeira chamada à API depois da volta
+  podia falhar com a internet boa. Agora uma falha de rede em consultas e
+  atualizações (GET, PUT e DELETE) ganha mais uma tentativa, numa conexão
+  nova, e o app descarta as conexões antigas quando volta ao primeiro plano.
+  Envios que criam algo (POST, PATCH) nunca repetem. Cada falha de rede deixa
+  no log o tipo do erro e a rota sem identificadores. A causa exata da falha
+  vista no motorola ainda não foi confirmada; a correção segue a hipótese de
+  conexão morta reaproveitada. Ver `docs/features/rede-em-segundo-plano.md`.
 - Troca de conta: sair e entrar em outra conta não deixa mais a Home em
   "Não foi possível carregar seus dados". O perfil passa a acompanhar a
   sessão; antes ficava preso ao perfil da conta anterior, que o Firestore
