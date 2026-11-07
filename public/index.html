@@ -86,6 +86,54 @@
     font-size: 15px;
   }
   .contact a { color: var(--brand-dark); font-weight: 700; text-decoration: none; }
+  .whatsapp {
+    display: block;
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #1f7a45;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+  }
+  .whatsapp-hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+  .carousel { margin-bottom: 16px; }
+  .carousel .slides {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--border);
+  }
+  /* cover recorta as bordas, mas nunca estica a foto. */
+  .carousel .slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .carousel .slide.current { opacity: 1; }
+  .carousel-controls { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+  .carousel-controls button {
+    width: auto;
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 15px;
+    background: #fff;
+    color: var(--brand-dark);
+    border: 1.5px solid var(--brand);
+  }
+  .carousel-controls button:not(:disabled):active { background: #fbf3ec; }
+  .carousel-pos { min-width: 72px; text-align: center; font-size: 13px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) {
+    .carousel .slide { transition: none; }
+  }
   .section-title { font-weight: 700; font-size: 16px; margin: 24px 0 10px; }
   label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 4px; }
   textarea, input[type=text] {
@@ -208,6 +256,120 @@
     return m ? '(' + m[1] + ') ' + m[2] + '-' + m[3] : e164;
   }
 
+  // Mensagem pronta do botão do WhatsApp (issue #103). O WhatsApp abre com o
+  // texto; quem envia é o visitante, e a página não diz que foi enviado.
+  var WHATSAPP_TEXT = 'Olá, encontrei seu pet';
+
+  // Só com um telefone E.164 válido (+ e 10 a 15 dígitos), que a API manda
+  // apenas quando o tutor autorizou.
+  function whatsappLink(e164) {
+    var m = /^\+(\d{10,15})$/.exec(e164 || '');
+    return m ? 'https://wa.me/' + m[1] + '?text=' + encodeURIComponent(WHATSAPP_TEXT) : null;
+  }
+
+  var CAROUSEL_INTERVAL_MS = 4000;
+
+  // Carrossel da fase 2 (issue #103): perfil → foto 2 → foto 3 → perfil, a
+  // cada 4 s. Não gira com prefers-reduced-motion, com a aba oculta nem
+  // depois que o visitante usa os botões ou toca na foto. Foto que não
+  // carrega sai do carrossel; sem nenhuma, fica o espaço reservado.
+  function renderCarousel(card, photos, petName) {
+    var alt = petName ? 'Foto de ' + petName : 'Foto do pet';
+    var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var box = el('<section class="carousel" aria-roledescription="carrossel" aria-label="Fotos do pet"></section>');
+    var slides = el('<div class="slides"></div>');
+    var controls = el(
+      '<div class="carousel-controls">' +
+        '<button type="button" class="carousel-prev" aria-label="Foto anterior">‹</button>' +
+        '<span class="carousel-pos" aria-live="polite"></span>' +
+        (reduceMotion ? '' : '<button type="button" class="carousel-pause"></button>') +
+        '<button type="button" class="carousel-next" aria-label="Próxima foto">›</button>' +
+      '</div>'
+    );
+    var imgs = photos.map(function (url, i) {
+      var img = el('<img class="slide" src="' + escapeHtml(url) + '" alt="' +
+        escapeHtml(alt + ', ' + (i + 1) + ' de ' + photos.length) + '">');
+      slides.appendChild(img);
+      return img;
+    });
+    box.appendChild(slides);
+    box.appendChild(controls);
+    card.appendChild(box);
+
+    var pos = controls.querySelector('.carousel-pos');
+    var pauseBtn = controls.querySelector('.carousel-pause');
+    var broken = imgs.map(function () { return false; });
+    var current = 0;
+    var timer = null;
+    // Com prefers-reduced-motion, nunca gira sozinho.
+    var paused = reduceMotion;
+
+    function available() {
+      return broken.filter(function (b) { return !b; }).length;
+    }
+
+    function show(i) {
+      current = i;
+      imgs.forEach(function (img, j) { img.classList.toggle('current', j === i); });
+      var order = 0;
+      for (var j = 0; j <= i; j++) if (!broken[j]) order++;
+      pos.textContent = 'Foto ' + order + ' de ' + available();
+    }
+
+    function step(delta) {
+      for (var n = 1; n <= imgs.length; n++) {
+        var i = (current + delta * n + imgs.length * n) % imgs.length;
+        if (!broken[i]) { show(i); return; }
+      }
+    }
+
+    function schedule() {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (!paused && !document.hidden && available() > 1) {
+        timer = setInterval(function () { step(1); }, CAROUSEL_INTERVAL_MS);
+      }
+    }
+
+    function updatePause() {
+      if (!pauseBtn) return;
+      pauseBtn.textContent = paused ? '▶ Continuar' : '⏸ Pausar';
+      pauseBtn.setAttribute('aria-label', paused ? 'Continuar a troca das fotos' : 'Pausar a troca das fotos');
+    }
+
+    function stopByVisitor() {
+      paused = true;
+      updatePause();
+      schedule();
+    }
+
+    controls.querySelector('.carousel-prev').addEventListener('click', function () { step(-1); stopByVisitor(); });
+    controls.querySelector('.carousel-next').addEventListener('click', function () { step(1); stopByVisitor(); });
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', function () { paused = !paused; updatePause(); schedule(); });
+    }
+    slides.addEventListener('touchstart', stopByVisitor, { passive: true });
+    document.addEventListener('visibilitychange', schedule);
+
+    imgs.forEach(function (img, i) {
+      img.addEventListener('error', function () {
+        broken[i] = true;
+        if (available() === 0) {
+          box.replaceWith(el('<div class="photo-placeholder" aria-hidden="true">🐾</div>'));
+          if (timer) clearInterval(timer);
+          document.removeEventListener('visibilitychange', schedule);
+          return;
+        }
+        if (available() === 1) controls.hidden = true;
+        if (i === current) step(1); else show(current);
+        schedule();
+      });
+    });
+
+    updatePause();
+    show(0);
+    schedule();
+  }
+
   // A API só manda o que o tutor marcou e consentiu (issue #35). Sem
   // consentimento, `shared` vem false e nada do pet aparece: só o aviso de
   // que ele está cadastrado e o formulário para avisar o tutor.
@@ -224,7 +386,10 @@
 
     var speciesLabel = SPECIES_LABEL[pet.species] || pet.species || '';
 
-    if (pet.photoUrl) {
+    // `photos` só vem com o carrossel completo (perfil e as duas da galeria).
+    if (pet.photos && pet.photos.length > 1) {
+      renderCarousel(card, pet.photos, pet.name);
+    } else if (pet.photoUrl) {
       card.appendChild(el('<img class="photo" src="' + escapeHtml(pet.photoUrl) + '" alt="' +
         escapeHtml(pet.name ? 'Foto de ' + pet.name : 'Foto do pet') + '">'));
     } else {
@@ -247,6 +412,12 @@
         '<div class="contact">📞 Contato do tutor: <a href="tel:' + escapeHtml(pet.publicContactPhone) + '">' +
         escapeHtml(formatPhone(pet.publicContactPhone)) + '</a></div>'
       ));
+      var whatsapp = whatsappLink(pet.publicContactPhone);
+      if (whatsapp) {
+        card.appendChild(el('<a class="whatsapp" href="' + escapeHtml(whatsapp) +
+          '" target="_blank" rel="noopener noreferrer">Avisar pelo WhatsApp</a>'));
+        card.appendChild(el('<p class="whatsapp-hint">Abre o WhatsApp com a mensagem pronta. Você confere e envia.</p>'));
+      }
     }
 
     renderSightingForm(card, publicId);

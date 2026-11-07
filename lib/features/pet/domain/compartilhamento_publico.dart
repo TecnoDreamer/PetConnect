@@ -25,6 +25,10 @@ enum CampoPublico {
   raca('BREED', 'Raça'),
   cor('COLOR', 'Cor'),
   fotoPerfil('PROFILE_PHOTO', 'Foto de perfil'),
+
+  /// Duas fotos da galeria depois da de perfil, em carrossel (fase 2,
+  /// issue #103). Exige [fotoPerfil].
+  fotosGaleria('GALLERY_PHOTOS', 'Mais duas fotos da galeria'),
   nomeTutor('TUTOR_NAME', 'Seu nome'),
   telefone('CONTACT_PHONE', 'Telefone ou WhatsApp');
 
@@ -41,6 +45,9 @@ enum CampoPublico {
   }
 }
 
+/// Fotos da galeria na página, além da de perfil.
+const fotosDaGaleriaNaPagina = 2;
+
 /// A configuração salva na API.
 class CompartilhamentoPublico {
   const CompartilhamentoPublico({
@@ -49,6 +56,7 @@ class CompartilhamentoPublico {
     required this.campos,
     this.nomeTutor,
     this.telefone,
+    this.fotosDaGaleria = const [],
     this.consentidoEm,
     this.revogadoEm,
     this.versaoAtual = versaoDoConsentimento,
@@ -65,6 +73,9 @@ class CompartilhamentoPublico {
 
   /// Em E.164.
   final String? telefone;
+
+  /// Ids das fotos da galeria escolhidas, na ordem do carrossel.
+  final List<String> fotosDaGaleria;
   final DateTime? consentidoEm;
   final DateTime? revogadoEm;
 
@@ -85,6 +96,10 @@ class CompartilhamentoPublico {
       campos: campos,
       nomeTutor: m['tutorDisplayName'] as String?,
       telefone: m['contactPhone'] as String?,
+      fotosDaGaleria: [
+        for (final id in (m['galleryPhotoIds'] as List?) ?? const [])
+          if (id is String) id
+      ],
       consentidoEm: data(m['consentAcceptedAt']),
       revogadoEm: data(m['consentRevokedAt']),
       versaoAtual:
@@ -100,11 +115,16 @@ class PedidoDeCompartilhamento {
     required this.campos,
     this.nomeTutor,
     this.telefone,
+    this.fotosDaGaleria = const [],
   });
 
   final Set<CampoPublico> campos;
   final String? nomeTutor;
   final String? telefone;
+
+  /// Ids das duas fotos da galeria, na ordem do carrossel. Só vão com
+  /// [CampoPublico.fotosGaleria].
+  final List<String> fotosDaGaleria;
 
   Map<String, dynamic> paraApi() => {
         'enabled': true,
@@ -117,6 +137,8 @@ class PedidoDeCompartilhamento {
         if (campos.contains(CampoPublico.nomeTutor))
           'tutorDisplayName': nomeTutor,
         if (campos.contains(CampoPublico.telefone)) 'contactPhone': telefone,
+        if (campos.contains(CampoPublico.fotosGaleria))
+          'galleryPhotoIds': fotosDaGaleria,
       };
 }
 

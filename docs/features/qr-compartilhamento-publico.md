@@ -55,6 +55,27 @@ A opção só aparece quando o app fala com a API: `USE_API_QR=true` com os
 pets no Firestore, ou `USE_API_PETS=true`. Sem isso, a página continua com o
 mínimo neutro.
 
+**Fase 2 — mais duas fotos da galeria (issue #103):**
+- A caixa "Mais duas fotos da galeria" só aparece com a galeria ligada
+  (`GALERIA_FOTOS`, pets no Firestore).
+- **Ordem do carrossel:** a foto de perfil é sempre a primeira. Marcar a
+  galeria marca também a foto de perfil, e desmarcar a de perfil desmarca a
+  galeria.
+- **Escolha:** o tutor toca em duas fotos da grade
+  (`escolha_de_fotos_da_galeria.dart`). A ordem do toque é a ordem do
+  carrossel (foto 2 e foto 3). Com duas escolhidas, uma terceira não entra.
+  A grade mostra as 60 fotos mais recentes.
+- **Publicar:** só com as duas escolhidas. A tela nunca envia um carrossel
+  incompleto.
+- **Casos tratados:**
+  - **Sem foto de perfil:** a caixa fica desabilitada, com o aviso.
+  - **Menos de duas fotos na galeria:** desabilitada, com o aviso.
+  - **Galeria sem internet:** desabilitada, com o botão "Tentar carregar a
+    galeria".
+  - **Foto que saiu da galeria:** a escolha dela é desfeita, aparece um
+    aviso, e "Publicar" só volta depois de escolher outra.
+- **Prévia:** mostra as três miniaturas na ordem.
+
 Excluir o pet desliga a página antes. Isso é melhor esforço e espera no
 máximo 5 s; se falhar, a API apaga a configuração no próximo acesso ao QR.
 
@@ -80,14 +101,26 @@ máximo 5 s; se falhar, a API apaga a configuração no próximo acesso ao QR.
 }
 ```
 
-`{"enabled": false}` desativa, revoga e apaga o telefone e o nome de
-exibição.
+`{"enabled": false}` desativa, revoga e apaga o telefone, o nome de
+exibição e as fotos escolhidas.
+
+**Fotos da galeria (fase 2):** com `GALLERY_PHOTOS` em `fields`, o corpo
+leva `"galleryPhotoIds": ["<id da foto 2>", "<id da foto 3>"]`. A API exige:
+- `PROFILE_PHOTO` marcado e o pet com foto de perfil;
+- exatamente dois ids diferentes, só com letras, números, `_` e `-`;
+- as duas fotos em `Pets/{id}/fotos` no Firestore, gravadas para aquele pet
+  pelo dono e com URL do Cloudinary;
+- pet do Firestore: para pet da API, `400`, porque a galeria só existe no
+  Firestore.
+
+Os ids ficam em `pet_public_sharing.galleryPhotoIds`. A URL não é copiada:
+a página lê as fotos na galeria a cada acesso.
 
 **Respostas:**
 
 | Código | Quando |
 |---|---|
-| `400` | Sem consentimento, sem campos, telefone ou nome inválido, campo desconhecido |
+| `400` | Sem consentimento, sem campos, telefone ou nome inválido, campo desconhecido, fotos da galeria inválidas |
 | `401` | Sem token |
 | `404` | Pet inexistente ou de outro tutor |
 | `409 CONSENT_VERSION_OUTDATED` | O texto do consentimento mudou |
@@ -101,6 +134,10 @@ exibição.
 ```
 
 Sem consentimento ativo: `{ "shared": false }`.
+
+Com o carrossel, vem também `"photos": [perfil, foto 2, foto 3]`. Ele só vem
+completo: se uma das fotos saiu da galeria, foi gravada para outro pet ou o
+Firestore não respondeu, `photos` não vem e a página mostra só `photoUrl`.
 
 **Onde fica:**
 - `pet_public_sharing`: uma configuração por pet. Fica fora de `pets` para
@@ -125,8 +162,22 @@ continua revogando o antigo.
 ### Na página
 
 - **`shared: false`:** o mínimo neutro e o formulário.
-- **`shared: true`:** só o que veio. O telefone aparece como link `tel:`; o
-  WhatsApp é a fase 2 (#103).
+- **`shared: true`:** só o que veio. O telefone aparece como link `tel:`.
+- **Carrossel (fase 2, #103):** com `photos`, as fotos trocam a cada 4 s,
+  na ordem perfil → 2 → 3 → perfil.
+  - Botões de voltar, avançar e pausar, com rótulos para leitor de tela e a
+    posição ("Foto 2 de 3") anunciada.
+  - **Para de girar:** com a aba oculta, quando o visitante usa os botões
+    ou toca na foto, e sempre com `prefers-reduced-motion`. Nesse último
+    caso o botão de pausar some e só os manuais funcionam.
+  - **Fotos:** usam `object-fit: cover`, que recorta mas nunca estica. Foto
+    que não carrega sai do carrossel; sem nenhuma, fica o espaço reservado.
+- **WhatsApp (fase 2):** o botão "Avisar pelo WhatsApp" só aparece com o
+  telefone que o tutor autorizou e em E.164 válido.
+  - O link é `https://wa.me/<número sem +>?text=Ol%C3%A1%2C%20encontrei%20seu%20pet`,
+    ou seja, a mensagem "Olá, encontrei seu pet".
+  - Abaixo do botão: "Abre o WhatsApp com a mensagem pronta. Você confere e
+    envia." A página não diz que a mensagem foi enviada.
 - **Mudanças nesta fase:**
   - a caixa de localização deixa de vir marcada (o fluxo completo de
     localização é a fase 3, #37);

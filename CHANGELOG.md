@@ -86,6 +86,19 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
     promete mais que "o tutor foi avisado".
   - Depende da API com a PR da fase 1 e da página publicada no Hosting. Ver
     `docs/features/qr-compartilhamento-publico.md`.
+  - Fase 2 (issue #103):
+    - **Fotos da galeria:** o tutor pode mostrar mais duas fotos da galeria
+      depois da de perfil. Elas aparecem em carrossel na página, trocando a
+      cada 4 s, com botões de voltar, avançar e pausar.
+    - **Quando o carrossel para:** sem animação com "Remover animações", com
+      a aba oculta ou depois de o visitante usar os botões.
+    - **Foto apagada da galeria:** a página volta a mostrar só a de perfil, e
+      o app pede outra.
+    - **WhatsApp:** com o telefone autorizado, o botão "Avisar pelo WhatsApp"
+      abre a conversa com "Olá, encontrei seu pet". Quem confere e envia é o
+      visitante.
+    - **Dependências:** a API com a PR da fase 2, a página publicada no
+      Hosting e a galeria ligada (`GALERIA_FOTOS`).
 - QR code do pet para imprimir: "Baixar QR Code" (PNG de alta resolução
   na galeria), "Compartilhar" (PNG) e "PDF para imprimir" (A4, com o QR
   vetorial em 8, 4, 3 e 2 cm). O arquivo tem o mesmo QR da tela, e nada vai
