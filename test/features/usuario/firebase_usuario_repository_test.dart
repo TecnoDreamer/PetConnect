@@ -10,6 +10,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mock_exceptions/mock_exceptions.dart';
+import 'package:pet_connect/features/pet/data/exclusao_de_pet.dart';
 import 'package:pet_connect/features/usuario/data/firebase_usuario_repository.dart';
 
 const _dono = 'tutor-dono';
@@ -66,7 +67,7 @@ void main() {
         .set({'userId': _dono, 'situacao': 'FALECIDO'});
     await db.collection('Pets').doc('thor').set({'userId': _outro});
     for (final petId in ['rex', 'mel', 'thor']) {
-      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
+      for (final sub in subcolecoesApagadasComOPet) {
         await db.collection('Pets/$petId/$sub').add({'nota': 'x'});
         await db.collection('Pets/$petId/$sub').add({'nota': 'y'});
       }
@@ -75,7 +76,7 @@ void main() {
   });
 
   test('cobre as quatro subcoleções clínicas e a galeria', () {
-    expect(subcolecoesApagadasNaExclusaoDeConta, [
+    expect(subcolecoesApagadasComOPet, [
       'vacinas',
       'consultas',
       'historicoMedico',
@@ -90,7 +91,7 @@ void main() {
 
     for (final petId in ['rex', 'mel']) {
       for (final sub in [
-        ...subcolecoesApagadasNaExclusaoDeConta,
+        ...subcolecoesApagadasComOPet,
         'eventosSituacao',
       ]) {
         expect(await _contar(db, 'Pets/$petId/$sub'), 0,
@@ -118,7 +119,7 @@ void main() {
 
     for (final petId in ['rex', 'mel']) {
       expect((await db.doc('Pets/$petId').get()).exists, isTrue);
-      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
+      for (final sub in subcolecoesApagadasComOPet) {
         expect(await _contar(db, 'Pets/$petId/$sub'), 0,
             reason: 'Pets/$petId/$sub não foi apagada');
       }
@@ -154,7 +155,7 @@ void main() {
     await repo.deleteAccount();
 
     expect((await db.doc('Pets/thor').get()).exists, isTrue);
-    for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
+    for (final sub in subcolecoesApagadasComOPet) {
       expect(await _contar(db, 'Pets/thor/$sub'), 2);
     }
     expect(await _contar(db, 'Pets/thor/eventosSituacao'), 1);

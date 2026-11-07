@@ -1,25 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../pet/data/exclusao_de_pet.dart';
 import '../domain/login_social.dart';
 import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
 import 'entrada_social.dart';
 import 'provedores_sociais.dart';
-
-/// Subcoleções de cada pet apagadas por [FirebaseUsuarioRepository.deleteAccount]
-/// antes do próprio pet (LGPD, RF09/RNF13): as quatro clínicas e a galeria.
-///
-/// `eventosSituacao` (auditoria do Memorial) não está aqui porque segue outro
-/// caminho: `firestore.rules` só aceita apagar esses eventos no mesmo lote que
-/// apaga o perfil do dono (ver docs/security/firestore-isolamento-por-dono.md).
-const subcolecoesApagadasNaExclusaoDeConta = [
-  'vacinas',
-  'consultas',
-  'historicoMedico',
-  'localizacoes',
-  'fotos',
-];
 
 class FirebaseUsuarioRepository implements UsuarioRepository {
   FirebaseUsuarioRepository({
@@ -161,15 +148,13 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
         .where('userId', isEqualTo: uid)
         .get();
     for (final pet in pets.docs) {
-      for (final sub in subcolecoesApagadasNaExclusaoDeConta) {
-        await _deleteSubcollection(pet.reference.collection(sub));
-      }
+      await apagarSubcolecoesDoPet(pet.reference);
     }
 
     // Eventos do Memorial, pets e perfil numa escrita só: a regra só aceita
-    // apagar `eventosSituacao` junto com o perfil, e lê o pet para conferir
-    // o dono (por isso o pet sai no mesmo lote, não antes). Limites de um
-    // lote: 500 operações e 20 leituras de regra (cerca de 18 pets com
+    // apagar `eventosSituacao` junto com o pet ou o perfil, e lê o pet para
+    // conferir o dono (por isso o pet sai no mesmo lote, não antes). Limites
+    // de um lote: 500 operações e 20 leituras de regra (cerca de 18 pets com
     // eventos).
     final batch = _firestore.batch();
     for (final pet in pets.docs) {
@@ -183,13 +168,5 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
     await batch.commit();
 
     await user.delete();
-  }
-
-  Future<void> _deleteSubcollection(
-      CollectionReference<Map<String, dynamic>> collection) async {
-    final docs = await collection.get();
-    for (final doc in docs.docs) {
-      await doc.reference.delete();
-    }
   }
 }
