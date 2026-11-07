@@ -19,7 +19,7 @@
 | Localização | — | `localizacao_management_test.dart` | fake | idem |
 | QR Code | — | `pet_qr_code_test.dart` | — | — |
 | Upload/anexo | — | `api_anexo_repository_test.dart` (mock HTTP, valida multipart + folder assinado) | mock, não Cloudinary real | erro de upload tratado (`describirErroUpload`) |
-| `ApiClient` (núcleo) | `api_client_test.dart` (6 casos: header, erro, 401, rede, 204) | — | — | — |
+| `ApiClient` (núcleo) | `api_client_test.dart` (18 casos: header, erro, 401, rede, 204, nova tentativa, conexão nova e log) | — | — | — |
 
 **Total**: 25 testes rodando em CI (VM, sem Chrome) + 1 bloqueado
 (`auth_flow_test.dart`, precisa de Chrome + infra externa).

@@ -6,7 +6,9 @@ import 'core/config/idioma.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_mode.dart';
 import 'core/theme/theme_providers.dart';
+import 'core/widgets/ao_voltar_ao_primeiro_plano.dart';
 import 'features/avisos/presentation/escuta_de_avisos_do_qr.dart';
+import 'features/usuario/presentation/providers/auth_providers.dart';
 import 'routing/app_router.dart';
 
 /// Para mostrar avisos de fora das telas (aviso do QR com o app aberto).
@@ -43,10 +45,16 @@ class PetConnectApp extends ConsumerWidget {
         localizationsDelegates: IdiomaDoApp.delegates,
         routerConfig: router,
         scaffoldMessengerKey: mensageiroDoApp,
-        builder: (context, child) => EscutaDeAvisosDoQr(
-          router: router,
-          mensageiro: mensageiroDoApp,
-          child: child ?? const SizedBox.shrink(),
+        builder: (context, child) => AoVoltarAoPrimeiroPlano(
+          // A rede do app cai em segundo plano e as conexões abertas morrem:
+          // recomeçar com conexões novas evita o "Sem conexão" na volta.
+          aoVoltar: () =>
+              ref.read(apiClientProvider).descartarConexoesAntigas(),
+          child: EscutaDeAvisosDoQr(
+            router: router,
+            mensageiro: mensageiroDoApp,
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
     );
