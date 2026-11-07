@@ -124,6 +124,11 @@ void main() {
     await tester.pumpAndSettle();
 
     for (final campo in CampoPublico.values) {
+      // Sem a galeria ligada (GALERIA_FOTOS), a opção das fotos não aparece.
+      if (campo == CampoPublico.fotosGaleria) {
+        expect(find.byKey(ValueKey('campo-${campo.api}')), findsNothing);
+        continue;
+      }
       expect(_marcado(tester, 'campo-${campo.api}'), isFalse,
           reason: campo.rotulo);
     }

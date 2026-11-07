@@ -85,6 +85,15 @@ class _Repo implements AvisosRepository {
       throw UnimplementedError();
 }
 
+/// Espera as novas tentativas do registro, sem depender de quão ocupada a
+/// máquina está (com uma espera fixa, o teste falhava na suíte completa).
+Future<void> _ate(bool Function() condicao) async {
+  final limite = DateTime.now().add(const Duration(seconds: 5));
+  while (!condicao() && DateTime.now().isBefore(limite)) {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
+
 const _acesso = {
   'type': 'qr_access',
   'firestorePetId': 'fs-rex',
@@ -202,7 +211,9 @@ void main() {
       await iniciar();
 
       sessao.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await _ate(() => repo.tentativas >= 4);
+      // Folga para uma tentativa a mais aparecer, se houvesse.
+      await Future<void>.delayed(const Duration(milliseconds: 30));
 
       expect(repo.registrados, isEmpty);
       expect(repo.tentativas, 4, reason: 'a primeira e mais 3 tentativas');
@@ -213,7 +224,7 @@ void main() {
       await iniciar();
 
       sessao.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await _ate(() => repo.registrados.isNotEmpty);
 
       expect(repo.registrados, ['token-1']);
       expect(repo.tentativas, 3);

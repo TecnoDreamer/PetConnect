@@ -45,8 +45,38 @@
 - [ ] Testar no Chrome do Android e no navegador do leitor de QR do
       fabricante. Se houver iPhone, testar no Safari.
 
+## Fase 2 — fotos da galeria e WhatsApp (issue #103)
+
+**Pré-requisitos:** API e página da fase 2 publicadas, APK com
+`GALERIA_FOTOS=true` e um pet com foto de perfil e ao menos duas fotos em
+"Fotos".
+
+**App:**
+- [ ] A caixa "Mais duas fotos da galeria" aparece. Marcá-la marca também
+      "Foto de perfil".
+- [ ] Pet sem foto de perfil, ou com menos de duas fotos na galeria: a caixa
+      fica desabilitada, com o aviso.
+- [ ] Escolher duas fotos: os números 2 e 3 aparecem nelas, e a prévia mostra
+      as três miniaturas. Uma terceira foto não entra.
+- [ ] "Publicar" só habilita com as duas escolhidas.
+- [ ] Apagar em "Fotos" uma das escolhidas e reabrir a tela: aparece o aviso
+      de que a foto saiu da galeria, e é preciso escolher outra.
+- [ ] Com TalkBack, cada miniatura é lida com a posição no carrossel.
+
+**Página:**
+- [ ] As fotos trocam a cada 4 s: perfil, 2, 3 e de volta à de perfil.
+- [ ] Voltar, avançar e pausar funcionam. Depois de usar os botões, as fotos
+      param de trocar sozinhas.
+- [ ] Em outra aba e de volta: o carrossel continua de onde parou.
+- [ ] Com "Remover animações" ligado no Android, as fotos não trocam sozinhas.
+- [ ] Depois de apagar uma das fotos da galeria, a página mostra só a de
+      perfil.
+- [ ] Com o telefone marcado, "Avisar pelo WhatsApp" abre o WhatsApp com
+      "Olá, encontrei seu pet". Sem o telefone, o botão não aparece.
+
 ## Resultado
 
 | Item | Aparelho / navegador | Data | Resultado |
 |---|---|---|---|
+| Fase 2, página: carrossel, botões, pausa, reduced-motion, foto que não carrega, WhatsApp com e sem telefone | Navegador do painel (Chromium), contra API falsa local | 2026-11-07 | ✅ Simulado. O pedido real ao WhatsApp e o "Remover animações" do Android não foram testados |
 | | | | |

@@ -8,9 +8,12 @@ import '../../../avisos/presentation/avisos_do_pet_secao.dart';
 import '../../../usuario/domain/usuario.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../../domain/compartilhamento_publico.dart';
+import '../../domain/foto_pet.dart';
 import '../../domain/pet.dart';
 import '../../domain/telefone_de_contato.dart';
+import '../providers/galeria_providers.dart';
 import '../providers/pet_providers.dart';
+import '../widgets/escolha_de_fotos_da_galeria.dart';
 
 /// Configurações do pet > Compartilhamento via QR Code (issue #35).
 ///
@@ -19,6 +22,9 @@ import '../providers/pet_providers.dart';
 /// nova, e a caixa de consentimento vem desmarcada toda vez que a tela abre:
 /// cada publicação é um consentimento novo. O telefone de contato é só da
 /// página: editar aqui não muda o telefone do perfil.
+///
+/// Com a galeria ligada, o tutor pode mostrar mais duas fotos dela depois da
+/// de perfil, em carrossel (issue #103). Só publica com as duas escolhidas.
 class CompartilhamentoQrScreen extends ConsumerWidget {
   const CompartilhamentoQrScreen({super.key, required this.petId});
 
@@ -93,10 +99,26 @@ class _FormularioState extends ConsumerState<_Formulario> {
   final _nomeTutor = TextEditingController();
   final _telefone = TextEditingController();
 
+  /// Ids das fotos da galeria escolhidas, na ordem do carrossel.
+  final _fotosDaGaleria = <String>[];
+
+  /// Fotos da galeria para escolher; nulo enquanto carrega.
+  List<FotoPet>? _galeria;
+  bool _galeriaTemMais = false;
+  bool _erroNaGaleria = false;
+  bool _fotoSaiuDaGaleria = false;
+
+  /// Fotos carregadas para a escolha. Galerias maiores mostram as mais
+  /// recentes.
+  static const _fotosNaEscolha = 60;
+
+  bool get _galeriaDisponivel => ref.read(galeriaDisponivelProvider);
+
   @override
   void initState() {
     super.initState();
     _carregar();
+    _carregarGaleria();
   }
 
   @override
@@ -125,6 +147,10 @@ class _FormularioState extends ConsumerState<_Formulario> {
         _campos
           ..clear()
           ..addAll(salvo.ativo ? salvo.campos : const {});
+        _fotosDaGaleria
+          ..clear()
+          ..addAll(salvo.ativo ? salvo.fotosDaGaleria : const []);
+        _conferirFotosEscolhidas();
         _nomeTutor.text = salvo.nomeTutor ?? usuario?.nome.trim() ?? '';
         final telefone = salvo.telefone ?? usuario?.telefone ?? '';
         final e164 = telefoneE164(telefone);
@@ -140,6 +166,92 @@ class _FormularioState extends ConsumerState<_Formulario> {
       }
     }
   }
+
+  Future<void> _carregarGaleria() async {
+    if (!_galeriaDisponivel) return;
+    setState(() {
+      _galeria = null;
+      _erroNaGaleria = false;
+    });
+    try {
+      final pagina = await ref
+          .read(galeriaRepositoryProvider)
+          .listar(widget.pet.id, limite: _fotosNaEscolha);
+      if (!mounted) return;
+      setState(() {
+        _galeria = pagina.fotos;
+        _galeriaTemMais = pagina.temMais;
+        _conferirFotosEscolhidas();
+      });
+    } catch (_) {
+      if (mounted) setState(() => _erroNaGaleria = true);
+    }
+  }
+
+  /// Foto escolhida que saiu da galeria deixa de contar, e o tutor escolhe
+  /// outra antes de salvar. Com a galeria carregada só em parte, não dá para
+  /// saber, e a escolha fica como está.
+  void _conferirFotosEscolhidas() {
+    final galeria = _galeria;
+    if (galeria == null || _galeriaTemMais) return;
+    final existentes = {for (final f in galeria) f.id};
+    final antes = _fotosDaGaleria.length;
+    _fotosDaGaleria.removeWhere((id) => !existentes.contains(id));
+    if (_fotosDaGaleria.length < antes) _fotoSaiuDaGaleria = true;
+  }
+
+  bool get _petTemFotoDePerfil => (widget.pet.foto ?? '').isNotEmpty;
+
+  /// A opção da galeria só pode ser marcada com a foto de perfil e ao menos
+  /// duas fotos na galeria. Desmarcar sempre pode.
+  bool get _podeMarcarGaleria =>
+      _campos.contains(CampoPublico.fotosGaleria) ||
+      (_petTemFotoDePerfil &&
+          (_galeria?.length ?? 0) >= fotosDaGaleriaNaPagina);
+
+  void _alternarCampo(CampoPublico campo, bool marcado) {
+    if (marcado) {
+      _campos.add(campo);
+      // A foto de perfil abre o carrossel.
+      if (campo == CampoPublico.fotosGaleria) {
+        _campos.add(CampoPublico.fotoPerfil);
+      }
+    } else {
+      _campos.remove(campo);
+      if (campo == CampoPublico.fotoPerfil) {
+        _campos.remove(CampoPublico.fotosGaleria);
+      }
+    }
+  }
+
+  void _alternarFoto(String id) {
+    setState(() {
+      _fotoSaiuDaGaleria = false;
+      if (!_fotosDaGaleria.remove(id) &&
+          _fotosDaGaleria.length < fotosDaGaleriaNaPagina) {
+        _fotosDaGaleria.add(id);
+      }
+    });
+  }
+
+  /// Miniaturas das fotos 2 e 3 para a prévia, só com as duas escolhidas.
+  List<String> get _miniaturasEscolhidas {
+    final galeria = _galeria;
+    if (!_campos.contains(CampoPublico.fotosGaleria) || galeria == null) {
+      return const [];
+    }
+    final porId = {for (final f in galeria) f.id: f};
+    final urls = [
+      for (final id in _fotosDaGaleria)
+        if (porId[id] != null) porId[id]!.miniaturaUrl
+    ];
+    return urls.length == fotosDaGaleriaNaPagina ? urls : const [];
+  }
+
+  bool get _galeriaCompleta =>
+      !_campos.contains(CampoPublico.fotosGaleria) ||
+      (_campos.contains(CampoPublico.fotoPerfil) &&
+          _fotosDaGaleria.length == fotosDaGaleriaNaPagina);
 
   String? get _erroNomeTutor {
     if (!_campos.contains(CampoPublico.nomeTutor)) return null;
@@ -160,6 +272,7 @@ class _FormularioState extends ConsumerState<_Formulario> {
       !_salvando &&
       _consentiu &&
       _campos.isNotEmpty &&
+      _galeriaCompleta &&
       _erroNomeTutor == null &&
       _erroTelefone == null;
 
@@ -177,12 +290,14 @@ class _FormularioState extends ConsumerState<_Formulario> {
           campos: Set.of(_campos),
           nomeTutor: _nomeTutor.text.trim(),
           telefone: telefoneE164(_telefone.text),
+          fotosDaGaleria: List.of(_fotosDaGaleria),
         ),
       );
       if (!mounted) return;
       setState(() {
         _salvo = salvo;
         _consentiu = false;
+        _fotoSaiuDaGaleria = false;
         _aviso = ativoAntes
             ? 'Alterações salvas. A página já mostra os dados novos.'
             : 'Página pública ativada.';
@@ -229,6 +344,7 @@ class _FormularioState extends ConsumerState<_Formulario> {
       setState(() {
         _salvo = salvo;
         _campos.clear();
+        _fotosDaGaleria.clear();
         _consentiu = false;
         _aviso = 'Página pública desativada.';
       });
@@ -278,71 +394,74 @@ class _FormularioState extends ConsumerState<_Formulario> {
             style: TextStyle(color: colors.textMuted, fontSize: 13),
           ),
         ),
-        for (final campo in CampoPublico.values) ...[
-          CheckboxListTile(
-            key: ValueKey('campo-${campo.api}'),
-            value: _campos.contains(campo),
-            title: Text(campo.rotulo),
-            subtitle: _detalheDo(campo, pet),
-            controlAffinity: ListTileControlAffinity.leading,
-            onChanged: _salvando
-                ? null
-                : (marcado) => setState(() {
-                      marcado == true
-                          ? _campos.add(campo)
-                          : _campos.remove(campo);
-                    }),
-          ),
-          if (campo == CampoPublico.nomeTutor &&
-              _campos.contains(CampoPublico.nomeTutor))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: TextField(
-                key: const ValueKey('nome-tutor'),
-                controller: _nomeTutor,
-                maxLength: 60,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  hintText: 'Como seu nome aparece',
-                  errorText: _erroNomeTutor,
+        for (final campo in CampoPublico.values)
+          if (campo != CampoPublico.fotosGaleria || _galeriaDisponivel) ...[
+            CheckboxListTile(
+              key: ValueKey('campo-${campo.api}'),
+              value: _campos.contains(campo),
+              title: Text(campo.rotulo),
+              subtitle: _detalheDo(campo, pet),
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: _salvando ||
+                      (campo == CampoPublico.fotosGaleria &&
+                          !_podeMarcarGaleria)
+                  ? null
+                  : (marcado) =>
+                      setState(() => _alternarCampo(campo, marcado == true)),
+            ),
+            if (campo == CampoPublico.fotosGaleria)
+              ..._escolhaDaGaleria(colors),
+            if (campo == CampoPublico.nomeTutor &&
+                _campos.contains(CampoPublico.nomeTutor))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: TextField(
+                  key: const ValueKey('nome-tutor'),
+                  controller: _nomeTutor,
+                  maxLength: 60,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'Como seu nome aparece',
+                    errorText: _erroNomeTutor,
+                  ),
+                  onChanged: (_) => setState(() {}),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
-            ),
-          if (campo == CampoPublico.telefone &&
-              _campos.contains(CampoPublico.telefone))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    key: const ValueKey('telefone'),
-                    controller: _telefone,
-                    keyboardType: TextInputType.phone,
-                    autofillHints: const [AutofillHints.telephoneNumber],
-                    decoration: InputDecoration(
-                      hintText: '(19) 99999-0000',
-                      errorText: _erroTelefone,
+            if (campo == CampoPublico.telefone &&
+                _campos.contains(CampoPublico.telefone))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      key: const ValueKey('telefone'),
+                      controller: _telefone,
+                      keyboardType: TextInputType.phone,
+                      autofillHints: const [AutofillHints.telephoneNumber],
+                      decoration: InputDecoration(
+                        hintText: '(19) 99999-0000',
+                        errorText: _erroTelefone,
+                      ),
+                      onChanged: (_) => setState(() {}),
                     ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Quem abrir a página vai ver este número. Ele vale só '
-                    'para a página e não muda o telefone do seu perfil.',
-                    style: TextStyle(color: colors.textMuted, fontSize: 12),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      'Quem abrir a página vai ver este número. Ele vale só '
+                      'para a página e não muda o telefone do seu perfil.',
+                      style: TextStyle(color: colors.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
         const SettingsSectionHeader(title: 'Prévia para quem escanear'),
         _Previa(
           pet: pet,
           campos: _campos,
           nomeTutor: _nomeTutor.text.trim(),
           telefone: telefoneE164(_telefone.text),
+          fotosDaGaleria: _miniaturasEscolhidas,
         ),
         const SizedBox(height: 8),
         CheckboxListTile(
@@ -405,6 +524,7 @@ class _FormularioState extends ConsumerState<_Formulario> {
   }
 
   Widget? _detalheDo(CampoPublico campo, Pet pet) {
+    if (campo == CampoPublico.fotosGaleria) return Text(_detalheDaGaleria);
     final texto = switch (campo) {
       CampoPublico.nomePet => pet.nome,
       CampoPublico.especie => pet.especie,
@@ -412,10 +532,71 @@ class _FormularioState extends ConsumerState<_Formulario> {
       CampoPublico.cor => pet.cor,
       CampoPublico.fotoPerfil =>
         (pet.foto ?? '').isEmpty ? 'Este pet ainda não tem foto' : null,
-      CampoPublico.nomeTutor || CampoPublico.telefone => null,
+      CampoPublico.fotosGaleria ||
+      CampoPublico.nomeTutor ||
+      CampoPublico.telefone =>
+        null,
     };
     if (texto == null) return null;
     return Text(texto.isEmpty ? 'Não preenchido no perfil' : texto);
+  }
+
+  String get _detalheDaGaleria {
+    if (!_petTemFotoDePerfil) {
+      return 'Precisa de uma foto de perfil, que aparece primeiro.';
+    }
+    if (_erroNaGaleria) {
+      return 'Não foi possível carregar a galeria. Verifique a internet.';
+    }
+    final galeria = _galeria;
+    if (galeria == null) return 'Carregando a galeria…';
+    if (galeria.length < fotosDaGaleriaNaPagina) {
+      return 'A galeria tem menos de duas fotos. Publique fotos em "Fotos", '
+          'no perfil do pet.';
+    }
+    return 'Aparecem depois da foto de perfil, em carrossel.';
+  }
+
+  /// Seletor das duas fotos, com os avisos de galeria indisponível ou de
+  /// foto que saiu da galeria.
+  List<Widget> _escolhaDaGaleria(AppPalette colors) {
+    final marcada = _campos.contains(CampoPublico.fotosGaleria);
+    final galeria = _galeria;
+    return [
+      if (_erroNaGaleria)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const ValueKey('recarregar-galeria'),
+              onPressed: _carregarGaleria,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar carregar a galeria'),
+            ),
+          ),
+        ),
+      if (_fotoSaiuDaGaleria)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: Text(
+            'Uma das fotos escolhidas saiu da galeria. Escolha outra para '
+            'publicar o carrossel.',
+            key: const ValueKey('foto-saiu-da-galeria'),
+            style: TextStyle(color: colors.error, fontSize: 13),
+          ),
+        ),
+      if (marcada && galeria != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: EscolhaDeFotosDaGaleria(
+            fotos: galeria,
+            escolhidas: _fotosDaGaleria,
+            aoAlternar: _alternarFoto,
+            habilitada: !_salvando,
+          ),
+        ),
+    ];
   }
 }
 
@@ -489,12 +670,16 @@ class _Previa extends StatelessWidget {
     required this.campos,
     required this.nomeTutor,
     required this.telefone,
+    this.fotosDaGaleria = const [],
   });
 
   final Pet pet;
   final Set<CampoPublico> campos;
   final String nomeTutor;
   final String? telefone;
+
+  /// Miniaturas das fotos 2 e 3 do carrossel; vazia sem carrossel.
+  final List<String> fotosDaGaleria;
 
   @override
   Widget build(BuildContext context) {
@@ -518,6 +703,9 @@ class _Previa extends StatelessWidget {
         campos.contains(CampoPublico.fotoPerfil) && (pet.foto ?? '').isNotEmpty
             ? pet.foto
             : null;
+    final carrossel = foto != null && fotosDaGaleria.isNotEmpty
+        ? [foto, ...fotosDaGaleria]
+        : const <String>[];
 
     return Container(
       key: const ValueKey('previa'),
@@ -528,47 +716,89 @@ class _Previa extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.divider),
       ),
-      child: linhas.isEmpty && foto == null
-          ? Text(
-              'Este pet está cadastrado no PetConnect.\n'
-              'Formulário para avisar o tutor.',
-              style: TextStyle(color: colors.textMuted),
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (foto != null) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      foto,
-                      width: 64,
-                      height: 64,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const SizedBox(width: 64, height: 64),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _conteudo(colors, linhas, foto),
+          if (carrossel.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Semantics(
+              key: const ValueKey('previa-carrossel'),
+              label: 'Carrossel com ${carrossel.length} fotos, a de perfil '
+                  'primeiro',
+              excludeSemantics: true,
+              child: Row(
+                children: [
+                  for (final (i, url) in carrossel.indexed) ...[
+                    if (i > 0) const SizedBox(width: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        url,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const SizedBox(width: 48, height: 48),
+                      ),
                     ),
+                  ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Trocam a cada 4 segundos.',
+                        style:
+                            TextStyle(color: colors.textMuted, fontSize: 12)),
                   ),
-                  const SizedBox(width: 12),
                 ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final linha in linhas)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(linha,
-                              style: TextStyle(color: colors.textPrimary)),
-                        ),
-                      Text('Formulário para avisar o tutor.',
-                          style:
-                              TextStyle(color: colors.textMuted, fontSize: 12)),
-                    ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _conteudo(AppPalette colors, List<String> linhas, String? foto) {
+    return linhas.isEmpty && foto == null
+        ? Text(
+            'Este pet está cadastrado no PetConnect.\n'
+            'Formulário para avisar o tutor.',
+            style: TextStyle(color: colors.textMuted),
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (foto != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    foto,
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const SizedBox(width: 64, height: 64),
                   ),
                 ),
+                const SizedBox(width: 12),
               ],
-            ),
-    );
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final linha in linhas)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(linha,
+                            style: TextStyle(color: colors.textPrimary)),
+                      ),
+                    Text('Formulário para avisar o tutor.',
+                        style:
+                            TextStyle(color: colors.textMuted, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          );
   }
 }

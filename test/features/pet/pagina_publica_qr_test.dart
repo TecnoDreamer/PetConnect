@@ -54,6 +54,60 @@ void main() {
     expect(html, isNot(contains('O tutor foi avisado')));
   });
 
+  group('fase 2 (issue #103)', () {
+    final carrossel = html.substring(html.indexOf('function renderCarousel'),
+        html.indexOf('function renderPet'));
+
+    test('carrossel só com as três fotos, troca a cada 4 s e é cíclico', () {
+      expect(html, contains('pet.photos && pet.photos.length > 1'));
+      expect(html, contains('var CAROUSEL_INTERVAL_MS = 4000;'));
+      expect(carrossel, contains('% imgs.length'), reason: 'volta ao perfil');
+    });
+
+    test('para de girar com reduced-motion, aba oculta e interação', () {
+      expect(carrossel, contains('prefers-reduced-motion: reduce'));
+      expect(carrossel, contains('var paused = reduceMotion;'));
+      expect(carrossel, contains('document.hidden'));
+      expect(carrossel, contains("addEventListener('visibilitychange'"));
+      expect(
+          carrossel, contains("addEventListener('touchstart', stopByVisitor"));
+      expect(html, contains('.carousel .slide { transition: none; }'));
+    });
+
+    test('botões de voltar, avançar e pausar, com rótulo para leitor de tela',
+        () {
+      expect(carrossel, contains('aria-label="Foto anterior"'));
+      expect(carrossel, contains('aria-label="Próxima foto"'));
+      expect(carrossel, contains('Pausar a troca das fotos'));
+      expect(carrossel, contains('aria-live="polite"'));
+    });
+
+    test('foto que não carrega sai do carrossel, sem distorcer as outras', () {
+      expect(carrossel, contains("img.addEventListener('error'"));
+      expect(html, contains('object-fit: cover;'));
+    });
+
+    test('WhatsApp: mensagem exata, só com telefone autorizado e válido', () {
+      expect(html, contains("var WHATSAPP_TEXT = 'Olá, encontrei seu pet';"));
+      expect(
+          html,
+          contains("'https://wa.me/' + m[1] + '?text=' + "
+              'encodeURIComponent(WHATSAPP_TEXT)'));
+      expect(html, contains(r'/^\+(\d{10,15})$/'));
+      // O botão só nasce dentro do bloco do telefone que o tutor autorizou.
+      final contato = html.substring(
+          html.indexOf('if (pet.publicContactPhone)'),
+          html.indexOf('renderSightingForm(card, publicId);\n  }'));
+      expect(contato, contains('whatsappLink(pet.publicContactPhone)'));
+      expect(html, isNot(contains('mensagem foi enviada')));
+    });
+
+    test('a mensagem codificada é a pedida na issue', () {
+      expect(Uri.encodeComponent('Olá, encontrei seu pet'),
+          'Ol%C3%A1%2C%20encontrei%20seu%20pet');
+    });
+  });
+
   test('continua fora dos buscadores', () {
     expect(html, contains('<meta name="robots" content="noindex" />'));
   });

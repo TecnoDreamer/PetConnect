@@ -35,6 +35,7 @@
 |---|---|
 | Coleta só o necessário pra cada funcionalidade | ✅ Nenhum campo "extra" identificado sem uso — todos os campos de `User`/`Pet`/etc. são exibidos/editados em alguma tela |
 | Contato do tutor na página pública é opt-in | ✅ Consentimento por campo na página pública (RF51): nada aparece sem o tutor marcar e consentir; o telefone da página é separado do telefone do perfil e é apagado ao revogar |
+| Fotos da galeria na página pública são opt-in (fase 2, #103) | ✅ Só as duas fotos que o tutor escolhe, com a caixa "Mais duas fotos da galeria" marcada e o consentimento. A API guarda só os ids e lê a foto na galeria a cada acesso: foto apagada da galeria sai da página na hora. Revogar apaga a escolha. O botão do WhatsApp só aparece com o telefone autorizado e não envia nada sozinho. |
 | Relato de avistamento não identifica quem reporta | ✅ Endpoint público não pede/guarda e-mail, nome ou IP de quem reporta (só a coordenada+descrição) |
 | Retenção definida por política (não só "para sempre") | ❌ **Decisão pendente** — hoje não há expiração automática de nenhum dado; tudo fica até exclusão manual da conta/pet |
 | Anonimização em vez de exclusão física, se aplicável | ❌ Não implementado — exclusão de conta remove os documentos de fato (não anonimiza). Isso é **mais** conservador do ponto de vista de privacidade (dado realmente sai do banco), então não é um problema de LGPD, mas pode ser um problema se o produto quiser manter histórico agregado/anônimo pra métricas no futuro |
