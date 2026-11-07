@@ -90,7 +90,14 @@ class _EsqueciSenhaScreenState extends ConsumerState<EsqueciSenhaScreen> {
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(hintText: 'E-mail:'),
+                        // A borda vem do tema; a altura é a do campo de
+                        // e-mail da tela Entrar.
+                        decoration: const InputDecoration(
+                          hintText: 'E-mail:',
+                          isDense: true,
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                        ),
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton(

@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_palette.dart';
+import '../../data/exportacao_cartaz.dart';
+import '../../data/exportacao_qr.dart';
 import '../../domain/pet.dart';
+import '../../domain/pet_qr_code.dart';
 import '../../domain/pet_qr_repository.dart';
+import '../providers/cartaz_providers.dart';
 import '../providers/pet_providers.dart';
 import 'pet_qr_code.dart';
 
-/// Conteúdo do bottom sheet "QR Code do Pet": o QR atual e, quando a API
+enum _Exportacao { baixar, compartilhar, pdf }
+
+/// Conteúdo do bottom sheet "QR Code do Pet": o QR atual, a exportação para
+/// imprimir na coleira (docs/features/qr-exportacao.md) e, quando a API
 /// está configurada, a opção de gerar um novo (RF19, issue #29).
 ///
 /// Observa [petProvider] em vez de usar só o [pet] recebido: depois de
@@ -27,6 +34,9 @@ class _PetQrSheetState extends ConsumerState<PetQrSheet> {
   String? _mensagem;
   bool _mensagemDeErro = false;
   bool _podeVerificar = false;
+  _Exportacao? _exportando;
+
+  bool get _algoEmAndamento => _ocupado || _exportando != null;
 
   @override
   void initState() {
@@ -65,7 +75,7 @@ class _PetQrSheetState extends ConsumerState<PetQrSheet> {
         ],
       ),
     );
-    if (confirmou != true || _ocupado || !mounted) return;
+    if (confirmou != true || _algoEmAndamento || !mounted) return;
 
     await _executar(
       () => ref.read(petQrRepositoryProvider).regenerar(_petAtual),
@@ -114,6 +124,68 @@ class _PetQrSheetState extends ConsumerState<PetQrSheet> {
     });
   }
 
+  /// Gera o arquivo do QR exibido agora e o entrega ao sistema. Salvar na
+  /// galeria confirma com mensagem; compartilhar, não, porque o sistema nem
+  /// sempre informa se o tutor enviou.
+  Future<void> _exportar(_Exportacao acao) async {
+    if (_algoEmAndamento) return;
+    final pet = _petAtual;
+    setState(() {
+      _exportando = acao;
+      _mensagem = null;
+      _podeVerificar = false;
+    });
+    final destino = ref.read(destinoDoCartazProvider);
+    final dados = publicPetUrl(pet);
+    final agora = DateTime.now();
+    String nome(String extensao) => nomeDoArquivoDoQr(
+        publicId: publicIdDoQr(pet), data: agora, extensao: extensao);
+    String? mensagem;
+    var erro = false;
+    try {
+      switch (acao) {
+        case _Exportacao.baixar:
+          final png = await gerarPngDoQr(dados);
+          final arquivo = nome('png');
+          await destino.salvarNaGaleria(
+              png: png,
+              nome: arquivo.substring(0, arquivo.length - '.png'.length));
+          mensagem = 'QR code salvo na galeria de fotos.';
+        case _Exportacao.compartilhar:
+          await destino.compartilhar(
+              bytes: await gerarPngDoQr(dados),
+              nomeDoArquivo: nome('png'),
+              mimeType: 'image/png');
+        case _Exportacao.pdf:
+          await destino.compartilhar(
+              bytes: await gerarPdfDoQr(dados: dados, nomeDoPet: pet.nome),
+              nomeDoArquivo: nome('pdf'),
+              mimeType: 'application/pdf');
+      }
+    } on FalhaAoSalvarCartaz catch (e) {
+      erro = true;
+      mensagem = switch (e.motivo) {
+        MotivoFalhaAoSalvar.semPermissao => 'Não foi possível salvar na '
+            'galeria. Use "Compartilhar" e escolha onde salvar.',
+        MotivoFalhaAoSalvar.semEspaco =>
+          'Não há espaço livre no celular para salvar o QR code.',
+        MotivoFalhaAoSalvar.outro =>
+          'Não foi possível salvar o QR code. Tente de novo.',
+      };
+    } catch (_) {
+      erro = true;
+      mensagem = 'Não foi possível gerar o arquivo do QR code. Tente de novo.';
+    }
+    if (!mounted) return;
+    setState(() {
+      _exportando = null;
+      if (mensagem != null) {
+        _mensagem = mensagem;
+        _mensagemDeErro = erro;
+      }
+    });
+  }
+
   static String _mensagemDa(QrFalha falha) => switch (falha) {
         QrFalha.conflito => 'Este QR code já tinha sido trocado, talvez em '
             'outro aparelho. Agora aparece o QR code atual.',
@@ -135,32 +207,78 @@ class _PetQrSheetState extends ConsumerState<PetQrSheet> {
     final pet = ref.watch(petProvider(widget.pet.id)).valueOrNull ?? widget.pet;
     final suporta = ref.watch(petQrRepositoryProvider).suportaRegeneracao;
 
+    Widget icone(_Exportacao acao, IconData simbolo) => _exportando == acao
+        ? const SizedBox.square(
+            dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+        : Icon(simbolo);
+    VoidCallback? aoTocar(_Exportacao acao) =>
+        _algoEmAndamento ? null : () => _exportar(acao);
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           PetQrCode(pet: pet),
-          if (suporta) ...[
-            const SizedBox(height: 12),
-            if (_mensagem != null)
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  _mensagem!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _mensagemDeErro ? colors.error : colors.success,
-                    fontSize: 13,
-                  ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            key: const ValueKey('qr-baixar'),
+            onPressed: aoTocar(_Exportacao.baixar),
+            icon: icone(_Exportacao.baixar, Icons.download_outlined),
+            label: const Text('Baixar QR Code'),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('qr-compartilhar'),
+                  onPressed: aoTocar(_Exportacao.compartilhar),
+                  icon: icone(_Exportacao.compartilhar, Icons.share_outlined),
+                  label: const Text('Compartilhar'),
                 ),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('qr-pdf'),
+                  onPressed: aoTocar(_Exportacao.pdf),
+                  icon: icone(_Exportacao.pdf, Icons.picture_as_pdf_outlined),
+                  label: const Text('PDF para imprimir'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Para a coleira: imprima em preto sobre branco, com pelo menos '
+            '2 cm de lado, e teste a leitura com a câmera do celular antes '
+            'de usar.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textMuted, fontSize: 12),
+          ),
+          if (_mensagem != null) ...[
+            const SizedBox(height: 12),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                _mensagem!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _mensagemDeErro ? colors.error : colors.success,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+          if (suporta) ...[
+            const SizedBox(height: 4),
             if (_podeVerificar)
               TextButton(
-                onPressed: _ocupado ? null : _verificar,
+                onPressed: _algoEmAndamento ? null : _verificar,
                 child: const Text('Verificar de novo'),
               ),
             TextButton.icon(
-              onPressed: _ocupado ? null : _confirmarERegenerar,
+              onPressed: _algoEmAndamento ? null : _confirmarERegenerar,
               icon: _ocupado
                   ? const SizedBox(
                       width: 16,

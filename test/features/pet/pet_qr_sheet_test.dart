@@ -1,14 +1,22 @@
-// QR code regenerável (RF19, issue #29) — o sheet "QR Code do Pet".
+// QR code regenerável (RF19, issue #29) e exportação para impressão
+// (issue #96) — o sheet "QR Code do Pet".
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pet_connect/core/theme/app_theme.dart';
 import 'package:pet_connect/core/theme/app_theme_mode.dart';
+import 'package:pet_connect/features/pet/data/exportacao_cartaz.dart';
 import 'package:pet_connect/features/pet/domain/pet.dart';
 import 'package:pet_connect/features/pet/domain/pet_qr_code.dart';
 import 'package:pet_connect/features/pet/domain/pet_qr_repository.dart';
+import 'package:pet_connect/features/pet/presentation/providers/cartaz_providers.dart';
 import 'package:pet_connect/features/pet/presentation/providers/pet_providers.dart';
 import 'package:pet_connect/features/pet/presentation/widgets/pet_qr_sheet.dart';
+
+import 'package:zxing2/qrcode.dart';
 
 import '../../helpers/fonte_roboto.dart';
 
@@ -62,9 +70,59 @@ class _FakeQr implements PetQrRepository {
   }
 }
 
+class _FakeDestino implements DestinoDoCartaz {
+  final compartilhados = <({Uint8List bytes, String nome, String mime})>[];
+  final salvos = <({Uint8List png, String nome})>[];
+  MotivoFalhaAoSalvar? falhaAoSalvar;
+
+  @override
+  Future<bool> compartilhar({
+    required Uint8List bytes,
+    required String nomeDoArquivo,
+    required String mimeType,
+  }) async {
+    compartilhados.add((bytes: bytes, nome: nomeDoArquivo, mime: mimeType));
+    return true;
+  }
+
+  @override
+  Future<void> salvarNaGaleria({
+    required Uint8List png,
+    required String nome,
+  }) async {
+    if (falhaAoSalvar != null) throw FalhaAoSalvarCartaz(falhaAoSalvar!);
+    salvos.add((png: png, nome: nome));
+  }
+}
+
+/// Lê o QR de um PNG como um leitor faria (zxing).
+Future<String> _lerQr(Uint8List png) async {
+  final codec = await ui.instantiateImageCodec(png);
+  final imagem = (await codec.getNextFrame()).image;
+  final rgba = (await imagem.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+  final fonte = RGBLuminanceSource(imagem.width, imagem.height,
+      Int32List.fromList(rgba.buffer.asInt32List()));
+  imagem.dispose();
+  codec.dispose();
+  return QRCodeReader()
+      .decode(BinaryBitmap(GlobalHistogramBinarizer(fonte)))
+      .text;
+}
+
+/// A exportação gera o arquivo de verdade (tempo real), intercalado com
+/// quadros.
+Future<void> _esperarArquivo(WidgetTester tester) async {
+  for (var i = 0; i < 6; i++) {
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+  }
+}
+
 Future<void> _abrir(
   WidgetTester tester,
   _FakeQr qr, {
+  _FakeDestino? destino,
   AppThemeMode modo = AppThemeMode.padrao,
   Size tamanho = const Size(412, 915),
   double escalaFonte = 1,
@@ -78,6 +136,7 @@ Future<void> _abrir(
     overrides: [
       petQrRepositoryProvider.overrideWithValue(qr),
       petProvider.overrideWith((ref, id) => Stream.value(qr.petAtual)),
+      destinoDoCartazProvider.overrideWithValue(destino ?? _FakeDestino()),
     ],
     child: MaterialApp(
       theme: AppTheme.build(modo),
@@ -242,6 +301,73 @@ void main() {
     await _gerarNovo(tester);
 
     expect(find.textContaining('já tinha sido trocado'), findsOneWidget);
+  });
+
+  group('Exportação para impressão', () {
+    testWidgets('Baixar QR Code salva na galeria o PNG do QR exibido',
+        (tester) async {
+      final destino = _FakeDestino();
+      await _abrir(tester, _FakeQr(suporta: false), destino: destino);
+      expect(find.text('Baixar QR Code'), findsOneWidget);
+      expect(find.textContaining('teste a leitura'), findsOneWidget);
+
+      await tester.tap(find.text('Baixar QR Code'));
+      await _esperarArquivo(tester);
+
+      final salvo = destino.salvos.single;
+      expect(salvo.nome, matches(RegExp(r'^petconnect-qr-[0-9a-f]{8}-\d{8}$')));
+      expect(
+          await tester.runAsync(() => _lerQr(salvo.png)), publicPetUrl(_pet()));
+      expect(find.text('QR code salvo na galeria de fotos.'), findsOneWidget);
+    });
+
+    testWidgets('Compartilhar e PDF vão pela folha do sistema, sem aviso',
+        (tester) async {
+      final destino = _FakeDestino();
+      await _abrir(tester, _FakeQr(suporta: false), destino: destino);
+
+      await tester.tap(find.text('Compartilhar'));
+      await _esperarArquivo(tester);
+      await tester.tap(find.text('PDF para imprimir'));
+      await _esperarArquivo(tester);
+
+      final [png, pdf] = destino.compartilhados;
+      expect(png.mime, 'image/png');
+      expect(png.nome, endsWith('.png'));
+      expect(
+          await tester.runAsync(() => _lerQr(png.bytes)), publicPetUrl(_pet()));
+      expect(pdf.mime, 'application/pdf');
+      expect(pdf.nome, endsWith('.pdf'));
+      expect(String.fromCharCodes(pdf.bytes.sublist(0, 4)), '%PDF');
+      expect(find.textContaining('salvo na galeria'), findsNothing);
+    });
+
+    testWidgets('sem acesso à galeria, orienta a compartilhar', (tester) async {
+      final destino = _FakeDestino()
+        ..falhaAoSalvar = MotivoFalhaAoSalvar.semPermissao;
+      await _abrir(tester, _FakeQr(suporta: false), destino: destino);
+
+      await tester.tap(find.text('Baixar QR Code'));
+      await _esperarArquivo(tester);
+
+      expect(destino.salvos, isEmpty);
+      expect(find.textContaining('Use "Compartilhar"'), findsOneWidget);
+    });
+
+    testWidgets('depois de gerar um novo QR, o arquivo traz o novo',
+        (tester) async {
+      final destino = _FakeDestino();
+      await _abrir(tester, _FakeQr(), destino: destino);
+      await _gerarNovo(tester);
+
+      await tester.tap(find.text('Compartilhar'));
+      await _esperarArquivo(tester);
+
+      expect(
+          await tester
+              .runAsync(() => _lerQr(destino.compartilhados.single.bytes)),
+          publicPetUrl(_pet(qrPublicId: 'qr-1')));
+    });
   });
 
   for (final modo in AppThemeMode.values) {

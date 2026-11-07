@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/br_date.dart';
+import '../../../../core/utils/foto_enviada.dart';
 import '../../../../core/utils/upload_error.dart';
 import '../../../../core/widgets/avatar_picker.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
@@ -55,6 +57,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
 
   bool _submitting = false;
   bool _enviandoFoto = false;
+  Uint8List? _fotoLocal;
   String? _error;
 
   @override
@@ -83,8 +86,12 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   }
 
   Future<void> _escolherFoto() async {
-    final arquivo = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final arquivo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: ladoMaximoDaFoto,
+      maxHeight: ladoMaximoDaFoto,
+    );
     if (arquivo == null) return;
 
     final bytes = await arquivo.readAsBytes();
@@ -96,8 +103,10 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     final uid = ref.read(currentUsuarioProvider).valueOrNull?.id;
     if (uid == null) return;
 
+    // A foto escolhida aparece na hora; o envio segue por baixo.
     setState(() {
       _error = null;
+      _fotoLocal = bytes;
       _enviandoFoto = true;
     });
 
@@ -107,10 +116,14 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       final url = await ref
           .read(anexoRepositoryProvider)
           .upload(path: path, bytes: bytes, contentType: 'image/jpeg');
+      await guardarFotoEnviadaNoCache(url, bytes);
       if (mounted) setState(() => _foto = url);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = describirErroUpload(e, item: 'a foto'));
+        setState(() {
+          _fotoLocal = null;
+          _error = describirErroUpload(e, item: 'a foto');
+        });
       }
     } finally {
       if (mounted) setState(() => _enviandoFoto = false);
@@ -193,6 +206,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 Center(
                   child: AvatarPicker(
                     fotoUrl: _foto,
+                    fotoLocal: _fotoLocal,
                     enviando: _enviandoFoto,
                     onTap: _escolherFoto,
                   ),

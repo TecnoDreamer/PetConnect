@@ -53,27 +53,14 @@ final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
 });
 
 /// Sessão do Firebase Auth (null = deslogado). Usado pelo guard de rotas.
+///
+/// O FirebaseAuth guarda a sessão no aparelho: fechar e reabrir o app volta
+/// direto para a Home. A sessão só termina em "Sair da conta", com
+/// confirmação (decisão do proprietário de 2026-11-04, que substitui o login
+/// obrigatório a cada abertura). O primeiro acesso de cada instalação pede
+/// login (`PrimeiroAcesso`).
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   return ref.watch(firebaseAuthProvider).authStateChanges();
-});
-
-/// Garante login explícito a cada abertura do app: mesmo com uma sessão do
-/// Firebase Auth persistida no aparelho de uma vez anterior, o tutor deve
-/// informar as credenciais de novo (decisão de produto pós-validação física
-/// — por padrão o FirebaseAuth mantém a sessão entre reaberturas, o que
-/// levaria direto pra Home sem pedir login).
-///
-/// Roda uma única vez, na [SplashScreen], e precisa terminar **antes** de
-/// [authStateChangesProvider] ser lido pela primeira vez — senão a Home
-/// chegaria a aparecer por um instante antes do redirect corrigir.
-final sessionBootstrapProvider = FutureProvider<void>((ref) async {
-  try {
-    await ref.watch(firebaseAuthProvider).signOut();
-  } catch (_) {
-    // Mesmo se o signOut falhar (ex.: sem rede no momento exato da
-    // abertura), a splash não deve travar esperando por isso — ela decide
-    // o destino pelo estado de auth de qualquer forma logo em seguida.
-  }
 });
 
 /// Perfil do usuário logado, combinando com o estado de autenticação — null
@@ -81,15 +68,22 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 ///
 /// Com [AppConfig.useApiForUsuario], a fonte é `GET /api/v1/me` (emissão
 /// única); telas que editam o perfil chamam `ref.invalidate` para recarregar.
-final currentUsuarioProvider = StreamProvider<Usuario?>((ref) async* {
-  final auth = ref.watch(firebaseAuthProvider);
-  final repository = ref.watch(usuarioRepositoryProvider);
-
-  await for (final user in auth.authStateChanges()) {
-    if (user == null) {
-      yield null;
-    } else {
-      yield* repository.watchUsuario(user.uid);
-    }
-  }
+///
+/// Recomeça a cada mudança de sessão. Antes, um `await for` com `yield*`
+/// ficava preso ao perfil da conta anterior: ao sair, o Firestore negava a
+/// leitura dele, o erro encerrava o provider, e a próxima conta via
+/// "Não foi possível carregar seus dados".
+final currentUsuarioProvider = StreamProvider<Usuario?>((ref) {
+  // Só o uid: renovar o token da mesma conta não recarrega o perfil.
+  final sessao = ref.watch(
+      authStateChangesProvider.select((s) => s.whenData((user) => user?.uid)));
+  return switch (sessao) {
+    AsyncData(value: final uid?) =>
+      ref.watch(usuarioRepositoryProvider).watchUsuario(uid),
+    AsyncData() => Stream.value(null),
+    AsyncError(:final error, :final stackTrace) =>
+      Stream.error(error, stackTrace),
+    // Sessão ainda carregando: o perfil também fica carregando.
+    _ => const Stream.empty(),
+  };
 });

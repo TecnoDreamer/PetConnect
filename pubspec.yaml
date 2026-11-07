@@ -1,7 +1,7 @@
 name: pet_connect
 description: "App para localização de pets desaparecidos, com carteira de vacina, histórico médico e QR code de identificação."
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.1+2
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -22,6 +22,8 @@ dependencies:
   firebase_core:
   firebase_auth:
   cloud_firestore:
+  # Avisos do QR por push (issue #36).
+  firebase_messaging:
 
   # Login social (só Google; Facebook fora do escopo, ver
   # docs/features/login-social.md)
@@ -34,6 +36,8 @@ dependencies:
   intl:
   image_picker:
   cached_network_image:
+  # Para guardar no cache a foto que o app acabou de enviar.
+  flutter_cache_manager: ^3.4.1
   http:
   crypto:
   shared_preferences:
@@ -43,6 +47,8 @@ dependencies:
   pdf: ^3.13.1
   gal: ^2.3.3
   path_provider: ^2.1.6
+  # Abre o ponto de um avistamento do QR no app de mapas (issue #37).
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +56,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   fake_cloud_firestore: ^4.4.0
   mock_exceptions: ^0.8.2
+  zxing2: ^0.2.4
 flutter:
   uses-material-design: true
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_palette.dart';
+import '../../../../core/utils/foto_enviada.dart';
 import '../../../../core/utils/upload_error.dart';
 import '../../../../core/widgets/settings_menu_tile.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
@@ -50,8 +51,12 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
       _enviandoCapa || _removendoCapa || _salvandoPosicao;
 
   Future<void> _alterarCapa(Pet pet) async {
-    final arquivo = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final arquivo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: ladoMaximoDaFoto,
+      maxHeight: ladoMaximoDaFoto,
+    );
     if (arquivo == null) return;
 
     final bytes = await arquivo.readAsBytes();
@@ -77,6 +82,7 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
           'pets/capas/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg';
       url = await anexos.upload(
           path: path, bytes: bytes, contentType: 'image/jpeg');
+      await guardarFotoEnviadaNoCache(url, bytes);
       // Foto nova recentraliza o alinhamento — a posição antiga não faz
       // sentido pra uma imagem diferente.
       await ref
@@ -193,6 +199,17 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
 
     setState(() => _excluindo = true);
 
+    // Antes de excluir, desliga a página pública: depois, a API não teria
+    // mais o pet para conferir o dono. Melhor esforço e com prazo curto (o
+    // servidor pode estar acordando); se falhar, a API apaga a configuração
+    // no próximo acesso ao QR.
+    final compartilhamento = ref.read(compartilhamentoRepositoryProvider);
+    if (compartilhamento != null) {
+      try {
+        await compartilhamento.revogar(pet).timeout(const Duration(seconds: 5));
+      } catch (_) {}
+    }
+
     try {
       await ref.read(petRepositoryProvider).deletePet(pet.id);
       // O rascunho do cartaz de desaparecido fica neste aparelho; sai junto.
@@ -257,6 +274,15 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
                   onTap: () =>
                       context.push('/pet/${pet.id}/editar', extra: pet),
                 ),
+                if (ref.watch(compartilhamentoRepositoryProvider) != null) ...[
+                  const SettingsSectionHeader(title: 'QR Code'),
+                  SettingsMenuTile(
+                    icon: Icons.qr_code_2,
+                    title: 'Compartilhamento via QR Code',
+                    onTap: () =>
+                        context.push('/pet/${pet.id}/compartilhamento'),
+                  ),
+                ],
                 const SettingsSectionHeader(title: 'Foto de capa'),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/widgets/settings_menu_tile.dart';
+import '../../../avisos/presentation/avisos_providers.dart';
 import '../providers/auth_providers.dart';
 
 /// Configurações do tutor: editar perfil (RF08), tema do aplicativo e
@@ -38,7 +39,10 @@ class _ConfiguracoesScreenState extends ConsumerState<ConfiguracoesScreen> {
         ],
       ),
     );
-    if (confirmou == true) await ref.read(usuarioRepositoryProvider).signOut();
+    if (confirmou != true) return;
+    // Antes do signOut: depois dele não há mais login para falar com a API.
+    await ref.read(avisosDoQrProvider)?.esquecerAparelho();
+    await ref.read(usuarioRepositoryProvider).signOut();
   }
 
   Future<void> _confirmarExclusaoConta() async {

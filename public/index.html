@@ -100,7 +100,14 @@
     color: var(--text);
   }
   textarea:focus, input[type=text]:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
-  .geo-row { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; font-size: 13px; color: var(--muted); }
+  .geo-box { margin: 14px 0 4px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+  .geo-box .hint { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+  .geo-status { font-size: 14px; line-height: 1.45; }
+  .geo-status:not(:empty) { margin-top: 10px; }
+  .geo-status p { margin: 8px 0 0; }
+  .geo-status .geo-ok { color: var(--success); font-weight: 600; }
+  .geo-status .geo-warn { color: var(--error); }
+  .geo-status a { color: var(--brand-dark); font-weight: 600; }
   button {
     width: 100%;
     margin-top: 18px;
@@ -113,7 +120,9 @@
     font-weight: 700;
     cursor: pointer;
   }
+  button.secondary { margin-top: 0; background: #fff; color: var(--brand-dark); border: 1.5px solid var(--brand); }
   button:disabled { background: #d9c8ba; cursor: default; }
+  button.secondary:disabled { background: #fff; color: var(--muted); border-color: var(--border); }
   button:not(:disabled):active { background: var(--brand-dark); }
   .msg { text-align: center; padding: 40px 8px; }
   .msg .icon { font-size: 40px; margin-bottom: 12px; }
@@ -193,105 +202,259 @@
     ));
   }
 
-  function renderPet(card, pet, publicId) {
-    var statusInfo = STATUS_LABEL[pet.status] || { text: pet.status || '', cls: 'badge-other' };
-    var speciesLabel = SPECIES_LABEL[pet.species] || pet.species || '';
+  // +5519999990000 → (19) 99999-0000; outros países ficam como vieram.
+  function formatPhone(e164) {
+    var m = /^\+55(\d{2})(\d{4,5})(\d{4})$/.exec(e164 || '');
+    return m ? '(' + m[1] + ') ' + m[2] + '-' + m[3] : e164;
+  }
 
+  // A API só manda o que o tutor marcou e consentiu (issue #35). Sem
+  // consentimento, `shared` vem false e nada do pet aparece: só o aviso de
+  // que ele está cadastrado e o formulário para avisar o tutor.
+  function renderPet(card, pet, publicId) {
     card.innerHTML = '';
 
-    if (pet.photoUrl) {
-      card.appendChild(el('<img class="photo" src="' + escapeHtml(pet.photoUrl) + '" alt="Foto de ' + escapeHtml(pet.name) + '">'));
-    } else {
-      card.appendChild(el('<div class="photo-placeholder">🐾</div>'));
+    if (pet.shared === false) {
+      card.appendChild(el('<div class="photo-placeholder" aria-hidden="true">🐾</div>'));
+      card.appendChild(el('<h1>Este pet está cadastrado no PetConnect</h1>'));
+      card.appendChild(el('<div class="meta">O tutor não publicou os dados do pet nesta página. Se você o encontrou, avise pelo formulário abaixo.</div>'));
+      renderSightingForm(card, publicId);
+      return;
     }
 
-    card.appendChild(el('<span class="badge ' + statusInfo.cls + '">' + escapeHtml(statusInfo.text) + '</span>'));
-    card.appendChild(el('<h1>' + escapeHtml(pet.name || 'Pet') + '</h1>'));
+    var speciesLabel = SPECIES_LABEL[pet.species] || pet.species || '';
+
+    if (pet.photoUrl) {
+      card.appendChild(el('<img class="photo" src="' + escapeHtml(pet.photoUrl) + '" alt="' +
+        escapeHtml(pet.name ? 'Foto de ' + pet.name : 'Foto do pet') + '">'));
+    } else {
+      card.appendChild(el('<div class="photo-placeholder" aria-hidden="true">🐾</div>'));
+    }
+
+    // `status` só vem da API antiga, de antes do consentimento.
+    if (pet.status) {
+      var statusInfo = STATUS_LABEL[pet.status] || { text: pet.status, cls: 'badge-other' };
+      card.appendChild(el('<span class="badge ' + statusInfo.cls + '">' + escapeHtml(statusInfo.text) + '</span>'));
+    }
+    card.appendChild(el('<h1>' + escapeHtml(pet.name || 'Pet cadastrado no PetConnect') + '</h1>'));
     if (speciesLabel) card.appendChild(el('<div class="meta">' + escapeHtml(speciesLabel) + '</div>'));
+    if (pet.breed) card.appendChild(el('<div class="meta">Raça: ' + escapeHtml(pet.breed) + '</div>'));
+    if (pet.color) card.appendChild(el('<div class="meta">Cor: ' + escapeHtml(pet.color) + '</div>'));
+    if (pet.tutorName) card.appendChild(el('<div class="meta">Tutor: ' + escapeHtml(pet.tutorName) + '</div>'));
 
     if (pet.publicContactPhone) {
       card.appendChild(el(
         '<div class="contact">📞 Contato do tutor: <a href="tel:' + escapeHtml(pet.publicContactPhone) + '">' +
-        escapeHtml(pet.publicContactPhone) + '</a></div>'
+        escapeHtml(formatPhone(pet.publicContactPhone)) + '</a></div>'
       ));
     }
 
+    renderSightingForm(card, publicId);
+  }
+
+  // Um id por relato: reenviar depois de uma falha de rede não duplica o
+  // relato no servidor (issue #37).
+  function newRequestId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    var s = '';
+    for (var i = 0; i < 32; i++) s += Math.floor(Math.random() * 16).toString(16);
+    return s;
+  }
+
+  // Precisão acima disto é avisada como baixa: o ponto pode estar a mais de
+  // um quarteirão de onde a pessoa está.
+  var LOW_ACCURACY_METERS = 500;
+
+  function formatDistance(meters) {
+    if (meters >= 1000) return (Math.round(meters / 100) / 10).toString().replace('.', ',') + ' km';
+    return Math.max(1, Math.round(meters)) + ' m';
+  }
+
+  // Resolve com o status HTTP, ou 0 sem conexão.
+  function postSighting(publicId, body) {
+    return fetch(API_BASE_URL + '/api/v1/public/pets/' + encodeURIComponent(publicId) + '/sightings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) { return res.status; }, function () { return 0; });
+  }
+
+  function renderSightingForm(card, publicId) {
     card.appendChild(el('<div class="section-title">Encontrou este pet?</div>'));
 
     var form = el(
       '<form>' +
-        '<label for="desc">Onde você viu? (opcional)</label>' +
+        '<div class="geo-box" id="geo-box">' +
+          '<p class="hint">Para mostrar ao tutor onde o pet está, esta página pede a sua localização assim que abre. ' +
+          'Se você permitir, ela é enviada uma única vez ao tutor e serve apenas para ajudar a encontrar o pet. ' +
+          'Se não permitir, você ainda pode avisar o tutor pelo formulário abaixo.</p>' +
+          '<div class="geo-status" id="geo-status" role="status" aria-live="polite"></div>' +
+          '<button type="button" class="secondary" id="geo-btn" hidden>📍 Tentar enviar a localização</button>' +
+        '</div>' +
+        '<label for="desc">Onde você viu o pet?</label>' +
         '<textarea id="desc" rows="3" maxlength="1000" placeholder="Ex: perto da praça, andando sozinho"></textarea>' +
-        '<div class="geo-row"><input type="checkbox" id="geo" checked><label for="geo" style="margin:0;font-weight:400;">Incluir minha localização atual</label></div>' +
         '<label for="contact">Seu contato (opcional, caso o tutor queira falar com você)</label>' +
         '<input type="text" id="contact" maxlength="120" placeholder="Telefone ou nome">' +
-        '<button type="submit">Avisar o tutor</button>' +
-        '<div class="feedback" id="feedback"></div>' +
+        '<button type="submit" id="send-btn">Avisar o tutor</button>' +
+        '<div class="feedback" id="feedback" role="status" aria-live="polite"></div>' +
       '</form>'
     );
     card.appendChild(form);
 
+    // A localização vai sozinha, com um id próprio; o relato em texto é
+    // outro envio (issue #37, pedido do proprietário de 2026-11-04).
+    var state = { position: null, sent: false, locationRequestId: newRequestId(), requestId: newRequestId() };
+    var geoBtn = form.querySelector('#geo-btn');
+    var geoStatus = form.querySelector('#geo-status');
+
+    function offerRetry(message) {
+      geoStatus.textContent = message;
+      geoBtn.disabled = false;
+      geoBtn.hidden = false;
+    }
+
+    function showSent() {
+      var p = state.position;
+      var mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + p.latitude + ',' + p.longitude;
+      geoBtn.hidden = true;
+      geoStatus.innerHTML = '';
+      geoStatus.appendChild(el('<p class="geo-ok">Localização enviada ao tutor, com precisão de cerca de ' +
+        escapeHtml(formatDistance(p.accuracy)) + '. Obrigado!</p>'));
+      if (p.accuracy > LOW_ACCURACY_METERS) {
+        geoStatus.appendChild(el('<p class="geo-warn">A precisão está baixa. Se puder, descreva o lugar no campo abaixo.</p>'));
+      }
+      geoStatus.appendChild(el('<p class="geo-links"><a href="' + escapeHtml(mapUrl) +
+        '" target="_blank" rel="noopener noreferrer">Conferir no mapa</a></p>'));
+    }
+
+    // Mesmo id em toda tentativa: reenviar depois de uma falha não duplica.
+    function sendLocation() {
+      var p = state.position;
+      geoBtn.hidden = true;
+      geoStatus.textContent = 'Enviando a localização ao tutor…';
+      postSighting(publicId, {
+        clientRequestId: state.locationRequestId,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        accuracyMeters: Math.min(100000, p.accuracy)
+      }).then(function (status) {
+        if (status === 201) {
+          state.sent = true;
+          showSent();
+        } else if (status === 404) {
+          geoStatus.textContent = 'Este pet não está mais disponível.';
+        } else if (status === 429) {
+          offerRetry('Muitas tentativas. Aguarde um instante e tente de novo.');
+        } else {
+          offerRetry('Não foi possível enviar a localização agora. Verifique sua internet e tente de novo.');
+        }
+      });
+    }
+
+    // Uma única leitura, sem acompanhar a posição. O navegador sempre
+    // pergunta antes; sem permissão, nada é enviado.
+    function requestLocation() {
+      geoBtn.hidden = true;
+      geoStatus.textContent = 'Pedindo a sua localização ao navegador…';
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          state.position = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy
+          };
+          sendLocation();
+        },
+        function (err) {
+          state.position = null;
+          offerRetry(err && err.code === 1
+            ? 'Você não permitiu a localização. Tudo bem: descreva abaixo onde viu o pet.'
+            : 'Não foi possível obter a localização agora. Descreva abaixo onde viu o pet.');
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      );
+    }
+
+    geoBtn.addEventListener('click', function () {
+      geoBtn.disabled = true;
+      if (state.position && !state.sent) sendLocation();
+      else requestLocation();
+    });
+
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
-      submitSighting(publicId, form);
+      submitSighting(publicId, form, state);
     });
+
+    // Sem HTTPS ou sem suporte no navegador, fica só o relato em texto.
+    if (!window.isSecureContext || !navigator.geolocation) {
+      geoStatus.textContent = 'Este navegador não permite enviar a localização. Descreva abaixo onde viu o pet.';
+    } else {
+      requestLocation();
+    }
   }
 
-  function submitSighting(publicId, form) {
-    var button = form.querySelector('button');
+  function submitSighting(publicId, form, state) {
+    var button = form.querySelector('#send-btn');
     var feedback = form.querySelector('#feedback');
-    var useGeo = form.querySelector('#geo').checked;
     var description = form.querySelector('#desc').value.trim();
     var contact = form.querySelector('#contact').value.trim();
+
+    if (!description) {
+      feedback.className = 'feedback error';
+      feedback.textContent = 'Conte onde viu o pet.';
+      return;
+    }
+
+    // O relato leva o mesmo ponto já obtido, para o tutor ver o texto no mapa.
+    var body = { clientRequestId: state.requestId, description: description };
+    if (contact) body.reporterContact = contact;
+    if (state.position) {
+      body.latitude = state.position.latitude;
+      body.longitude = state.position.longitude;
+      body.accuracyMeters = Math.min(100000, state.position.accuracy);
+    }
 
     button.disabled = true;
     feedback.className = 'feedback';
     feedback.textContent = 'Enviando…';
 
-    function send(lat, lng) {
-      var body = {};
-      if (description) body.description = description;
-      if (contact) body.reporterContact = contact;
-      if (lat != null) body.latitude = lat;
-      if (lng != null) body.longitude = lng;
-
-      fetch(API_BASE_URL + '/api/v1/public/pets/' + encodeURIComponent(publicId) + '/sightings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).then(function (res) {
-        if (res.status === 201) {
-          feedback.className = 'feedback success';
-          feedback.textContent = 'Obrigado! O tutor foi avisado.';
-          form.querySelectorAll('textarea, input').forEach(function (f) { f.disabled = true; });
-        } else if (res.status === 429) {
-          feedback.className = 'feedback error';
-          feedback.textContent = 'Muitas tentativas. Aguarde um instante e tente de novo.';
-          button.disabled = false;
-        } else if (res.status === 404) {
-          feedback.className = 'feedback error';
-          feedback.textContent = 'Este pet não está mais disponível.';
-        } else {
-          feedback.className = 'feedback error';
-          feedback.textContent = 'Não foi possível enviar agora. Tente novamente.';
-          button.disabled = false;
-        }
-      }).catch(function () {
+    postSighting(publicId, body).then(function (status) {
+      if (status === 201) {
+        feedback.className = 'feedback success';
+        // Não promete aviso: o tutor pode ter desligado as notificações.
+        feedback.textContent = 'Obrigado! Seu relato foi registrado.';
+        form.querySelectorAll('textarea, input, #send-btn').forEach(function (f) { f.disabled = true; });
+      } else if (status === 429) {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Muitas tentativas. Aguarde um instante e tente de novo.';
+        button.disabled = false;
+      } else if (status === 404) {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Este pet não está mais disponível.';
+      } else if (status === 0) {
         feedback.className = 'feedback error';
         feedback.textContent = 'Sem conexão. Verifique sua internet e tente de novo.';
         button.disabled = false;
-      });
-    }
+      } else {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Não foi possível enviar agora. Tente novamente.';
+        button.disabled = false;
+      }
+    });
+  }
 
-    if (useGeo && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function (pos) { send(pos.coords.latitude, pos.coords.longitude); },
-        function () { send(null, null); },
-        { timeout: 5000 }
-      );
-    } else {
-      send(null, null);
-    }
+  // qr_page_opened: a página mostrou um pet válido. Não é avistamento e não
+  // leva coordenada (issue #37). Sem esperar a resposta nem mostrar erro.
+  function reportPageOpened(publicId) {
+    try {
+      fetch(API_BASE_URL + '/api/v1/public/pets/' + encodeURIComponent(publicId) + '/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'qr_page_opened' }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (e) { /* navegador sem fetch moderno: segue sem registrar */ }
   }
 
   function init() {
@@ -321,7 +484,10 @@
         return res.json();
       })
       .then(function (pet) {
-        if (pet) renderPet(card, pet, publicId);
+        if (pet) {
+          renderPet(card, pet, publicId);
+          reportPageOpened(publicId);
+        }
       })
       .catch(function () {
         clearTimeout(slowHintTimer);

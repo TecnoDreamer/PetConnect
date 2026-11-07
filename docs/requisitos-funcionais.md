@@ -34,9 +34,11 @@ Convenção: `RFxx` — identificador único, usado também para rastrear casos 
 | ID | Requisito |
 |----|-----------|
 | RF16 | O sistema deve gerar um QR code único para cada pet cadastrado, exibido no perfil do pet. |
-| RF17 | Ao ser escaneado por qualquer pessoa, o QR code deve abrir uma página web pública com informações do pet destinadas à sua identificação e devolução (nome, foto, espécie/raça, contato do tutor). |
-| RF18 | A página pública do QR code não deve exibir histórico médico completo nem dados de contato além do necessário para a devolução do pet. |
+| RF17 | Ao ser escaneado por qualquer pessoa, o QR code deve abrir uma página web pública com informações do pet destinadas à sua identificação e devolução, **só as que o tutor autorizou** (RF51). Sem autorização, a página mostra apenas que o pet está cadastrado e o formulário para avisar o tutor. |
+| RF18 | A página pública do QR code não deve exibir histórico médico, e-mail, endereço, ids internos nem a situação do pet; o contato do tutor só aparece se ele marcou (RF51). |
 | RF19 | O sistema deve permitir ao tutor regenerar o QR code de um pet (ex: em caso de suspeita de uso indevido do código anterior). |
+| RF51 | O tutor escolhe, um a um, os dados que a página pública mostra (nome do pet, espécie, raça, cor, foto de perfil, nome do tutor, telefone ou WhatsApp) e publica com um consentimento explícito, registrado com data, versão do texto e escopo. Nenhuma caixa vem marcada; o telefone vale só para a página; desativar revoga na hora e apaga o telefone e o nome salvos para a página. Ver `docs/features/qr-compartilhamento-publico.md`. |
+| RF50 | O tutor baixa o QR code do pet para imprimir: PNG de alta resolução (salvo na galeria ou compartilhado) e PDF A4 com o QR vetorial em vários tamanhos. O arquivo tem o mesmo conteúdo do QR exibido e só o nome do pet como dado adicional. Ver `docs/features/qr-exportacao.md`. |
 
 ## Carteira de vacina
 
@@ -76,8 +78,10 @@ Convenção: `RFxx` — identificador único, usado também para rastrear casos 
 
 | ID | Requisito |
 |----|-----------|
-| RF31 | Quando alguém encontra um pet e acessa a página pública do QR code, o sistema permite registrar a localização onde o pet foi visto — `POST /api/v1/public/pets/{publicId}/sightings`, anônimo, com rate limiting. |
-| RF32 | O tutor consegue visualizar os registros de localização reportados para seu pet — `GET /api/v1/pets/{id}/locations`, autenticado. |
+| RF31 | Quando alguém encontra um pet e acessa a página pública do QR code, o sistema permite registrar onde o pet foi visto — `POST /api/v1/public/pets/{publicId}/sightings`, anônimo, com rate limiting. A localização do navegador é pedida assim que a página mostra o pet e, com a permissão do visitante, vai sozinha uma única vez, com a precisão (desde 2026-11-04; antes dependia do botão "Compartilhar local onde vi o pet"); sem ela, o relato em texto continua possível. Ver `docs/features/qr-avistamentos.md`. |
+| RF32 | O tutor consegue visualizar os registros de localização reportados para seu pet — `GET /api/v1/pets/{id}/locations` ou, no app em modo Firestore, `GET /api/v1/legacy-pets/{id}/qr-activity`, autenticado. A aba Localização mostra data e hora, precisão, origem (localização enviada ou relato em texto, não verificado) e "Abrir no mapa". |
+| RF52 | A abertura da página pública do QR é registrada como acesso (`qr_page_opened`), separado de avistamento: sem coordenada nem dado de quem abriu. O tutor vê quantos acessos houve nos últimos 30 dias e o último, com o aviso de que abrir a página não confirma que alguém viu o pet. Ver `docs/features/qr-avistamentos.md`. |
+| RF53 | O tutor recebe push quando a página do QR do pet é aberta (a cada abertura, dizendo que isso não confirma que o pet foi visto) e quando chega um relato. Tocar abre a aba Localização do pet; com o app aberto, aparece uma faixa com "Ver". Em Compartilhamento via QR Code > Avisos no celular, liga e desliga cada aviso. Sem garantia de entrega nem de tempo. Ver `docs/features/qr-notificacoes.md`. |
 
 ## Memorial do Pet
 

@@ -19,6 +19,19 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- A sessão fica guardada no aparelho: fechar e reabrir o app volta direto
+  para a Home, sem pedir login. Voltar a partir da Home fecha o app sem
+  perguntar se quer sair da conta. A sessão só termina em Configurações >
+  "Sair da conta", com confirmação. Substitui o login obrigatório a cada
+  abertura. O primeiro acesso depois de instalar ou atualizar o app pede
+  login uma vez.
+- Campos de texto com a aparência dos da tela Entrar, nos três temas:
+  borda fina com raio 16 e borda mais forte com foco. Antes, as telas
+  internas tinham campos sem borda. "Esqueceu sua senha?" ganhou a borda e
+  a altura do login. Ver `docs/features/padronizacao-campos.md`.
+- APK para testadores `0.1.1` (versionCode `2`), com login com Google,
+  cartaz de pet desaparecido e app em português; instala por cima da
+  `0.1.0`. Ver `docs/release/apk-testes-externos.md`.
 - App em português do Brasil também nos textos do Flutter: "Cancelar" e
   "Voltar" em vez de "Cancel" e "Back", menu "Copiar/Colar" e calendários e
   relógios no modelo brasileiro (meses em português, semana a partir do
@@ -40,6 +53,43 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Avisos do QR por push: o tutor recebe uma notificação a cada vez que a
+  página do QR do pet é aberta (dizendo que isso não confirma que o pet foi
+  visto; antes, no máximo uma a cada 15 minutos) e quando alguém envia um
+  relato. Tocar abre
+  a aba Localização do pet. Cada aviso pode ser desligado em Compartilhamento
+  via QR Code > Avisos no celular. O app pede a permissão de notificação
+  depois do login e para de receber avisos ao sair da conta.
+  - Depende da API com a PR da fase 4. Ver `docs/features/qr-notificacoes.md`.
+- Relatos e acessos do QR na aba Localização do pet: o tutor passa a ver os
+  relatos enviados pela página pública, que antes ficavam só no servidor,
+  com data e hora, precisão, origem e "Abrir no mapa". Os acessos à página
+  aparecem à parte, com o aviso de que abrir a página não confirma que
+  alguém viu o pet.
+  - Na página, a localização é pedida assim que o pet aparece e, se quem
+    escaneou permitir no navegador, vai sozinha ao tutor, uma única vez e
+    com a precisão (pedido do proprietário de 2026-11-04; antes dependia do
+    botão "Compartilhar local onde vi o pet"). No app, esse envio aparece
+    como "Local onde o QR Code foi escaneado". Negar a permissão não impede
+    o relato em texto.
+  - Depende da API com a PR da fase 3 e da página publicada no Hosting. Ver
+    `docs/features/qr-avistamentos.md`.
+- Página pública do QR com consentimento: em Configurações do pet >
+  Compartilhamento via QR Code, o tutor escolhe um a um os dados que quem
+  escanear vai ver (nome, espécie, raça, cor, foto, nome do tutor,
+  telefone) e publica com um consentimento explícito. Pode alterar ou
+  desativar quando quiser.
+  - Sem consentimento, a página mostra só que o pet está cadastrado e o
+    formulário para avisar o tutor; antes, mostrava nome, espécie, situação
+    e foto de qualquer pet.
+  - A caixa de localização da página deixa de vir marcada, e a página não
+    promete mais que "o tutor foi avisado".
+  - Depende da API com a PR da fase 1 e da página publicada no Hosting. Ver
+    `docs/features/qr-compartilhamento-publico.md`.
+- QR code do pet para imprimir: "Baixar QR Code" (PNG de alta resolução
+  na galeria), "Compartilhar" (PNG) e "PDF para imprimir" (A4, com o QR
+  vetorial em 8, 4, 3 e 2 cm). O arquivo tem o mesmo QR da tela, e nada vai
+  a servidor. Ver `docs/features/qr-exportacao.md`.
 - "Pet desaparecido" no perfil do pet: o tutor monta um cartaz "Procura-se"
   no modelo minimalista, com o nome, a espécie, a raça e a cor do cadastro,
   três fotos (da galeria do pet, a do perfil ou do celular) com
@@ -80,6 +130,26 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Corrigido
 
+- Troca de conta: sair e entrar em outra conta não deixa mais a Home em
+  "Não foi possível carregar seus dados". O perfil passa a acompanhar a
+  sessão; antes ficava preso ao perfil da conta anterior, que o Firestore
+  deixa de liberar ao sair.
+- Fotos de perfil (tutor e pet) e capa do pet: a foto escolhida aparece na
+  hora no formulário, sai do celular com no máximo 1600 px de lado (envio
+  mais rápido) e, depois do envio, já fica no cache de imagens. Assim a
+  Home e o perfil do pet mostram a foto nova sem baixá-la de novo.
+- Avisos do QR: o registro do celular para receber push tenta de novo
+  quando a API demora a responder (a API no Render dorme sem uso e pode
+  levar perto de um minuto para acordar). Antes havia uma tentativa só, e o
+  celular podia ficar sem avisos até o próximo login.
+- Orientação: o app fica só em retrato, na própria janela. Antes, ele
+  girava com a rotação automática ligada, e com ela desligada o Android
+  oferecia o botão de girar. O app nunca alterou a rotação automática do
+  celular, o que foi conferido no código e no aparelho. Ver
+  `docs/features/orientacao-retrato.md`.
+- Login: os campos de e-mail e de senha têm o mesmo tamanho. O botão de
+  mostrar/ocultar senha deixava a senha 6 px mais alta. Ver
+  `docs/features/login-layout-distribuido.md`.
 - Memorial: depois de registrar o falecimento, Voltar leva à lista do
   Memorial e depois à Home, em vez de fechar o app. Vale para o botão e o
   gesto do Android e para a seta da tela; o mesmo vale ao restaurar um
