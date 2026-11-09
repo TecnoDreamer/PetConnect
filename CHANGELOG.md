@@ -53,6 +53,14 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Adicionado
 
+- Cartão de Emergência do pet (issue #41): alergias, medicamentos em uso,
+  condições, tipo sanguíneo confirmado, observações e contatos do veterinário
+  e do tutor, num cartão privado por pet, com "Não informado" separado de
+  "Nenhuma conhecida". Só leitura no Memorial. Nada vai para a página do QR.
+  Grava em `Pets/{petId}/emergencia/cartao` com revisão contra sobrescrita
+  entre aparelhos; sai junto com o pet e com a conta. Atrás do flag
+  `CARTAO_EMERGENCIA`, que depende do deploy das regras novas do Firestore.
+  Ver `docs/features/cartao-emergencia.md` e ADR 0009.
 - Avisos do QR por push: o tutor recebe uma notificação a cada vez que a
   página do QR do pet é aberta (dizendo que isso não confirma que o pet foi
   visto; antes, no máximo uma a cada 15 minutos) e quando alguém envia um

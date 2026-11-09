@@ -129,6 +129,19 @@ arquivo fica no Cloudinary; aqui só os metadados. Sem edição.
 | `legenda` | string (opcional) | até 300 caracteres |
 | `criadoEm` | timestamp | horário do servidor — exceção à convenção de datas abaixo, porque ordena e pagina a galeria |
 
+### `Pets/{petId}/emergencia/cartao`
+
+Cartão de Emergência do pet (issue #41, `docs/features/cartao-emergencia.md`,
+ADR 0009). Um documento por pet, privado: só o dono lê; grava só com o pet
+ativo. Campos: `versaoEsquema` (1), `situacaoAlergias`,
+`situacaoMedicamentos`, `situacaoCondicoes` (`NAO_INFORMADO`,
+`NENHUMA_DECLARADA` ou `INFORMADA`), `alergias`, `medicamentos`, `condicoes`
+(até 20 cada), `tipoSanguineo`, `tipoSanguineoConfirmado`, `observacoes`,
+`veterinario` (`nome`, `clinica`, `telefone` em E.164),
+`mostrarContatoDoTutor`, `revisao` (sobe 1 a cada gravação) e `atualizadoEm`
+(horário do servidor). Fora do documento do pet porque a API lê o pet para a
+página pública do QR. Apagado na exclusão do pet e da conta.
+
 ## Convenção de datas
 
 O banco existente usa **strings no formato `dd/MM/yyyy`** para datas, não `Timestamp` do Firestore. Mantemos essa convenção nos novos campos/coleções para consistência, em vez de introduzir um formato diferente no meio do mesmo banco.

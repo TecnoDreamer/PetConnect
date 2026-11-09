@@ -62,6 +62,13 @@ Levantadas em `lib/features/*/data/firebase_*_repository.dart`.
   registro clínico). Criação só com os campos conhecidos, `petId` igual ao
   pai, `userId` = UID, URL de imagem do Cloudinary, `publicId`, legenda de
   até 300 caracteres e `criadoEm` = horário do servidor. `update` negado.
+- `emergencia` (Cartão de Emergência, issue #41): só o documento `cartao`.
+  Leitura e exclusão pelo dono do pet, inclusive `FALECIDO`; criação e
+  alteração só com o pet ativo, com os campos conhecidos, listas de até 20
+  itens, textos limitados, `versaoEsquema` = 1, `atualizadoEm` = horário do
+  servidor e `revisao` = anterior + 1 (1 na criação). Os itens das listas não
+  são conferidos pelas regras; o app valida. Ver
+  `docs/features/cartao-emergencia.md`.
 - `Localizacoes` (raiz, legado): igual a hoje — leitura para logado, escrita
   fechada.
 

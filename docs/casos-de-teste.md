@@ -195,3 +195,31 @@ em `docs/validation/cartaz-pet-desaparecido.md`.
 ### CT40 — Rascunho e nenhuma mudança no pet (RF49)
 - **Passos**: preencher, sair e voltar; sair com foto do celular; descartar; conferir o pet.
 - **Resultado esperado**: textos e fotos da galeria voltam, a autorização e as fotos do celular não; sair com foto do celular pede confirmação; descartar limpa; o pet, os dados clínicos, a galeria e o QR não mudam.
+
+## Cartão de Emergência do pet
+
+Roteiro no aparelho: `docs/validation/cartao-emergencia.md`.
+
+### CT41 — Abrir o cartão (RF54)
+- **Passos**: perfil do pet ativo → Cartão de Emergência; depois, um pet no Memorial → Configurações → Cartão de Emergência.
+- **Resultado esperado**: abre o cartão do pet certo; no Memorial, sem editar. Outra conta não abre, nem por link direto.
+
+### CT42 — Leitura (RF55)
+- **Resultado esperado**: seções preenchidas com os dados; vazias com "Não informado"; "Atualizado em" e o aviso para confirmar com o veterinário. "Ligar" abre o discador, sem ligar.
+
+### CT43 — Editar e reabrir (RF56)
+- **Passos**: preencher uma alergia, um medicamento e o veterinário → salvar → sair → voltar.
+- **Resultado esperado**: tudo igual; salvar sem preencher nada também funciona.
+
+### CT44 — Não informado × nenhuma conhecida (RF57)
+- **Resultado esperado**: "Nenhuma conhecida (declarado pelo tutor)" só quando o tutor escolheu; tipo sanguíneo sem a confirmação não salva.
+
+### CT45 — Nada na página pública (RF58)
+- **Passos**: escanear o QR de um pet com o cartão preenchido.
+- **Resultado esperado**: nenhum dado do cartão na página.
+
+### CT46 — Rede e conflito (RF59)
+- **Resultado esperado**: offline, o cartão aparece com o aviso da última versão; salvar offline avisa e mantém o formulário; com dois aparelhos, o segundo a salvar vê "O cartão mudou" e nada é sobrescrito.
+
+### CT47 — Exclusão (RF60)
+- **Resultado esperado**: excluir o pet ou a conta apaga `Pets/{petId}/emergencia/cartao`.

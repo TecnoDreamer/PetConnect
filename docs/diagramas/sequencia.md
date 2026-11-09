@@ -194,3 +194,38 @@ Publicar, listar e excluir, com o tratamento de falha parcial: ver
 
 Prévia, captura em PNG, PDF e compartilhamento: ver
 `docs/features/cartaz-pet-desaparecido.md` ("Arquitetura").
+
+## Cartão de Emergência (RF54–RF60)
+
+Abrir o cartão e salvar uma edição. O cartão nunca passa pela API.
+
+```mermaid
+sequenceDiagram
+    actor Tutor
+    participant App
+    participant Store as Firestore (regras)
+
+    Tutor->>App: Perfil do pet > Cartão de Emergência
+    App->>App: rota /pet/{id}/emergencia (PetSituacaoGuard: dono)
+    App->>Store: observa Pets/{id}/emergencia/cartao
+    alt dono do pet
+        Store-->>App: documento (ou nenhum) + se veio do cache
+        App-->>Tutor: cartão, vazio ou aviso de sem conexão
+    else outra conta
+        Store-->>App: permission-denied
+        App-->>Tutor: "Você não tem acesso a este cartão."
+    end
+
+    Tutor->>App: Editar > altera > Salvar
+    App->>App: valida campos e limpa o texto
+    App->>Store: transação: lê revisao
+    alt revisao igual à do formulário
+        App->>Store: grava com revisao + 1 e atualizadoEm do servidor
+        Store-->>App: ok (regras: dono, pet ativo, formato, revisão)
+        App-->>Tutor: "Cartão salvo." e volta ao cartão
+    else outra gravação antes
+        App-->>Tutor: "O cartão mudou", nada gravado
+    else sem rede (até 20 s)
+        App-->>Tutor: "Sem conexão. Nada foi salvo", formulário intacto
+    end
+```

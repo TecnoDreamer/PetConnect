@@ -163,3 +163,63 @@ celular), `EnquadramentoFoto`, `ConteudoCartaz`, `CartazController`,
 `RascunhoCartazStore` e `DestinoDoCartaz`: ver
 `docs/features/cartaz-pet-desaparecido.md` ("Arquitetura"). Nenhuma classe
 nova é persistida no Firestore.
+
+## Cartão de Emergência
+
+```mermaid
+classDiagram
+    class Pet {
+        +String id
+        +String userId
+        +SituacaoPet situacao
+    }
+    class CartaoEmergencia {
+        +SituacaoDaLista situacaoAlergias
+        +List~Alergia~ alergias
+        +SituacaoDaLista situacaoMedicamentos
+        +List~Medicamento~ medicamentos
+        +SituacaoDaLista situacaoCondicoes
+        +List~String~ condicoes
+        +String tipoSanguineo
+        +bool tipoSanguineoConfirmado
+        +String observacoes
+        +bool mostrarContatoDoTutor
+        +DateTime atualizadoEm
+        +int revisao
+    }
+    class Alergia {
+        +String id
+        +String substancia
+        +String reacao
+        +String observacao
+    }
+    class Medicamento {
+        +String id
+        +String nome
+        +String dose
+        +String frequencia
+        +String via
+        +String observacao
+    }
+    class VeterinarioDeConfianca {
+        +String nome
+        +String clinica
+        +String telefone
+    }
+    class CartaoEmergenciaRepository {
+        <<interface>>
+        +observar(petId) Stream~LeituraDoCartao~
+        +salvar(petId, cartao, revisaoEsperada)
+    }
+    class FirebaseCartaoEmergenciaRepository
+    Pet "1" --> "0..1" CartaoEmergencia : emergencia/cartao
+    CartaoEmergencia "1" *-- "0..20" Alergia
+    CartaoEmergencia "1" *-- "0..20" Medicamento
+    CartaoEmergencia "1" *-- "1" VeterinarioDeConfianca
+    CartaoEmergenciaRepository <|.. FirebaseCartaoEmergenciaRepository
+```
+
+`SituacaoDaLista`: `naoInformado`, `nenhumaDeclarada`, `informada`. Falhas:
+`CartaoAlteradoEmOutroLugar`, `CartaoSemPermissao`, `CartaoSemConexao`,
+`CartaoFalhaDesconhecida`. `atualizadoEm` é nulo enquanto o cartão nunca foi
+salvo.
