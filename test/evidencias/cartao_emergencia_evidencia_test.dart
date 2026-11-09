@@ -56,7 +56,10 @@ final _completo = CartaoEmergencia(
   situacaoMedicamentos: SituacaoDaLista.informada,
   medicamentos: const [
     Medicamento(
-        id: 'm1', nome: 'Fenobarbital', dose: '50 mg', frequencia: '12 em 12 h'),
+        id: 'm1',
+        nome: 'Fenobarbital',
+        dose: '50 mg',
+        frequencia: '12 em 12 h'),
   ],
   situacaoCondicoes: SituacaoDaLista.nenhumaDeclarada,
   observacoes: 'Morde quando sente dor. Usar focinheira.',
@@ -138,8 +141,8 @@ void main() {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _tela(
-                const CartaoEmergenciaScreen(petId: 'pet-1'), _completo),
+            child:
+                _tela(const CartaoEmergenciaScreen(petId: 'pet-1'), _completo),
           ),
           const SizedBox(width: 8),
           Expanded(

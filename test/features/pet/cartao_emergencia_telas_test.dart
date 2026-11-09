@@ -125,10 +125,10 @@ class _Repo implements CartaoEmergenciaRepository {
 }
 
 class _App {
-  _App(this.repo, {this.pets = const [_rex, _mel], this.links});
+  _App(this.repo, {this.links});
 
   final _Repo repo;
-  final List<Pet> pets;
+  final List<Pet> pets = const [_rex, _mel];
   final List<Uri>? links;
 
   late final router = GoRouter(
@@ -562,7 +562,7 @@ void main() {
 
       expect(
         tester.getSemantics(find.text('Alergias conhecidas')),
-        containsSemantics(label: 'Alergias conhecidas', isHeader: true),
+        isSemantics(label: 'Alergias conhecidas', isHeader: true),
       );
       semantica.dispose();
     });
