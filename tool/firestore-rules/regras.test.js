@@ -38,17 +38,22 @@ const SUBCOLECOES_CLINICAS = [
 // Mesma lista que `subcolecoesApagadasComOPet`
 // (lib/features/pet/data/exclusao_de_pet.dart), usada por deletePet e
 // deleteAccount. `eventosSituacao` não está aqui: só sai no lote que apaga o
-// pet.
-const SUBCOLECOES_APAGADAS_COM_O_PET = [...SUBCOLECOES_CLINICAS, 'fotos', 'emergencia'];
+// pet. O Cartão de Emergência também não: é um documento só, apagado direto
+// (`apagarCartaoDeEmergencia`), e as regras não deixam listar a subcoleção.
+const SUBCOLECOES_LISTADAS_NA_EXCLUSAO = [...SUBCOLECOES_CLINICAS, 'fotos'];
+// Tudo o que precisa sumir antes do pet.
+const SUBCOLECOES_APAGADAS_COM_O_PET = [...SUBCOLECOES_LISTADAS_NA_EXCLUSAO, 'emergencia'];
 
-// Mesma ordem que apagarSubcolecoesDoPet: cada subcoleção, um documento por vez.
+// Mesma ordem que apagarSubcolecoesDoPet: cada subcoleção, um documento por
+// vez; depois o Cartão de Emergência, sem listar.
 async function apagarSubcolecoesComoOApp(db, petId) {
-  for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
+  for (const sub of SUBCOLECOES_LISTADAS_NA_EXCLUSAO) {
     const docs = await getDocs(collection(db, 'Pets', petId, sub));
     for (const d of docs.docs) {
       await deleteDoc(d.ref);
     }
   }
+  await deleteDoc(doc(db, 'Pets', petId, 'emergencia', 'cartao'));
 }
 
 // Mesma ordem que FirebasePetRepository.deletePet: subcoleções, depois um
