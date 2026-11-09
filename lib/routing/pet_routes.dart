@@ -1,10 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/pet/domain/cartao_emergencia.dart';
 import '../features/pet/domain/consulta.dart';
 import '../features/pet/domain/historico_medico.dart';
 import '../features/pet/domain/pet.dart';
 import '../features/pet/domain/vacina.dart';
+import '../features/pet/presentation/screens/cartao_emergencia_form_screen.dart';
+import '../features/pet/presentation/screens/cartao_emergencia_screen.dart';
 import '../features/pet/presentation/screens/cartaz_editor_screen.dart';
 import '../features/pet/presentation/screens/cartaz_previa_screen.dart';
 import '../features/pet/presentation/screens/compartilhamento_qr_screen.dart';
@@ -157,6 +160,28 @@ List<GoRoute> buildPetRoutes() => [
           petId: state.pathParameters['id']!,
           exige: null,
           child: GaleriaScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      // Cartão de Emergência (issue #41): leitura para pet ativo ou no
+      // Memorial (só leitura), edição só para pet ativo. Só do dono.
+      GoRoute(
+        path: '/pet/:id/emergencia',
+        builder: (context, state) => PetSituacaoGuard(
+          petId: state.pathParameters['id']!,
+          exige: null,
+          child: CartaoEmergenciaScreen(petId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/pet/:id/emergencia/editar',
+        builder: (context, state) => _soPetAtivo(
+          state,
+          CartaoEmergenciaFormScreen(
+            petId: state.pathParameters['id']!,
+            inicial: state.extra is CartaoEmergencia
+                ? state.extra as CartaoEmergencia
+                : null,
+          ),
         ),
       ),
       // Cartaz de pet desaparecido: só pet ativo, só do dono.

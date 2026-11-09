@@ -6,6 +6,7 @@ import '../../../../core/theme/app_palette.dart';
 import '../../domain/consulta_alerta.dart';
 import '../../domain/pet.dart';
 import '../../domain/vacina_alerta.dart';
+import '../providers/cartao_emergencia_providers.dart';
 import '../providers/consulta_providers.dart';
 import '../providers/vacina_providers.dart';
 import 'pet_feature_card.dart';
@@ -67,6 +68,20 @@ class PetFeatureGrid extends ConsumerWidget {
       onTap: () => context.push('/pet/${pet.id}/historico'),
     );
 
+    // Cartão de Emergência (issue #41): abaixo da grade, sem mexer nos
+    // quatro cards. Não lê o cartão aqui: o perfil não busca dados de saúde
+    // que não vai mostrar.
+    final emergenciaCard = ref.watch(cartaoEmergenciaDisponivelProvider)
+        ? PetFeatureCard(
+            icon: Icons.emergency_outlined,
+            title: 'Cartão de Emergência',
+            description: 'Alergias, medicamentos e contatos para uma urgência.',
+            background: colors.surface,
+            accent: colors.error,
+            onTap: () => context.push('/pet/${pet.id}/emergencia'),
+          )
+        : null;
+
     final qrCard = PetFeatureCard(
       icon: Icons.qr_code_2,
       title: 'QR Code do Pet',
@@ -99,6 +114,10 @@ class PetFeatureGrid extends ConsumerWidget {
             ],
           ),
         ),
+        if (emergenciaCard != null) ...[
+          const SizedBox(height: 12),
+          emergenciaCard,
+        ],
       ],
     );
   }
