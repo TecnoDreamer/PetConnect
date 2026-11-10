@@ -28,7 +28,7 @@ Testado por: proprietário
 | CP04 | Uma foto já usada aparece marcada e não pode ser escolhida de novo | |
 | CP05 | Escolher uma foto abre "Ajustar"; tocar no rosto do pet na foto inteira move a parte clara; zoom; Pronto; a miniatura e a prévia mostram o rosto no centro, sem cortar | |
 | CP06 | Mover uma foto para outra posição e remover uma foto | |
-| CP07 | Características vem sugerida (sexo, porte) e pode ser editada; campos opcionais vazios não aparecem na prévia; o cartaz não tem Espécie/Raça, Cor nem Desapareceu em | |
+| CP07 | Características vem sugerida (sexo, porte) e pode ser editada; campos opcionais vazios não aparecem na prévia; o cartaz não tem Espécie/Raça, Cor nem Desapareceu em; o nome aparece só no cabeçalho, sem linha "Nome:" | |
 | CP08 | Prévia sem marcar a autorização: o contato fica vazio e os botões ficam desligados, com "Confirme que o telefone…" | |
 | CP09 | Marcar a autorização: o telefone aparece formatado e os botões ligam | |
 | CP10 | Compartilhar imagem → a folha do sistema abre; enviar para você mesmo no WhatsApp; a imagem chega nítida e legível | |

@@ -187,10 +187,9 @@ void main() {
       expect(conteudo.nome, 'REX');
       expect(conteudo.telefone, '(11) 90000-0000');
       expect(conteudo.cor, CorDoCartaz.azul);
-      // Espécie/raça, cor e "Desapareceu em" saíram do cartaz; as
-      // observações têm caixa própria.
+      // Nome (já está no cabeçalho), espécie/raça, cor e "Desapareceu em"
+      // não têm linha; as observações têm caixa própria.
       expect(conteudo.campos, const [
-        CampoDoCartaz('Nome', 'Rex'),
         CampoDoCartaz('Características', 'Macho, porte médio'),
         CampoDoCartaz('Visto por último', '20/10/2026, à noite — Praça da Sé'),
         CampoDoCartaz('Recompensa', 'R\$ 200,00'),
@@ -206,7 +205,8 @@ void main() {
             recompensa: Recompensa(tipo: TipoRecompensa.outra, texto: '   ')),
         telefone: null,
       );
-      expect(conteudo.campos, const [CampoDoCartaz('Nome', 'Rex')]);
+      expect(conteudo.campos, isEmpty);
+      expect(conteudo.nome, 'REX');
       expect(conteudo.observacoes, isEmpty);
       expect(conteudo.telefone, isNull);
       expect(conteudo.cor, CorDoCartaz.preto);

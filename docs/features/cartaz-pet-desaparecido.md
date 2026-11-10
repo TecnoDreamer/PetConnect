@@ -76,7 +76,7 @@ prévia → editor, ajuste da foto → editor (sem mudar o ajuste anterior).
 | Exatamente 3 fotos | A prévia aceita rascunho incompleto (espaço vazio com o nome da posição); a exportação exige as 3 | `problemasDoCartaz` |
 | Fotos independentes do perfil | Escolher uma foto não muda a foto de perfil nem a galeria | — |
 | Campos vazios somem | Sem rótulo vazio, sem "null"; recompensa vazia (ou R$ 0,00) tira a linha inteira, e observações vazias tiram a caixa | `ConteudoCartaz.de` |
-| Linhas do cartaz | Nome, Características, Visto por último e Recompensa, nessa ordem; Observações numa caixa abaixo, da largura toda, com letra maior | `ConteudoCartaz`, `CartazProcuraSe` |
+| Linhas do cartaz | Características, Visto por último e Recompensa, nessa ordem. O nome fica só na faixa do cabeçalho, sem linha própria (pedido do proprietário, 2026-11-10); Observações numa caixa abaixo, da largura toda, com letra maior | `ConteudoCartaz`, `CartazProcuraSe` |
 | Visto por último | Um campo só, para data e local não se contradizerem. Data entre hoje e 365 dias atrás, no calendário em português; período ou horário exato (escolher um tira o outro); local em texto livre. Não há GPS nem permissão de localização | `VistoPorUltimo` |
 | Recompensa | Em dinheiro: só números, que entram pela direita (2, 0, 0, 0, 0 → `200,00`), até R$ 999.999,99, e no cartaz `R$ 200,00`. Outra: texto livre. Só a escolhida vai para o cartaz | `Recompensa`, `MascaraDeReais` |
 | Cor | Preto `#111111`, vermelho `#C62828` ou azul `#1565C0`, todas com contraste acima de 5:1 com o texto branco | `CorDoCartaz` |
@@ -110,8 +110,7 @@ recebido.
 │ │           │ ├──────┤       │
 │ │           │ │ foto3│       │
 │ └───────────┘ └──────┘       │
-│ Nome:            [ ...... ]  │  só os campos preenchidos
-│ Características: [ ...... ]  │
+│ Características: [ ...... ]  │  só os campos preenchidos
 │ Visto por último:[ ...... ]  │
 │ Recompensa:      [ ...... ]  │
 │ ▌OBSERVAÇÕES                 │  caixa em destaque
@@ -134,8 +133,8 @@ recebido.
   - o nome encolhe para caber na faixa, numa linha;
   - os dados quebram linha. Se passarem do espaço, encolhem juntos, e as
     fotos mantêm no mínimo 380 px de altura;
-  - com a Roboto, o cartaz completo fica em 100% e o caso com todos os
-    textos no limite, em 90% (`test/evidencias/cartaz_evidencia_test.dart`);
+  - com a Roboto, o cartaz completo e o caso com todos os textos no limite
+    ficam em 100% (`test/evidencias/cartaz_evidencia_test.dart`);
   - nada é cortado.
 - **Prévia e arquivo iguais:** a prévia é o próprio widget
   (`CartazProcuraSe`), reduzido com `FittedBox`. A exportação captura esse
