@@ -175,7 +175,6 @@ void main() {
     expect(find.text('GATO DESAPARECIDO'), findsOneWidget);
     expect(find.text('(11) 90000-0000'), findsOneWidget);
     for (final rotulo in [
-      'Nome:',
       'Características:',
       'Visto por último:',
       'Recompensa:',
@@ -183,8 +182,14 @@ void main() {
     ]) {
       expect(find.text(rotulo), findsOneWidget, reason: rotulo);
     }
-    // Fora do cartaz, a pedido do proprietário.
-    for (final rotulo in ['Espécie/Raça:', 'Cor:', 'Desapareceu em:']) {
+    // Fora do cartaz, a pedido do proprietário. O nome fica só no
+    // cabeçalho.
+    for (final rotulo in [
+      'Nome:',
+      'Espécie/Raça:',
+      'Cor:',
+      'Desapareceu em:',
+    ]) {
       expect(find.text(rotulo), findsNothing, reason: rotulo);
     }
     expect(find.text('20/10/2026, à noite — Praça da Matriz, Centro'),
@@ -241,8 +246,9 @@ void main() {
         ));
 
     expect(find.text('CACHORRO DESAPARECIDO'), findsOneWidget);
-    expect(find.text('Nome:'), findsOneWidget);
+    expect(find.text('THOR'), findsOneWidget);
     for (final rotulo in [
+      'Nome:',
       'Características:',
       'Visto por último:',
       'OBSERVAÇÕES',

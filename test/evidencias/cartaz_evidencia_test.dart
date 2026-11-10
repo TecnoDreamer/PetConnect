@@ -111,13 +111,18 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
 
+    // Sem nenhuma linha nem observações, o cartaz não tem área de dados.
     final dados = find.byKey(const ValueKey('cartaz-dados'));
-    final natural = tester.getSize(
-        find.descendant(of: dados, matching: find.byType(SizedBox)).first);
-    final escala = tester.getSize(dados).height / natural.height;
-    // ignore: avoid_print
-    print('$nome: escala dos dados ${escala.toStringAsFixed(2)}');
-    expect(escala, greaterThanOrEqualTo(0.75), reason: nome);
+    if (conteudo.campos.isNotEmpty || conteudo.observacoes.isNotEmpty) {
+      final natural = tester.getSize(
+          find.descendant(of: dados, matching: find.byType(SizedBox)).first);
+      final escala = tester.getSize(dados).height / natural.height;
+      // ignore: avoid_print
+      print('$nome: escala dos dados ${escala.toStringAsFixed(2)}');
+      expect(escala, greaterThanOrEqualTo(0.75), reason: nome);
+    } else {
+      expect(dados, findsNothing, reason: nome);
+    }
 
     await tester.runAsync(() async {
       final render =

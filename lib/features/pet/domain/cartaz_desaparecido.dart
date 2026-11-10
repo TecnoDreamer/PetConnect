@@ -816,8 +816,9 @@ class ConteudoCartaz {
         limpo(rascunho.caracteristicas ?? sugerirCaracteristicas(pet));
     final visto = rascunho.vistoPorUltimo.texto;
     final recompensa = rascunho.recompensa.noCartaz;
+    // O nome já está na faixa do cabeçalho; não tem linha própria (pedido
+    // do proprietário).
     final campos = <CampoDoCartaz>[
-      if (limpo(pet.nome).isNotEmpty) CampoDoCartaz('Nome', limpo(pet.nome)),
       if (caracteristicas.isNotEmpty)
         CampoDoCartaz('Características', caracteristicas),
       if (visto.isNotEmpty) CampoDoCartaz('Visto por último', visto),

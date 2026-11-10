@@ -19,6 +19,9 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Alterado
 
+- Cartaz de pet desaparecido sem a linha "Nome:": o nome já aparece na
+  faixa do cabeçalho, abaixo de "PROCURA-SE". As linhas começam em
+  Características.
 - A sessão fica guardada no aparelho: fechar e reabrir o app volta direto
   para a Home, sem pedir login. Voltar a partir da Home fecha o app sem
   perguntar se quer sair da conta. A sessão só termina em Configurações >
