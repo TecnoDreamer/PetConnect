@@ -347,11 +347,13 @@ test/features/pet/ test/features/auth/ test/features/usuario/ test/android/
    telas têm identidade fixa por decisão (ADR 0001) e saem do escopo.
    **Andamento:** feito na PR #77 (mesclada em 2026-10-27).
 3. **QR regenerável (#29)**, depois **privacidade/contato público (#35)**.
-   **Andamento:** implementado no app e na API (`feat/qr-regeneravel` nos dois
-   repositórios), desligado por padrão (`USE_API_QR`) até a API ser publicada.
-   Ver `docs/features/qr-regeneravel.md` e ADR 0004.
+   **Andamento:** mesclado nos dois repositórios (PRs #78 e API #16) e API
+   publicada no Render em 2026-10-27. No app continua desligado por padrão
+   (`USE_API_QR`); teste no aparelho pendente. Ver
+   `docs/features/qr-regeneravel.md` e ADR 0004.
 4. **Publicação (#28 e assinatura):** release assinado com a chave de debug, sem
-   política de privacidade. Só planejamento por enquanto.
+   política de privacidade. Plano em `docs/release/plano-publicacao-android.md`,
+   checklist em `docs/validation/checklist-android-proprietario.md`; nada executado.
 5. **Validação no aparelho (#33)** — no Project está "In review"; checklists em
    `docs/validation/`.
 6. Itens da seção 7 que continuam valendo: hospedagem/staging, credenciais reais do
@@ -362,6 +364,10 @@ só com autorização do proprietário): `feat/memorial-pet`,
 `fix/android-icone-inicializacao-petconnect`, `fix/auth-tema-identidade-original`,
 `fix/cadastro-sobreposicao-layout-estatico`, `fix/home-overflow-fonte-grande`,
 `fix/login-layout-distribuido`, `fix/tema-claro-padrao-fundo-branco`,
-`fix/qr-code-pet-publico` (PR #19). A `fix/cadastro-tela-estatica-sem-scroll`
+`fix/qr-code-pet-publico` (PR #19), `docs/fase0-estado-base-2026-10`,
+`fix/firestore-isolamento-por-dono`, `fix/tema-telas-clinicas`,
+`feat/qr-regeneravel` (e a de mesmo nome na API). A
+`teste/mutacao-regras-catch-all` tem 1 commit que reintroduz a falha de
+propósito, só para provar que o CI pega; não mesclar. A `fix/cadastro-tela-estatica-sem-scroll`
 (PR #64, fechada sem merge, substituída pela #68) tem 6 commits fora da base:
 apagá-la descarta esse trabalho, que não é usado.
