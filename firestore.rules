@@ -137,6 +137,62 @@ service cloud.firestore {
         allow update: if false;
       }
 
+      // Cartão de Emergência (issue #41, docs/features/cartao-emergencia.md).
+      // Um documento por pet (`cartao`), privado: só o dono lê. Escreve só
+      // com o pet ativo (é dado clínico, como vacinas). Cada gravação sobe a
+      // `revisao` em 1, então duas edições a partir da mesma versão não se
+      // sobrescrevem em silêncio. O que as regras não conseguem conferir
+      // (cada item das listas) o app valida antes de gravar.
+      match /emergencia/{docId} {
+        allow read, delete: if donoDoPet() && docId == 'cartao';
+        allow create: if podeEscreverClinico()
+            && docId == 'cartao'
+            && cartaoValido(request.resource.data)
+            && request.resource.data.revisao == 1;
+        allow update: if podeEscreverClinico()
+            && docId == 'cartao'
+            && cartaoValido(request.resource.data)
+            && request.resource.data.revisao == resource.data.revisao + 1;
+      }
+
+      function situacaoDaLista(valor) {
+        return valor in ['NAO_INFORMADO', 'NENHUMA_DECLARADA', 'INFORMADA'];
+      }
+      function textoAte(valor, maximo) {
+        return valor is string && valor.size() <= maximo;
+      }
+      function cartaoValido(d) {
+        return d.keys().hasOnly([
+                'versaoEsquema', 'situacaoAlergias', 'alergias',
+                'situacaoMedicamentos', 'medicamentos', 'situacaoCondicoes',
+                'condicoes', 'tipoSanguineo', 'tipoSanguineoConfirmado',
+                'observacoes', 'veterinario', 'mostrarContatoDoTutor',
+                'revisao', 'atualizadoEm'])
+            && d.keys().hasAll(['versaoEsquema', 'revisao', 'atualizadoEm'])
+            && d.versaoEsquema == 1
+            && d.revisao is int
+            && d.atualizadoEm == request.time
+            && situacaoDaLista(d.get('situacaoAlergias', 'NAO_INFORMADO'))
+            && situacaoDaLista(d.get('situacaoMedicamentos', 'NAO_INFORMADO'))
+            && situacaoDaLista(d.get('situacaoCondicoes', 'NAO_INFORMADO'))
+            && d.get('alergias', []) is list
+            && d.get('alergias', []).size() <= 20
+            && d.get('medicamentos', []) is list
+            && d.get('medicamentos', []).size() <= 20
+            && d.get('condicoes', []) is list
+            && d.get('condicoes', []).size() <= 20
+            && textoAte(d.get('tipoSanguineo', ''), 40)
+            && d.get('tipoSanguineoConfirmado', false) is bool
+            && textoAte(d.get('observacoes', ''), 1000)
+            && d.get('mostrarContatoDoTutor', true) is bool
+            && d.get('veterinario', {}) is map
+            && d.get('veterinario', {}).keys()
+                .hasOnly(['nome', 'clinica', 'telefone'])
+            && textoAte(d.get('veterinario', {}).get('nome', ''), 80)
+            && textoAte(d.get('veterinario', {}).get('clinica', ''), 80)
+            && textoAte(d.get('veterinario', {}).get('telefone', ''), 20);
+      }
+
       // Auditoria das mudanças de situação (Memorial). O evento só é aceito
       // na mesma escrita que muda `situacao` do pet, descrevendo exatamente
       // essa mudança, com o próprio usuário como autor e o horário do

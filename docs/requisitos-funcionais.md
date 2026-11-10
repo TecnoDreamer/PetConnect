@@ -124,6 +124,21 @@ gerado no aparelho: sem mudança de banco, regras ou backend.
 | RF48 | A prévia mostra o cartaz exatamente como será exportado; o tutor compartilha um PNG (2110 × 2982) ou um PDF A4 pela folha do sistema, ou salva o PNG na galeria, só por ação explícita. | `cartaz_layout_test.dart` (PNG), `cartaz_telas_test.dart` (Exportação), CT39 |
 | RF49 | O rascunho (textos, fotos já no Cloudinary e enquadramento) fica só no aparelho, sem telefone, consentimento nem fotos do celular; gerar ou exportar não muda nada no pet. | `cartaz_dominio_test.dart` (rascunho), `cartaz_telas_test.dart` (Rascunho, Exportação), CT40 |
 
+## Cartão de Emergência do pet
+
+Detalhes em `docs/features/cartao-emergencia.md` e ADR 0009 (issue #41).
+Privado na versão 1: nada vai para a página do QR nem para a API.
+
+| ID | Requisito | Testes |
+|----|-----------|--------|
+| RF54 | No perfil do pet ativo, o card "Cartão de Emergência" (abaixo dos quatro cards) abre o cartão daquele pet; no Memorial, o cartão abre só para leitura pelas configurações. Outra conta não abre, nem por link direto. (RF-41-01, RF-41-06) | `cartao_emergencia_telas_test.dart` (perfil, Memorial, cada pet vê só o próprio), `regras.test.js` (emergencia), CT41 |
+| RF55 | O cartão mostra alergias, medicamentos em uso, condições clínicas, tipo sanguíneo confirmado, observações, veterinário de confiança e, se o tutor quiser, o telefone do perfil dele, com "Atualizado em" e o aviso para confirmar com o veterinário. (RF-41-02, RF-41-05) | `cartao_emergencia_telas_test.dart` (cartão completo, contato oculto), CT42 |
+| RF56 | O tutor edita o cartão; salvar e reabrir preserva o conteúdo. Nenhum campo médico é obrigatório. (RF-41-03) | `cartao_emergencia_repository_test.dart`, `cartao_emergencia_telas_test.dart` (edição), CT43 |
+| RF57 | Alergias, medicamentos e condições distinguem "Não informado" de "Nenhuma conhecida (declarado pelo tutor)"; nada é deduzido de dado ausente ou malformado; tipo sanguíneo só com a confirmação de origem. (RF-41-04) | `cartao_emergencia_dominio_test.dart`, CT44 |
+| RF58 | Os dados do cartão nunca aparecem na página pública do QR, na API ou em links. (RF-41-07) | ADR 0009 (documento fora do pet), CT45 |
+| RF59 | Estados vazio, sem conexão (com e sem cache), sem permissão e erro são compreensíveis; uma gravação sem rede não perde o formulário; uma edição feita em outro lugar não é sobrescrita. (RF-41-08) | `cartao_emergencia_telas_test.dart` (offline, conflito, toque duplo), `cartao_emergencia_repository_test.dart` (revisão), CT46 |
+| RF60 | Excluir o pet ou a conta apaga o cartão. | `firebase_pet_repository_exclusao_test.dart`, `firebase_usuario_repository_test.dart`, `regras.test.js` (cascata), CT47 |
+
 ## Fora de escopo nesta fase
 
 - Chat entre tutor e quem encontrou o pet.

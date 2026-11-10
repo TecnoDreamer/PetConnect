@@ -38,17 +38,22 @@ const SUBCOLECOES_CLINICAS = [
 // Mesma lista que `subcolecoesApagadasComOPet`
 // (lib/features/pet/data/exclusao_de_pet.dart), usada por deletePet e
 // deleteAccount. `eventosSituacao` não está aqui: só sai no lote que apaga o
-// pet.
-const SUBCOLECOES_APAGADAS_COM_O_PET = [...SUBCOLECOES_CLINICAS, 'fotos'];
+// pet. O Cartão de Emergência também não: é um documento só, apagado direto
+// (`apagarCartaoDeEmergencia`), e as regras não deixam listar a subcoleção.
+const SUBCOLECOES_LISTADAS_NA_EXCLUSAO = [...SUBCOLECOES_CLINICAS, 'fotos'];
+// Tudo o que precisa sumir antes do pet.
+const SUBCOLECOES_APAGADAS_COM_O_PET = [...SUBCOLECOES_LISTADAS_NA_EXCLUSAO, 'emergencia'];
 
-// Mesma ordem que apagarSubcolecoesDoPet: cada subcoleção, um documento por vez.
+// Mesma ordem que apagarSubcolecoesDoPet: cada subcoleção, um documento por
+// vez; depois o Cartão de Emergência, sem listar.
 async function apagarSubcolecoesComoOApp(db, petId) {
-  for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
+  for (const sub of SUBCOLECOES_LISTADAS_NA_EXCLUSAO) {
     const docs = await getDocs(collection(db, 'Pets', petId, sub));
     for (const d of docs.docs) {
       await deleteDoc(d.ref);
     }
   }
+  await deleteDoc(doc(db, 'Pets', petId, 'emergencia', 'cartao'));
 }
 
 // Mesma ordem que FirebasePetRepository.deletePet: subcoleções, depois um
@@ -116,9 +121,33 @@ beforeEach(async () => {
       ['petBeto', BETO],
     ]) {
       await setDoc(doc(db, 'Pets', petId, 'fotos', 'f1'), fotoValida(petId, dono, 1));
+      await setDoc(doc(db, 'Pets', petId, 'emergencia', 'cartao'), {
+        ...cartaoValido(1),
+        atualizadoEm: new Date(0),
+      });
     }
   });
 });
+
+// Mesmo documento que FirebaseCartaoEmergenciaRepository.salvar grava.
+function cartaoValido(revisao, atualizadoEm = serverTimestamp()) {
+  return {
+    versaoEsquema: 1,
+    situacaoAlergias: 'INFORMADA',
+    alergias: [{ id: 'a1', substancia: 'Dipirona', reacao: 'Vômito' }],
+    situacaoMedicamentos: 'NENHUMA_DECLARADA',
+    medicamentos: [],
+    situacaoCondicoes: 'NAO_INFORMADO',
+    condicoes: [],
+    tipoSanguineo: 'DEA 1.1 positivo',
+    tipoSanguineoConfirmado: true,
+    observacoes: 'Morde quando sente dor.',
+    veterinario: { nome: 'Dra. Exemplo', clinica: 'Clínica Exemplo', telefone: '+5519900000000' },
+    mostrarContatoDoTutor: true,
+    revisao,
+    atualizadoEm,
+  };
+}
 
 // Mesmo registro que FirebaseGaleriaRepository.publicar grava.
 function fotoValida(petId, userId, criadoEm = serverTimestamp()) {
@@ -562,10 +591,121 @@ describe('exclusão de conta (mesma ordem do app)', () => {
     await assertFails(comEventoAlheio.commit());
 
     for (const sub of SUBCOLECOES_APAGADAS_COM_O_PET) {
-      const id = sub === 'fotos' ? 'f1' : 'r1';
+      const id = { fotos: 'f1', emergencia: 'cartao' }[sub] ?? 'r1';
       await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto', sub, id)));
     }
     await assertFails(deleteDoc(doc(db, 'Pets', 'petBeto')));
+  });
+});
+
+describe('emergencia (Cartão de Emergência)', () => {
+  const cartao = (db, petId, id = 'cartao') => doc(db, 'Pets', petId, 'emergencia', id);
+
+  it('o dono lê, cria, altera e apaga', async () => {
+    const db = comoAna();
+    await assertSucceeds(getDoc(cartao(db, 'petAna')));
+    await assertSucceeds(updateDoc(cartao(db, 'petAna'), cartaoValido(2)));
+    await assertSucceeds(deleteDoc(cartao(db, 'petAna')));
+    await assertSucceeds(setDoc(cartao(db, 'petAna'), cartaoValido(1)));
+  });
+
+  it('salvar como o app: transação lê a revisão e grava a seguinte', async () => {
+    const db = comoAna();
+    await assertSucceeds(
+      runTransaction(db, async (tx) => {
+        const atual = await tx.get(cartao(db, 'petAna'));
+        tx.set(cartao(db, 'petAna'), cartaoValido(atual.data().revisao + 1));
+      }),
+    );
+  });
+
+  it('cartão mínimo, só com os campos obrigatórios, é aceito', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(cartao(ctx.firestore(), 'petAna'));
+    });
+    await assertSucceeds(
+      setDoc(cartao(comoAna(), 'petAna'), {
+        versaoEsquema: 1,
+        revisao: 1,
+        atualizadoEm: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('edição a partir de versão velha não sobrescreve (revisão)', async () => {
+    const db = comoAna();
+    // No banco está a revisão 1: gravar 1 de novo, pular para 3 ou voltar
+    // para 0 é negado; criar do zero com revisão diferente de 1 também.
+    await assertFails(setDoc(cartao(db, 'petAna'), cartaoValido(1)));
+    await assertFails(setDoc(cartao(db, 'petAna'), cartaoValido(3)));
+    await assertFails(setDoc(cartao(db, 'petAna'), cartaoValido(0)));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(cartao(ctx.firestore(), 'petAna'));
+    });
+    await assertFails(setDoc(cartao(db, 'petAna'), cartaoValido(2)));
+  });
+
+  it('outro tutor não lê, cria, altera nem apaga', async () => {
+    const db = comoAna();
+    await assertFails(getDoc(cartao(db, 'petBeto')));
+    await assertFails(getDocs(collection(db, 'Pets', 'petBeto', 'emergencia')));
+    await assertFails(updateDoc(cartao(db, 'petBeto'), cartaoValido(2)));
+    await assertFails(deleteDoc(cartao(db, 'petBeto')));
+  });
+
+  it('anônimo não lê nem escreve', async () => {
+    const db = anonimo();
+    await assertFails(getDoc(cartao(db, 'petAna')));
+    await assertFails(updateDoc(cartao(db, 'petAna'), cartaoValido(2)));
+  });
+
+  it('pet falecido: lê e apaga, mas não altera', async () => {
+    const db = comoAna();
+    await assertSucceeds(getDoc(cartao(db, 'petAnaFalecido')));
+    await assertFails(updateDoc(cartao(db, 'petAnaFalecido'), cartaoValido(2)));
+    await assertSucceeds(deleteDoc(cartao(db, 'petAnaFalecido')));
+    await assertFails(setDoc(cartao(db, 'petAnaFalecido'), cartaoValido(1)));
+  });
+
+  it('pet que não existe: negado', async () => {
+    await assertFails(setDoc(cartao(comoAna(), 'naoExiste'), cartaoValido(1)));
+    await assertFails(getDoc(cartao(comoAna(), 'naoExiste')));
+  });
+
+  it('só existe o documento `cartao`', async () => {
+    await assertFails(setDoc(cartao(comoAna(), 'petAna', 'outro'), cartaoValido(1)));
+    await assertFails(getDoc(cartao(comoAna(), 'petAna', 'outro')));
+  });
+
+  it('documento fora do formato é negado', async () => {
+    const db = comoAna();
+    const base = cartaoValido(2);
+    const vinte = Array.from({ length: 20 }, (_, i) => ({ id: `a${i}`, substancia: 'x' }));
+    const invalidos = {
+      'campo extra': { ...base, dono: ANA },
+      'versão de esquema diferente': { ...base, versaoEsquema: 2 },
+      'horário do aparelho': { ...base, atualizadoEm: new Date() },
+      'sem horário': (({ atualizadoEm, ...resto }) => resto)(base),
+      'situação desconhecida': { ...base, situacaoAlergias: 'TALVEZ' },
+      '21 alergias': { ...base, alergias: [...vinte, { id: 'a20', substancia: 'x' }] },
+      'condições que não são lista': { ...base, condicoes: 'diabetes' },
+      'observações com mais de 1000 caracteres': { ...base, observacoes: 'x'.repeat(1001) },
+      'tipo sanguíneo com mais de 40 caracteres': { ...base, tipoSanguineo: 'x'.repeat(41) },
+      'confirmação que não é booleana': { ...base, tipoSanguineoConfirmado: 'sim' },
+      'veterinário com campo extra': { ...base, veterinario: { nome: 'x', email: 'x@x' } },
+      'telefone do veterinário longo demais': {
+        ...base,
+        veterinario: { telefone: '+'.padEnd(21, '1') },
+      },
+      'revisão que não é número inteiro': { ...base, revisao: '2' },
+    };
+    for (const [motivo, dados] of Object.entries(invalidos)) {
+      await assertFails(setDoc(cartao(db, 'petAna'), dados)).catch((erro) => {
+        throw new Error(`${motivo}: ${erro.message}`);
+      });
+    }
+    // O limite de 20 itens é aceito.
+    await assertSucceeds(setDoc(cartao(db, 'petAna'), { ...base, alergias: vinte }));
   });
 });
 

@@ -57,6 +57,13 @@ class AppConfig {
   /// com [useApiForPets] fica oculta, como o Memorial.
   static const bool galeriaFotos = bool.fromEnvironment('GALERIA_FOTOS');
 
+  /// Cartão de Emergência do pet (issue #41, docs/features/cartao-emergencia.md).
+  /// Desligado por padrão até o deploy das regras de `Pets/{id}/emergencia`:
+  /// sem elas, o Firestore nega a leitura e a gravação. Só no modo
+  /// Firestore; com [useApiForPets] fica oculto, como a galeria.
+  static const bool cartaoEmergencia =
+      bool.fromEnvironment('CARTAO_EMERGENCIA');
+
   /// ID do cliente OAuth **web** do projeto, para o login com Google
   /// (docs/features/login-social.md). Opcional: sem ele, o Google Sign-In
   /// lê o valor do `google-services.json`. Não é segredo.

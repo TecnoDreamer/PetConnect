@@ -19,6 +19,7 @@
 | Localização | — | `localizacao_management_test.dart` | fake | idem |
 | QR Code | — | `pet_qr_code_test.dart` | — | — |
 | Upload/anexo | — | `api_anexo_repository_test.dart` (mock HTTP, valida multipart + folder assinado) | mock, não Cloudinary real | erro de upload tratado (`describirErroUpload`) |
+| Cartão de Emergência (#41) | `cartao_emergencia_dominio_test.dart` (situações, leitura tolerante, limpeza), `cartao_emergencia_repository_test.dart` (revisão, conflito, erros) | `cartao_emergencia_telas_test.dart` (leitura, edição, offline, conflito, Memorial, temas, fonte 200%) | fake + regras no emulador (`regras.test.js`) | vazio, parcial, completo, offline, sem permissão, erro, conflito |
 | `ApiClient` (núcleo) | `api_client_test.dart` (18 casos: header, erro, 401, rede, 204, nova tentativa, conexão nova e log) | — | — | — |
 
 **Total**: 25 testes rodando em CI (VM, sem Chrome) + 1 bloqueado

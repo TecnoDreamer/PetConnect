@@ -72,6 +72,7 @@ void main() {
         await db.collection('Pets/$petId/$sub').add({'nota': 'y'});
       }
       await db.collection('Pets/$petId/eventosSituacao').add({'atorId': 'x'});
+      await db.doc('Pets/$petId/emergencia/cartao').set({'revisao': 1});
     }
   });
 
@@ -123,6 +124,9 @@ void main() {
         expect(await _contar(db, 'Pets/$petId/$sub'), 0,
             reason: 'Pets/$petId/$sub não foi apagada');
       }
+      expect(
+          (await db.doc('Pets/$petId/emergencia/cartao').get()).exists, isFalse,
+          reason: 'o Cartão de Emergência de $petId não foi apagado');
       expect(await _contar(db, 'Pets/$petId/eventosSituacao'), 1);
     }
     expect((await db.doc('Usuarios/$_dono').get()).exists, isTrue);

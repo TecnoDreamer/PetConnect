@@ -71,3 +71,11 @@ Ver `docs/features/galeria-fotos-pet.md`.
 | RNF21 | Nenhum segredo do Cloudinary no app; fotos privadas por padrão (só o dono, pelas regras do Firestore), inclusive de pet falecido. |
 | RNF22 | A interface só exibe versões transformadas das fotos (sem metadados); o nome original do arquivo não sai do aparelho. |
 | RNF23 | Grade, visualizador e envio funcionam nos três temas, com fonte ampliada e em telas a partir de 320 dp, com rótulos para leitor de tela. |
+
+## Cartão de Emergência do pet
+
+| ID | Requisito |
+|----|-----------|
+| RNF24 | Cartão e formulário funcionam nos três temas, com fonte em 200% e em telas pequenas, com seções marcadas como cabeçalho para o leitor de tela (RNF-41-01). |
+| RNF25 | Só o dono lê e grava o cartão, pelas regras do Firestore testadas no emulador; dados do cartão não vão para log, notificação nem para a API (RNF-41-02). |
+| RNF26 | Pets sem cartão abrem normalmente; documentos antigos ou malformados são lidos sem erro e sem dedução (RNF-41-03). |

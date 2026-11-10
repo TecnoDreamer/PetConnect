@@ -6,6 +6,7 @@ import '../../../../core/theme/app_palette.dart';
 import '../../../../core/widgets/settings_menu_tile.dart';
 import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../../domain/alteracao_situacao.dart';
+import '../providers/cartao_emergencia_providers.dart';
 import '../providers/pet_providers.dart';
 
 /// Configurações restritas do memorial: só a correção de um falecimento
@@ -108,6 +109,15 @@ class _MemorialSettingsScreenState
                         : null,
                     onTap: () => _corrigir(pet.nome),
                   ),
+                  // Cartão de Emergência (issue #41): só leitura no Memorial.
+                  if (ref.watch(cartaoEmergenciaDisponivelProvider)) ...[
+                    const SettingsSectionHeader(title: 'Registros'),
+                    SettingsMenuTile(
+                      icon: Icons.emergency_outlined,
+                      title: 'Cartão de Emergência',
+                      onTap: () => context.push('/pet/${pet.id}/emergencia'),
+                    ),
+                  ],
                 ],
               ),
       ),

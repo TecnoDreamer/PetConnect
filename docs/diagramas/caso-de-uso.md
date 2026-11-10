@@ -78,6 +78,9 @@ graph LR
 | Gerar/regenerar QR code | Tutor | RF16, RF19 |
 | Visualizar página pública do pet | Visitante | RF17, RF18 |
 | Gerenciar carteira de vacina | Tutor | RF20–RF23 |
+| Ver o Cartão de Emergência (também no Memorial, só leitura) | Tutor | RF54, RF55 |
+| Editar o Cartão de Emergência | Tutor | RF56, RF57, RF59 |
+| Ligar para o veterinário ou o tutor pelo cartão | Tutor | RF55 |
 | Gerenciar histórico médico | Tutor | RF24–RF26 |
 | Agendar consultas | Tutor | RF27–RF30 |
 | Ver, publicar e excluir fotos do pet (também no Memorial) | Tutor | RF37–RF42 |

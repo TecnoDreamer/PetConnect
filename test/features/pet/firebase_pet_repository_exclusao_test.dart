@@ -36,6 +36,7 @@ void main() {
         await db.collection('Pets/$petId/$sub').add({'nota': 'y'});
       }
       await db.collection('Pets/$petId/eventosSituacao').add({'atorId': 'ana'});
+      await db.doc('Pets/$petId/emergencia/cartao').set({'revisao': 1});
     }
   });
 
@@ -74,5 +75,44 @@ void main() {
       expect(await _contar(db, 'Pets/mel/$sub'), 2);
     }
     expect(await _contar(db, 'Pets/mel/eventosSituacao'), 1);
+  });
+
+  group('Cartão de Emergência (#41)', () {
+    test('sai antes do pet', () async {
+      final erro = FirebaseException(plugin: 'cloud_firestore', code: 'teste');
+      whenCalling(Invocation.method(#delete, null))
+          .on(db.doc('Pets/rex'))
+          .thenThrow(erro);
+
+      await expectLater(repo.deletePet('rex'), throwsA(erro));
+
+      expect(
+          (await db.doc('Pets/rex/emergencia/cartao').get()).exists, isFalse);
+      expect((await db.doc('Pets/mel/emergencia/cartao').get()).exists, isTrue,
+          reason: 'o cartão de outro pet não pode sair');
+    });
+
+    test('regras antigas (sem o cartão) não impedem excluir o pet', () async {
+      whenCalling(Invocation.method(#delete, null))
+          .on(db.doc('Pets/rex/emergencia/cartao'))
+          .thenThrow(FirebaseException(
+              plugin: 'cloud_firestore', code: 'permission-denied'));
+
+      await repo.deletePet('rex');
+
+      expect((await db.doc('Pets/rex').get()).exists, isFalse);
+    });
+
+    test('outro erro ao apagar o cartão interrompe a exclusão', () async {
+      final erro =
+          FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+      whenCalling(Invocation.method(#delete, null))
+          .on(db.doc('Pets/rex/emergencia/cartao'))
+          .thenThrow(erro);
+
+      await expectLater(repo.deletePet('rex'), throwsA(erro));
+
+      expect((await db.doc('Pets/rex').get()).exists, isTrue);
+    });
   });
 }
