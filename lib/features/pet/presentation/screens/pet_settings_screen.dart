@@ -13,6 +13,7 @@ import '../../../usuario/presentation/providers/auth_providers.dart';
 import '../../domain/pet.dart';
 import '../providers/anexo_providers.dart';
 import '../providers/cartaz_providers.dart';
+import '../providers/limpeza_providers.dart';
 import '../providers/pet_providers.dart';
 import '../widgets/cover_position_editor.dart';
 import '../widgets/pet_cover_image.dart';
@@ -199,12 +200,19 @@ class _PetSettingsScreenState extends ConsumerState<PetSettingsScreen> {
 
     setState(() => _excluindo = true);
 
-    // Antes de excluir, desliga a página pública: depois, a API não teria
-    // mais o pet para conferir o dono. Melhor esforço e com prazo curto (o
-    // servidor pode estar acordando); se falhar, a API apaga a configuração
-    // no próximo acesso ao QR.
+    // Antes de excluir, enquanto a API ainda acha o pet no Firestore para
+    // conferir o dono: pets no Firestore com a API do QR apagam lá a página
+    // pública, os acessos, os relatos, as preferências e os avisos do pet.
+    // Melhor esforço, com prazo curto: com a API fora, o pedido fica
+    // guardado no aparelho e é repetido na próxima abertura, e a própria API
+    // apaga tudo no próximo acesso ao QR do pet excluído.
+    final limpeza = ref.read(limpezaNaApiProvider);
     final compartilhamento = ref.read(compartilhamentoRepositoryProvider);
-    if (compartilhamento != null) {
+    if (limpeza != null) {
+      await limpeza.antesDeExcluirPet(pet.id);
+    } else if (compartilhamento != null) {
+      // Pets na API (`USE_API_PETS`): a exclusão lá já apaga em cascata;
+      // desligar a página antes só a tira do ar mais cedo.
       try {
         await compartilhamento.revogar(pet).timeout(const Duration(seconds: 5));
       } catch (_) {}
