@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../pet/data/exclusao_de_pet.dart';
+import '../../pet/domain/limpeza_na_api.dart';
 import '../domain/login_social.dart';
 import '../domain/usuario.dart';
 import '../domain/usuario_repository.dart';
@@ -13,8 +14,10 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
     required FirebaseAuth auth,
     required FirebaseFirestore firestore,
     Map<ProvedorSocial, ProvedorDeCredencial> provedores = const {},
+    LimpezaNaApi? limpezaNaApi,
   })  : _auth = auth,
-        _firestore = firestore {
+        _firestore = firestore,
+        _limpezaNaApi = limpezaNaApi {
     _social = EntradaSocial(
       auth: auth,
       provedores: provedores,
@@ -24,6 +27,7 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final LimpezaNaApi? _limpezaNaApi;
   late final EntradaSocial _social;
 
   CollectionReference<Map<String, dynamic>> get _usuarios =>
@@ -138,16 +142,32 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
     });
   }
 
+  /// Com a API do QR ([LimpezaNaApi]), antes de apagar cada pet pede à API
+  /// que apague o que guarda dele, e no fim pede a exclusão da conta lá
+  /// (`DELETE /me`: aparelhos do push, páginas públicas, preferências e
+  /// avisos, e o usuário no Firebase Auth). Melhor esforço: com a API fora,
+  /// a exclusão segue só no Firebase, sem novas tentativas (a conta deixa de
+  /// existir e não há como repetir com login). Ver
+  /// docs/privacy/data-flow-and-lgpd-readiness.md.
   @override
   Future<void> deleteAccount() async {
     final user = _auth.currentUser!;
     final uid = user.uid;
+    final limpeza = _limpezaNaApi;
+    // Um pedido sem resposta basta: os seguintes esperariam o mesmo prazo.
+    var apiNoAr = limpeza != null;
 
     final pets = await _firestore
         .collection('Pets')
         .where('userId', isEqualTo: uid)
         .get();
     for (final pet in pets.docs) {
+      // Antes de qualquer exclusão do pet: a API confere o dono no Firestore.
+      if (apiNoAr) {
+        final resultado =
+            await limpeza!.antesDeExcluirPet(pet.id, guardarSeFalhar: false);
+        apiNoAr = resultado != ResultadoDaLimpeza.apiInacessivel;
+      }
       await apagarSubcolecoesDoPet(pet.reference);
     }
 
@@ -167,6 +187,14 @@ class FirebaseUsuarioRepository implements UsuarioRepository {
     batch.delete(_usuarios.doc(uid));
     await batch.commit();
 
-    await user.delete();
+    final apiExcluiu = apiNoAr && await limpeza!.excluirConta();
+    try {
+      await user.delete();
+    } on FirebaseAuthException {
+      // A API já removeu o usuário do Firebase Auth pelo Admin SDK, então o
+      // SDK do app não o acha mais (ou pede login recente). Só sai da sessão.
+      if (!apiExcluiu) rethrow;
+      await _auth.signOut();
+    }
   }
 }

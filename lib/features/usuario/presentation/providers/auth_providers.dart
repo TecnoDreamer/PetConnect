@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../pet/presentation/providers/limpeza_providers.dart';
 import '../../data/api_usuario_repository.dart';
 import '../../data/firebase_usuario_repository.dart';
 import '../../data/provedores_sociais.dart';
@@ -49,6 +50,7 @@ final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
     auth: ref.watch(firebaseAuthProvider),
     firestore: ref.watch(firestoreProvider),
     provedores: ref.watch(provedoresSociaisProvider),
+    limpezaNaApi: ref.watch(limpezaNaApiProvider),
   );
 });
 

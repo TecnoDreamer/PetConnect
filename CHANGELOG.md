@@ -7,6 +7,20 @@ lojas ainda; as entradas abaixo estão agrupadas por entrega.
 
 ### Segurança
 
+- Exclusão de pet e de conta apaga também o que a API guarda do QR (LGPD).
+  Com os pets no Firestore e `USE_API_QR=true`, excluir o pet chama antes
+  `DELETE /api/v1/legacy-pets/{id}/qr-data`, que apaga a página pública, os
+  acessos, os relatos com localização e contato de quem achou, as
+  preferências e o histórico de avisos do pet. Antes, só a página era
+  desligada e o resto ficava na API. Excluir a conta faz o mesmo para cada
+  pet e depois chama `DELETE /api/v1/me`.
+  - Melhor esforço: a exclusão nunca espera mais de 8 s pela API. Com a
+    API fora, o pedido do pet fica guardado no aparelho e é repetido na
+    próxima abertura com sessão; na exclusão de conta não há nova
+    tentativa. O que fica nesses casos está em
+    `docs/privacy/data-flow-and-lgpd-readiness.md`.
+  - Depende da API com a rota nova (PR da API). Contra a API anterior, o app
+    só desliga a página pública, como antes.
 - Regras do Firestore para a galeria de fotos (`Pets/{petId}/fotos`): só o
   dono lê, publica e exclui; criação validada campo a campo; sem edição.
   Testes no emulador, no CI. Deployadas com as de isolamento em 2026-10-27.

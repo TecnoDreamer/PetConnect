@@ -11,8 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pet_connect/core/theme/app_theme.dart';
 import 'package:pet_connect/features/pet/domain/compartilhamento_publico.dart';
+import 'package:pet_connect/features/pet/domain/limpeza_na_api.dart';
 import 'package:pet_connect/features/pet/domain/pet.dart';
 import 'package:pet_connect/features/pet/presentation/providers/anexo_providers.dart';
+import 'package:pet_connect/features/pet/presentation/providers/limpeza_providers.dart';
 import 'package:pet_connect/features/pet/presentation/widgets/cover_position_editor.dart';
 import 'package:pet_connect/features/pet/presentation/providers/pet_providers.dart';
 import 'package:pet_connect/features/pet/presentation/screens/pet_settings_screen.dart';
@@ -59,7 +61,7 @@ Pet _pet({
 /// configurações do pet — a rota de "editar" é uma tela-marcador, só pra
 /// confirmar que a navegação preserva o pet certo.
 Widget _appPara(FakePetRepository repo, String petIdInicial,
-    {CompartilhamentoRepository? compartilhamento}) {
+    {CompartilhamentoRepository? compartilhamento, LimpezaNaApi? limpeza}) {
   final router = GoRouter(
     initialLocation: '/pet/$petIdInicial/configuracoes',
     routes: [
@@ -92,6 +94,7 @@ Widget _appPara(FakePetRepository repo, String petIdInicial,
       petProvider.overrideWith((ref, id) => repo.watchPet(id)),
       anexoRepositoryProvider.overrideWithValue(FakeAnexoRepository()),
       compartilhamentoRepositoryProvider.overrideWithValue(compartilhamento),
+      limpezaNaApiProvider.overrideWithValue(limpeza),
     ],
     child: MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
   );
@@ -123,6 +126,28 @@ class _CompartilhamentoFake implements CompartilhamentoRepository {
     return const CompartilhamentoPublico(
         ativado: false, ativo: false, campos: {});
   }
+}
+
+/// Registra se o pet ainda existia quando a limpeza na API foi pedida.
+class _LimpezaFake implements LimpezaNaApi {
+  _LimpezaFake(this.pets, {this.resultado = ResultadoDaLimpeza.apagado});
+
+  final FakePetRepository pets;
+  final ResultadoDaLimpeza resultado;
+  final petExistiaAoLimpar = <bool>[];
+
+  @override
+  Future<ResultadoDaLimpeza> antesDeExcluirPet(String petId,
+      {bool guardarSeFalhar = true}) async {
+    petExistiaAoLimpar.add(await pets.watchPet(petId).first != null);
+    return resultado;
+  }
+
+  @override
+  Future<void> retomarPendentes() async {}
+
+  @override
+  Future<bool> excluirConta() async => true;
 }
 
 void main() {
@@ -372,6 +397,47 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(compartilhamento.petExistiaAoRevogar, [true]);
+      expect((await repo.watchPet(id).first), isNull);
+    });
+
+    testWidgets(
+        'com pets no Firestore e API do QR, apaga os dados do QR na API '
+        'antes de apagar o pet', (tester) async {
+      final repo = FakePetRepository();
+      final id = await repo.createPet(_pet(id: '', nome: 'Felícia'));
+      final compartilhamento = _CompartilhamentoFake(repo);
+      final limpeza = _LimpezaFake(repo);
+
+      await tester.pumpWidget(_appPara(repo, id,
+          compartilhamento: compartilhamento, limpeza: limpeza));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Excluir perfil do pet'), 200);
+      await tester.tap(find.text('Excluir perfil do pet'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+
+      expect(limpeza.petExistiaAoLimpar, [true]);
+      // A rota de limpeza já apaga a página pública: sem revogar à parte.
+      expect(compartilhamento.petExistiaAoRevogar, isEmpty);
+      expect((await repo.watchPet(id).first), isNull);
+    });
+
+    testWidgets('API fora na limpeza não impede a exclusão', (tester) async {
+      final repo = FakePetRepository();
+      final id = await repo.createPet(_pet(id: '', nome: 'Felícia'));
+
+      await tester.pumpWidget(_appPara(repo, id,
+          limpeza: _LimpezaFake(repo,
+              resultado: ResultadoDaLimpeza.apiInacessivel)));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Excluir perfil do pet'), 200);
+      await tester.tap(find.text('Excluir perfil do pet'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsOneWidget);
       expect((await repo.watchPet(id).first), isNull);
     });
 

@@ -8,6 +8,7 @@ import 'core/theme/app_theme_mode.dart';
 import 'core/theme/theme_providers.dart';
 import 'core/widgets/ao_voltar_ao_primeiro_plano.dart';
 import 'features/avisos/presentation/escuta_de_avisos_do_qr.dart';
+import 'features/pet/presentation/retomada_da_limpeza_na_api.dart';
 import 'features/usuario/presentation/providers/auth_providers.dart';
 import 'routing/app_router.dart';
 
@@ -53,7 +54,9 @@ class PetConnectApp extends ConsumerWidget {
           child: EscutaDeAvisosDoQr(
             router: router,
             mensageiro: mensageiroDoApp,
-            child: child ?? const SizedBox.shrink(),
+            child: RetomadaDaLimpezaNaApi(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         ),
       ),
